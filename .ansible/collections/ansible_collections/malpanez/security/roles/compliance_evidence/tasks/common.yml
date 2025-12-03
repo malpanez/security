@@ -1,0 +1,33 @@
+---
+- name: "common | Ensure evidence directory exists"
+  ansible.builtin.file:
+    path: "{{ compliance_evidence_output_dir }}"
+    state: directory
+    mode: "0750"
+
+- name: "common | Collect file-based evidence"
+  ansible.builtin.copy:
+    src: "{{ item.path }}"
+    dest: "{{ compliance_evidence_output_dir }}/{{ inventory_hostname }}-{{ item.name }}"
+    remote_src: true
+    mode: "0640"
+  loop: "{{ compliance_evidence_items | selectattr('path', 'defined') | list }}"
+  failed_when: false
+  tags: [review]
+
+- name: "common | Collect command output evidence"
+  ansible.builtin.command: "{{ item.command }}"
+  register: compliance_evidence_cmd
+  changed_when: false
+  loop: "{{ compliance_evidence_items | selectattr('command', 'defined') | list }}"
+  failed_when: false
+  tags: [review]
+
+- name: "common | Write command evidence to files"
+  ansible.builtin.copy:
+    dest: "{{ compliance_evidence_output_dir }}/{{ inventory_hostname }}-{{ item.item.name | default(item.item.command | regex_replace('[^A-Za-z0-9_-]', '_')) }}.log"
+    content: "{{ item.stdout | default('') }}"
+    mode: "0640"
+  loop: "{{ compliance_evidence_cmd.results | default([]) }}"
+  when: compliance_evidence_cmd is defined
+  tags: [review]

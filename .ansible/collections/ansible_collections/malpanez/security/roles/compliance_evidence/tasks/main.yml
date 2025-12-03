@@ -1,0 +1,35 @@
+---
+- name: "Skip evidence collection when disabled"
+  ansible.builtin.meta: end_play
+  when: not compliance_evidence_enabled
+
+- name: "Include common evidence tasks"
+  ansible.builtin.include_tasks: common.yml
+
+- name: "Include platform-specific evidence tasks"
+  vars:
+    compliance_evidence_platform_task: "{{ lookup('ansible.builtin.first_found', params={'files': [ansible_os_family | lower ~ '.yml'], 'paths': [role_path ~ '/tasks']}, errors='ignore') }}"
+  ansible.builtin.include_tasks: "{{ compliance_evidence_platform_task }}"
+  when: compliance_evidence_platform_task is not none
+
+- name: "Include capabilities evidence when available"
+  ansible.builtin.template:
+    src: capabilities.json.j2
+    dest: "{{ compliance_evidence_output_dir }}/capabilities.json"
+    mode: "0640"
+  when: security_capabilities is defined
+  tags: [review]
+
+- name: "Include capabilities markdown when available"
+  ansible.builtin.template:
+    src: capabilities.md.j2
+    dest: "{{ compliance_evidence_output_dir }}/capabilities.md"
+    mode: "0640"
+  when: security_capabilities is defined
+  tags: [review]
+
+- name: "Include sshd policy evidence"
+  ansible.builtin.include_tasks: sshd_policy.yml
+
+- name: "Include selinux status evidence"
+  ansible.builtin.include_tasks: selinux_status.yml

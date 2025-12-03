@@ -1,0 +1,18 @@
+---
+compliance_evidence_enabled: true
+compliance_evidence_output_dir: reports
+compliance_evidence_items:
+  - name: sshd_config
+    path: /etc/ssh/sshd_config
+  - name: sudoers
+    path: /etc/sudoers
+  - name: selinux_status_cmd
+    command: "sestatus"
+  - name: audit_rules
+    path: /etc/audit/rules.d
+  - name: pam_chain
+    command: "grep -E 'pam_(u2f|fido2|google_authenticator)' /etc/pam.d/sshd || true"
+  - name: sudoers_summary
+    command: "visudo -c -f /etc/sudoers && cat /etc/sudoers"
+  - name: controls_map
+    command: "echo 'See docs/controls.md'"

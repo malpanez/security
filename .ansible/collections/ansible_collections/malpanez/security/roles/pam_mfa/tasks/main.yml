@@ -1,0 +1,27 @@
+---
+- name: "Skip PAM MFA when disabled"
+  ansible.builtin.meta: end_play
+  when:
+    - not pam_mfa_enabled
+    - not (security_capabilities_selected_auth_mode | default('legacy') == 'pam_mfa')
+    - not (
+        security_capabilities_selected_auth_mode | default('legacy') == 'sk_keys'
+        and security_capabilities_mfa_for_humans_even_with_sk_keys | default(false)
+      )
+
+- name: "Normalize OS family for PAM decisions"
+  ansible.builtin.set_fact:
+    pam_mfa_os_family: "{{ ansible_os_family | lower }}"
+  tags: [always]
+
+- name: "Include common MFA setup"
+  ansible.builtin.include_tasks: common.yml
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]
+
+- name: "Include platform-specific MFA tasks"
+  vars:
+    pam_mfa_platform_task: "{{ lookup('ansible.builtin.first_found', params={'files': [pam_mfa_os_family ~ '.yml'], 'paths': [role_path ~ '/tasks']}, errors='ignore') }}"
+  ansible.builtin.include_tasks: "{{ pam_mfa_platform_task }}"
+  when: pam_mfa_platform_task is not none and security_mode | default('enforce') == 'enforce'
+  tags: [enforce]

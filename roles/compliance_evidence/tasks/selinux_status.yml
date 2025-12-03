@@ -1,0 +1,14 @@
+---
+- name: "Selinux | Capture sestatus"
+  ansible.builtin.command: "sestatus"
+  register: compliance_selinux_status
+  changed_when: false
+  failed_when: false
+  tags: [review]
+
+- name: "Selinux | Write selinux_status.md"
+  ansible.builtin.template:
+    src: selinux_status.md.j2
+    dest: "{{ compliance_evidence_output_dir }}/selinux_status.md"
+    mode: "0640"
+  tags: [review]

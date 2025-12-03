@@ -1,0 +1,11 @@
+---
+- name: "Skip sudoers baseline when strict mode disabled"
+  ansible.builtin.meta: end_play
+  when: not sudoers_baseline_strict
+
+- name: "Include common sudoers tasks"
+  ansible.builtin.include_tasks: common.yml
+
+- name: "Include platform-specific sudoers tasks"
+  ansible.builtin.include_tasks: "{{ ansible_os_family | lower }}.yml"
+  when: lookup('ansible.builtin.first_found', params={'files': [ansible_os_family | lower ~ '.yml'], 'paths': [role_path ~ '/tasks']}, errors='ignore') is not none

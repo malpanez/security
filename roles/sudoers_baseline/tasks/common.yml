@@ -1,0 +1,23 @@
+---
+- name: "common | Ensure sudo package is present"
+  ansible.builtin.package:
+    name: sudo
+    state: present
+
+- name: "common | Deploy sudoers defaults"
+  ansible.builtin.template:
+    src: sudoers.j2
+    dest: /etc/sudoers
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: "common | Deploy sudoers include files"
+  ansible.builtin.template:
+    src: sudoers.d.j2
+    dest: "{{ sudoers_baseline_files_path }}/99-security"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"

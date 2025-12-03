@@ -1,0 +1,19 @@
+{
+  "name": "malpanez.security",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "postCreateCommand": "python -m pip install -U pip && pip install -r requirements-dev.txt",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "redhat.ansible",
+        "redhat.vscode-yaml",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "ansible.validation.lint.enabled": true,
+        "ansible.validation.useProjectLanguageServer": true,
+        "yaml.validate": true
+      }
+    }
+  }
+}

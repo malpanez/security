@@ -1,0 +1,9 @@
+---
+profile: production
+exclude_paths:
+  - .git/
+  - .venv/
+  - .devcontainer/
+  - .github/
+  - docs/
+  - "**/.molecule/**"

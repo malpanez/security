@@ -1,0 +1,6 @@
+---
+- name: "Sshd policy | Render effective sshd policy summary"
+  ansible.builtin.template:
+    src: sshd_effective_policy.md.j2
+    dest: "{{ compliance_evidence_output_dir }}/sshd_effective_policy.md"
+    mode: "0640"

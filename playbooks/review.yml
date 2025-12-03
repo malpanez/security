@@ -1,0 +1,13 @@
+---
+- name: Review mode (no enforcement)
+  hosts: all
+  become: true
+  vars:
+    pam_mfa_enabled: false
+    selinux_enforcement_enabled: false
+    sudoers_baseline_strict: false
+  roles:
+    - role: malpanez.security.security_capabilities
+      tags: [review]
+    - role: malpanez.security.compliance_evidence
+      tags: [review]

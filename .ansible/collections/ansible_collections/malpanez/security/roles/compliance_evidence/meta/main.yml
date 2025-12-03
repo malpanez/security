@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: Miguel Alpañez
+  description: Collect evidence artifacts for compliance mapping.
+  license: GPL-2.0-or-later
+  min_ansible_version: "2.16"
+  platforms:
+    - name: all
+      versions: [all]
+dependencies: []

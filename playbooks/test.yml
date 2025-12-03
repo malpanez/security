@@ -1,0 +1,5 @@
+- name: Test sshd_hardening
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - role: malpanez.security.sshd_hardening

@@ -1,0 +1,22 @@
+---
+service_accounts_transfer_accounts:
+  - name: sftp_svc
+    shell: /usr/sbin/nologin
+    home: /srv/sftp_svc
+    sftp_only: true
+    chroot: /srv/sftp_svc
+    allow_from: []
+    command: "internal-sftp"
+    keys: []
+    match_extra:
+      - "AuthorizedKeysFile .ssh/authorized_keys"
+  - name: rsync_svc
+    shell: /usr/sbin/nologin
+    home: /srv/rsync_svc
+    rsync_only: true
+    allow_from: []
+    command: "/usr/bin/rrsync /srv/rsync_svc"
+    keys: []
+    match_extra: []
+service_accounts_transfer_authorized_keys: {}
+service_accounts_transfer_force_command: true

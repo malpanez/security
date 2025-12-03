@@ -1,0 +1,9 @@
+---
+audit_logging_enabled: true
+audit_logging_rules:
+  - "-w /etc/sudoers -p wa -k scope"
+  - "-w /etc/sudoers.d/ -p wa -k scope"
+  - "-w /etc/ssh/sshd_config -p wa -k sshd"
+  - "-w /var/log/secure -p wa -k secure"
+  - "-w /var/log/auth.log -p wa -k auth"
+audit_logging_service: auditd

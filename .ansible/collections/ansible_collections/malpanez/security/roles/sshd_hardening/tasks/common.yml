@@ -1,0 +1,77 @@
+---
+- name: "common | Ensure OpenSSH server package is installed"
+  ansible.builtin.package:
+    name: "{{ sshd_hardening_package_name }}"
+    state: present
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]
+
+- name: "common | Detect SSH service name"
+  ansible.builtin.service_facts:
+
+- name: "common | Resolve SSH service name"
+  ansible.builtin.set_fact:
+    sshd_hardening_resolved_service_name: >-
+      {{ 'ssh' if 'ssh.service' in ansible_facts.services else
+         ('sshd' if 'sshd.service' in ansible_facts.services else sshd_hardening_service_name) }}
+
+- name: "common | Detect OpenSSH version"
+  ansible.builtin.command: /usr/sbin/sshd -V
+  register: sshd_hardening_version_raw
+  failed_when: false
+  changed_when: false
+
+- name: "common | Derive OpenSSH version string"
+  ansible.builtin.set_fact:
+    sshd_hardening_version: "{{ (sshd_hardening_version_raw.stderr | default('')) | regex_search('OpenSSH_([0-9]+\\.[0-9]+)', '\\1') | default([]) | first | default(omit) }}"
+
+- name: "common | Select algorithm profile"
+  ansible.builtin.set_fact:
+    sshd_hardening_algorithm_profile_effective: >-
+      {{
+        sshd_hardening_algorithm_profile
+        if sshd_hardening_algorithm_profile != 'auto'
+        else (
+          'legacy'
+          if (sshd_hardening_version is defined and (sshd_hardening_version | float) < 7.8)
+          else 'modern'
+        )
+      }}
+
+- name: "common | Compute effective algorithm lists"
+  ansible.builtin.set_fact:
+    sshd_hardening_effective_ciphers: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].ciphers }}"
+    sshd_hardening_effective_macs: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].macs }}"
+    sshd_hardening_effective_kex: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].kex_algorithms }}"
+    sshd_hardening_effective_hostkeys: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].hostkey_algorithms }}"
+
+- name: "common | Write trusted CA public key for SSH certificates"
+  ansible.builtin.copy:
+    dest: "{{ sshd_hardening_trusted_ca_path }}"
+    content: "{{ sshd_hardening_trusted_ca_key }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: sshd_hardening_trusted_ca_key | length > 0
+  when: security_mode | default('enforce') == 'enforce' and sshd_hardening_trusted_ca_key | length > 0
+  tags: [enforce]
+
+- name: "common | Configure sshd_config"
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: "0600"
+    validate: "/usr/sbin/sshd -t -f %s"
+  notify: Restart sshd
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]
+
+- name: "common | Ensure sshd service is enabled and running"
+  ansible.builtin.service:
+    name: "{{ sshd_hardening_resolved_service_name | default(sshd_hardening_service_name) }}"
+    state: started
+    enabled: true
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]

@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: Miguel Alpañez
+  description: Detect SSH/PAM/SELinux capabilities and select auth mode automatically.
+  license: GPL-2.0-or-later
+  min_ansible_version: "2.16"
+  platforms:
+    - name: all
+      versions: [all]
+dependencies: []

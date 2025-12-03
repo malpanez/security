@@ -1,0 +1,12 @@
+---
+cis_baseline_enabled: false
+cis_baseline_mode: enforce  # enforce|review
+cis_baseline_controls:
+  sshd:
+    - "No PasswordAuthentication"
+    - "PermitRootLogin no"
+    - "MaxAuthTries <=4"
+  sudoers:
+    - "require use_pty"
+    - "logfile configured"
+    - "no NOPASSWD:ALL"

@@ -1,0 +1,24 @@
+---
+- name: "common | Ensure auditd package present"
+  ansible.builtin.package:
+    name: auditd
+    state: present
+  tags: [enforce]
+
+- name: "common | Deploy audit rules"
+  ansible.builtin.copy:
+    dest: /etc/audit/rules.d/99-security.rules
+    content: |
+      {{ audit_logging_rules | join('\n') }}
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Restart auditd
+  tags: [enforce]
+
+- name: "common | Ensure auditd service running"
+  ansible.builtin.service:
+    name: "{{ audit_logging_service }}"
+    state: started
+    enabled: true
+  tags: [enforce]

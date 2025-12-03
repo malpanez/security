@@ -1,0 +1,30 @@
+---
+- name: "common | Ensure MFA groups exist"
+  ansible.builtin.group:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - "{{ pam_mfa_breakglass_group }}"
+    - "{{ pam_mfa_service_bypass_group }}"
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]
+
+- name: "common | Ensure U2F authfile directory exists"
+  ansible.builtin.file:
+    path: "{{ pam_mfa_u2f_keys_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]
+
+- name: "common | Ensure TOTP directory exists"
+  ansible.builtin.file:
+    path: "{{ pam_mfa_totp_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]

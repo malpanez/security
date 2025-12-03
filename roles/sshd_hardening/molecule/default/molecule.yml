@@ -1,0 +1,28 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: ../../../../requirements.yml
+driver:
+  name: docker
+platforms:
+  - name: instance
+    image: "geerlingguy/docker-ubuntu2204-ansible:latest"
+    platform: linux/amd64
+    privileged: true
+    command: "/lib/systemd/systemd"
+    pre_build_image: true
+  - name: debian12
+    image: "geerlingguy/docker-debian12-ansible:latest"
+    platform: linux/amd64
+    privileged: true
+    command: "/lib/systemd/systemd"
+    pre_build_image: true
+provisioner:
+  name: ansible
+verifier:
+  name: ansible
+ansible:
+  playbooks:
+    converge: converge.yml
+    verify: verify.yml

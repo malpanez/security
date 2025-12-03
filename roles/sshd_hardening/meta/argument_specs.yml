@@ -1,0 +1,172 @@
+argument_specs:
+  main:
+    short_description: Harden OpenSSH server configuration safely.
+    options:
+      sshd_hardening_password_authentication:
+        type: bool
+        default: false
+        description: Enable password-based authentication if true, otherwise require key-based auth.
+      sshd_hardening_permit_root_login:
+        type: str
+        choices: ["yes", "no", "prohibit-password"]
+        default: "no"
+        description: Control whether root is allowed to log in via SSH.
+      sshd_hardening_permit_empty_passwords:
+        type: bool
+        default: false
+        description: Permit accounts without passwords to log in.
+      sshd_hardening_challenge_response_authentication:
+        type: bool
+        default: false
+        description: Enable challenge-response (keyboard-interactive) authentication.
+      sshd_hardening_use_pam:
+        type: bool
+        default: true
+        description: Enable PAM integration.
+      sshd_hardening_x11_forwarding:
+        type: bool
+        default: false
+        description: Allow X11 forwarding.
+      sshd_hardening_login_grace_time:
+        type: str
+        default: "30"
+        description: Time in seconds clients have to authenticate before the server disconnects.
+      sshd_hardening_client_alive_interval:
+        type: int
+        default: 300
+        description: Interval in seconds for client keepalive messages.
+      sshd_hardening_client_alive_count_max:
+        type: int
+        default: 2
+        description: Number of unanswered keepalive messages before disconnecting.
+      sshd_hardening_max_auth_tries:
+        type: int
+        default: 4
+        description: Maximum authentication attempts per connection.
+      sshd_hardening_max_sessions:
+        type: int
+        default: 10
+        description: Maximum open sessions permitted.
+      sshd_hardening_max_startups:
+        type: str
+        default: "10:30:60"
+        description: Limits unauthenticated connections (start:rate:full).
+      sshd_hardening_print_motd:
+        type: bool
+        default: false
+        description: Control printing of /etc/motd on login.
+      sshd_hardening_use_dns:
+        type: bool
+        default: false
+        description: Whether sshd should use DNS for client lookup.
+      sshd_hardening_compression:
+        type: bool
+        default: false
+        description: Enable SSH compression.
+      sshd_hardening_banner:
+        type: str
+        default: ""
+        description: Path to a legal banner file (leave empty to disable).
+      sshd_hardening_log_level:
+        type: str
+        default: VERBOSE
+        description: Log verbosity.
+      sshd_hardening_allow_users:
+        type: list
+        elements: str
+        default: []
+        description: List of user accounts explicitly allowed to connect.
+      sshd_hardening_allow_groups:
+        type: list
+        elements: str
+        default: []
+        description: List of groups explicitly allowed to connect.
+      sshd_hardening_human_groups:
+        type: list
+        elements: str
+        default: []
+        description: Groups considered humanas interactive requiring MFA (template enforces AuthenticationMethods).
+      sshd_hardening_service_groups:
+        type: list
+        elements: str
+        default: []
+        description: Groups for service accounts restricted to publickey and limited forwarding/TTY.
+      sshd_hardening_trusted_ca_key:
+        type: str
+        default: ""
+        description: SSH CA public key used for TrustedUserCAKeys.
+      sshd_hardening_trusted_ca_path:
+        type: str
+        default: /etc/ssh/trusted_user_ca_keys
+        description: Path to write the trusted CA public key.
+      sshd_hardening_algorithm_profile:
+        type: str
+        default: auto
+        choices: [auto, modern, legacy]
+        description: Auto-select algorithm set based on OpenSSH version or force a specific set.
+      sshd_hardening_algorithm_sets:
+        type: dict
+        default:
+          modern:
+            ciphers:
+              - chacha20-poly1305@openssh.com
+              - aes256-gcm@openssh.com
+              - aes256-ctr
+              - aes192-ctr
+              - aes128-ctr
+            macs:
+              - hmac-sha2-512-etm@openssh.com
+              - hmac-sha2-256-etm@openssh.com
+              - hmac-sha2-512
+              - hmac-sha2-256
+            kex_algorithms:
+              - curve25519-sha256
+              - curve25519-sha256@libssh.org
+              - ecdh-sha2-nistp521
+              - ecdh-sha2-nistp384
+              - ecdh-sha2-nistp256
+            hostkey_algorithms:
+              - ssh-ed25519
+              - rsa-sha2-512
+              - rsa-sha2-256
+          legacy:
+            ciphers:
+              - chacha20-poly1305@openssh.com
+              - aes256-ctr
+              - aes192-ctr
+              - aes128-ctr
+            macs:
+              - hmac-sha2-512-etm@openssh.com
+              - hmac-sha2-256-etm@openssh.com
+              - hmac-sha2-512
+              - hmac-sha2-256
+            kex_algorithms:
+              - curve25519-sha256
+              - curve25519-sha256@libssh.org
+              - ecdh-sha2-nistp384
+              - ecdh-sha2-nistp256
+            hostkey_algorithms:
+              - ssh-ed25519
+              - ssh-rsa
+        description: Algorithm sets for modern vs legacy OpenSSH. Override to customize per-environment.
+      sshd_hardening_service_match_blocks:
+        type: list
+        elements: dict
+        default: []
+        description: List of Match blocks for service accounts (keys: group/match, options).
+      sshd_hardening_service_name:
+        type: str
+        default: "sshd"
+        description: Service name to manage for the SSH daemon.
+      sshd_hardening_package_name:
+        type: str
+        default: "openssh-server"
+        description: Package providing the SSH daemon.
+      sshd_hardening_hostkey_algorithms:
+        type: list
+        elements: str
+        default:
+          - ssh-ed25519
+          - rsa-sha2-512
+          - rsa-sha2-256
+        description: Ordered list of allowed host key algorithms.

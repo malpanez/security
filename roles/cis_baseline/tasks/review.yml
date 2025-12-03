@@ -1,0 +1,26 @@
+---
+- name: "Cis Review | Check sshd password auth disabled"
+  ansible.builtin.command: "sshd -T | grep -i passwordauthentication"
+  register: cis_baseline_sshd_passwordauth
+  changed_when: false
+  failed_when: false
+
+- name: "Cis Review | Assert PasswordAuthentication no"
+  ansible.builtin.assert:
+    that:
+      - "'passwordauthentication no' in cis_baseline_sshd_passwordauth.stdout | lower"
+    fail_msg: "CIS: PasswordAuthentication should be no"
+  tags: [cis_review]
+
+- name: "Cis Review | Check sudoers use_pty"
+  ansible.builtin.command: "grep -E '^Defaults.*use_pty' /etc/sudoers /etc/sudoers.d/*"
+  register: cis_baseline_sudo_use_pty
+  changed_when: false
+  failed_when: false
+
+- name: "Cis Review | Assert sudo use_pty configured"
+  ansible.builtin.assert:
+    that:
+      - cis_baseline_sudo_use_pty.rc == 0
+    fail_msg: "CIS: Defaults use_pty not found"
+  tags: [cis_review]

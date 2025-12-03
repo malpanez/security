@@ -1,0 +1,11 @@
+---
+- name: "Include common sshd hardening tasks"
+  ansible.builtin.include_tasks: common.yml
+
+- name: "Include platform-specific sshd hardening tasks"
+  ansible.builtin.set_fact:
+    sshd_hardening_platform_task: "{{ lookup('ansible.builtin.first_found', params={'files': [ansible_os_family | lower ~ '.yml'], 'paths': [role_path ~ '/tasks']}, errors='ignore') }}"
+
+- name: "Platform-specific sshd hardening tasks"
+  ansible.builtin.include_tasks: "{{ sshd_hardening_platform_task }}"
+  when: sshd_hardening_platform_task is not none

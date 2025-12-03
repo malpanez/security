@@ -1,0 +1,16 @@
+---
+# Global defaults for the collection
+security_capabilities_auth_mode: auto
+security_capabilities_force_mode: ""
+security_capabilities_force_openssh_version: ""
+security_capabilities_human_groups: []
+security_capabilities_service_groups: []
+security_capabilities_mfa_for_humans_even_with_sk_keys: false
+security_capabilities_totp_breakglass_enabled: true
+security_mode: enforce
+
+pam_mfa_enabled: false
+selinux_enforcement_enabled: false
+sudoers_baseline_strict: false
+audit_logging_enabled: true
+compliance_evidence_enabled: true

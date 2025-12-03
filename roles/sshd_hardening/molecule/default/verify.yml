@@ -1,0 +1,48 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Resolve SSH service name
+      ansible.builtin.set_fact:
+        verify_sshd_service_name: >-
+          {{ 'ssh' if 'ssh.service' in ansible_facts.services else
+             ('sshd' if 'sshd.service' in ansible_facts.services else 'sshd') }}
+
+    - name: Check sshd effective configuration
+      ansible.builtin.command: /usr/sbin/sshd -T
+      register: sshd_config_test
+      changed_when: false
+
+    - name: Assert sshd_config hardening is applied
+      ansible.builtin.assert:
+        that:
+          - "'passwordauthentication no' in sshd_config_test.stdout"
+          - "'permitrootlogin no' in sshd_config_test.stdout"
+          - "'permitemptypasswords no' in sshd_config_test.stdout"
+          - "'challengeresponseauthentication no' in sshd_config_test.stdout"
+          - "'x11forwarding no' in sshd_config_test.stdout"
+          - "'clientaliveinterval 300' in sshd_config_test.stdout"
+          - "'clientalivecountmax 2' in sshd_config_test.stdout"
+          - "'maxauthtries 4' in sshd_config_test.stdout"
+          - "'maxsessions 10' in sshd_config_test.stdout"
+          - "'maxstartups 10:30:60' in sshd_config_test.stdout"
+          - "'usedns no' in sshd_config_test.stdout"
+          - "'printmotd no' in sshd_config_test.stdout"
+          - "'compression no' in sshd_config_test.stdout"
+          - "'loglevel verbose' in sshd_config_test.stdout"
+          - sshd_config_test.stdout is search("ciphers (.+)")
+          - sshd_config_test.stdout is search("macs (.+)")
+          - sshd_config_test.stdout is search("kexalgorithms (.+)")
+          - sshd_config_test.stdout is search("hostkeyalgorithms (.+)")
+        fail_msg: "sshd_config does not reflect expected hardened settings"
+
+    - name: Assert sshd service is running and enabled
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services[verify_sshd_service_name + '.service'].state == 'running'
+          - ansible_facts.services[verify_sshd_service_name + '.service'].status == 'enabled'
+        fail_msg: "sshd service is not running and enabled as expected"

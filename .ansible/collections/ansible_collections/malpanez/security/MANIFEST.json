@@ -1,0 +1,34 @@
+{
+ "collection_info": {
+  "namespace": "malpanez",
+  "name": "security",
+  "version": "1.0.0",
+  "authors": [
+   "Miguel Alpa\u00f1ez"
+  ],
+  "readme": "README.md",
+  "tags": [
+   "security",
+   "compliance",
+   "hardening"
+  ],
+  "description": "Harden hosts with SSH configuration best practices.",
+  "license": [
+   "GPL-2.0-or-later"
+  ],
+  "license_file": null,
+  "dependencies": {},
+  "repository": "https://github.com/malpanez/security",
+  "documentation": "https://github.com/malpanez/security",
+  "homepage": "https://github.com/malpanez/security",
+  "issues": "https://github.com/malpanez/security/issues"
+ },
+ "file_manifest_file": {
+  "name": "FILES.json",
+  "ftype": "file",
+  "chksum_type": "sha256",
+  "chksum_sha256": "0f2b3adc6ed0539b3cf9113d58f67e5ff821caf724318e398bdb2d30db5eb8cd",
+  "format": 1
+ },
+ "format": 1
+}
