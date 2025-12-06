@@ -6,6 +6,7 @@ exclude_paths:
   - .devcontainer/
   - .github/
   - .ansible/
+  - ansible_collections/
   - docs/
   - examples/
   - group_vars/
