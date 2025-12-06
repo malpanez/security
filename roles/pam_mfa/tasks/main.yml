@@ -1,8 +1,8 @@
 ---
-- name: "Load OS-specific variables"
+- name: Load OS-specific variables
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
 
-- name: "Determine if PAM MFA should run"
+- name: Determine if PAM MFA should run
   ansible.builtin.set_fact:
     pam_mfa_should_configure: >-
       {{
@@ -14,14 +14,14 @@
         )
       }}
 
-- name: "Include common MFA setup"
+- name: Include common MFA setup
   ansible.builtin.include_tasks: common.yml
   when:
     - pam_mfa_should_configure
     - security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
-- name: "Resolve platform-specific MFA task"
+- name: Resolve platform-specific MFA task
   ansible.builtin.set_fact:
     pam_mfa_platform_task: >-
       {{
@@ -33,7 +33,7 @@
       }}
   tags: [enforce]
 
-- name: "Include platform-specific MFA tasks"
+- name: Include platform-specific MFA tasks
   ansible.builtin.include_tasks: "{{ pam_mfa_platform_task }}"
   when:
     - pam_mfa_should_configure
@@ -41,7 +41,7 @@
     - security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
-- name: "Configure common PAM MFA chains"
+- name: Configure common PAM MFA chains
   ansible.builtin.include_tasks: common_mfa_config.yml
   when:
     - pam_mfa_should_configure

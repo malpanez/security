@@ -51,9 +51,9 @@ sudoers_baseline_preserve_main: true
 sudoers_baseline_manage_main_file: false
 
 sudoers_baseline_defaults:
-  - "use_pty"
-  - "logfile=/var/log/sudo.log"
-  - "log_output"
+  - use_pty
+  - logfile=/var/log/sudo.log
+  - log_output
   - "!visiblepw"
 
 # Test the same groups as production
@@ -61,13 +61,13 @@ sudoers_baseline_groups:
   linux_admins:
     require_password: true
     commands:
-      - "/usr/bin/systemctl restart *"
-      - "/usr/bin/systemctl status *"
+      - /usr/bin/systemctl restart *
+      - /usr/bin/systemctl status *
 
   devops:
     require_password: false
     commands:
-      - "/usr/bin/docker *"
+      - /usr/bin/docker *
 
 # ========================================
 # PAM MFA (FULL TESTING)
@@ -113,7 +113,7 @@ selinux_enforcement_packages:
 # ========================================
 
 audit_logging_enabled: true
-audit_logging_verbose: true  # More verbose in staging
+audit_logging_verbose: true # More verbose in staging
 audit_logging_log_commands: true
 
 # ========================================
@@ -133,8 +133,8 @@ cis_baseline_mode: enforce
 # ========================================
 
 # Process one at a time for careful validation
-rollout_percentage: "1"  # Serial processing
-max_fail_percentage: 0   # Stop immediately on failure
+rollout_percentage: "1" # Serial processing
+max_fail_percentage: 0 # Stop immediately on failure
 
 # Flexible maintenance window for staging
 security_require_maintenance_window: false

@@ -9,14 +9,14 @@
 
 - name: Set backup directory path
   set_fact:
-    security_backup_dir: "/root/security-backup-{{ ansible_date_time.epoch }}"
+    security_backup_dir: /root/security-backup-{{ ansible_date_time.epoch }}
     security_backup_timestamp: "{{ ansible_date_time.iso8601 }}"
 
 - name: Create backup directory
   file:
     path: "{{ security_backup_dir }}"
     state: directory
-    mode: '0700'
+    mode: "0700"
     owner: root
     group: root
 
@@ -30,7 +30,7 @@
     src: /etc/ssh/sshd_config
     dest: "{{ security_backup_dir }}/sshd_config"
     remote_src: true
-    mode: '0600'
+    mode: "0600"
   when: security_phase_ssh_hardening | default(false)
   ignore_errors: true
 
@@ -49,7 +49,7 @@
     src: /etc/sudoers
     dest: "{{ security_backup_dir }}/sudoers"
     remote_src: true
-    mode: '0600'
+    mode: "0600"
   when: security_phase_sudoers | default(false)
   ignore_errors: true
 
@@ -67,7 +67,7 @@
     src: /etc/pam.d/sshd
     dest: "{{ security_backup_dir }}/pam.d-sshd"
     remote_src: true
-    mode: '0600'
+    mode: "0600"
   when: security_phase_mfa | default(false)
   ignore_errors: true
 
@@ -76,7 +76,7 @@
     src: /etc/pam.d/common-auth
     dest: "{{ security_backup_dir }}/pam.d-common-auth"
     remote_src: true
-    mode: '0600'
+    mode: "0600"
   when:
     - security_phase_mfa | default(false)
     - ansible_os_family == 'Debian'
@@ -87,7 +87,7 @@
     src: /etc/pam.d/system-auth
     dest: "{{ security_backup_dir }}/pam.d-system-auth"
     remote_src: true
-    mode: '0600'
+    mode: "0600"
   when:
     - security_phase_mfa | default(false)
     - ansible_os_family == 'RedHat'
@@ -98,7 +98,7 @@
     src: /etc/pam.d/password-auth
     dest: "{{ security_backup_dir }}/pam.d-password-auth"
     remote_src: true
-    mode: '0600'
+    mode: "0600"
   when:
     - security_phase_mfa | default(false)
     - ansible_os_family == 'RedHat'
@@ -110,7 +110,7 @@
     src: /etc/selinux/config
     dest: "{{ security_backup_dir }}/selinux-config"
     remote_src: true
-    mode: '0600'
+    mode: "0600"
   when:
     - security_phase_selinux | default(false)
     - ansible_os_family == 'RedHat'
@@ -122,7 +122,7 @@
     src: /etc/audit/auditd.conf
     dest: "{{ security_backup_dir }}/auditd.conf"
     remote_src: true
-    mode: '0600'
+    mode: "0600"
   when: security_phase_audit | default(false)
   ignore_errors: true
 
@@ -131,7 +131,7 @@
     src: /etc/audit/rules.d/audit.rules
     dest: "{{ security_backup_dir }}/audit.rules"
     remote_src: true
-    mode: '0600'
+    mode: "0600"
   when: security_phase_audit | default(false)
   ignore_errors: true
 
@@ -182,7 +182,7 @@
       WARNING: Restore may require restarting services:
       - SSH: systemctl restart sshd
       - Auditd: service auditd restart
-    mode: '0600'
+    mode: "0600"
 
 # Generate automatic restore script
 - name: Create automatic restore script
@@ -351,7 +351,7 @@
       echo "- Boot into single-user mode"
       echo "- Contact system administrator"
       echo "=========================================="
-    mode: '0700'
+    mode: "0700"
 
 - name: Display backup summary
   debug:

@@ -10,8 +10,8 @@
   hosts: staging
   become: true
   gather_facts: true
-  serial: 1  # One at a time for staging validation
-  max_fail_percentage: 0  # Stop immediately on any failure
+  serial: 1 # One at a time for staging validation
+  max_fail_percentage: 0 # Stop immediately on any failure
 
   vars:
     security_mode: enforce
@@ -28,7 +28,7 @@
 
   pre_tasks:
     - name: Display staging enforcement warning
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           SECURITY ENFORCEMENT - STAGING
@@ -43,7 +43,7 @@
           ========================================
 
     - name: Ensure emergency SSH session is open
-      debug:
+      ansible.builtin.debug:
         msg: |
           ⚠️  CRITICAL: Before continuing:
           1. Open a SEPARATE SSH session to {{ inventory_hostname }}
@@ -53,15 +53,14 @@
           Press Ctrl+C now if you don't have emergency access!
 
     - name: Wait for confirmation (30 seconds to abort)
-      pause:
+      ansible.builtin.pause:
         seconds: 30
-        prompt: "Starting in 30 seconds. Press Ctrl+C to abort if needed."
+        prompt: Starting in 30 seconds. Press Ctrl+C to abort if needed.
 
     - name: Backup current configurations
-      include_tasks: ../tasks/backup-configs.yml
-
+      ansible.builtin.include_tasks: ../tasks/backup-configs.yml
     - name: Detect system capabilities
-      include_role:
+      ansible.builtin.include_role:
         name: security_capabilities
 
   roles:
@@ -82,20 +81,20 @@
         # Hybrid approach - preserve main file
         sudoers_baseline_preserve_main: true
         sudoers_baseline_defaults:
-          - "use_pty"
-          - "logfile=/var/log/sudo.log"
-          - "log_output"
+          - use_pty
+          - logfile=/var/log/sudo.log
+          - log_output
           - "!visiblepw"
         sudoers_baseline_groups:
           linux_admins:
             require_password: true
             commands:
-              - "/usr/bin/systemctl restart *"
-              - "/usr/bin/systemctl status *"
+              - /usr/bin/systemctl restart *
+              - /usr/bin/systemctl status *
           devops:
             require_password: false
             commands:
-              - "/usr/bin/docker *"
+              - /usr/bin/docker *
 
     # Phase 3: PAM MFA
     - role: pam_mfa
@@ -139,12 +138,11 @@
 
   post_tasks:
     - name: Validate all services
-      include_tasks: ../tasks/validate-services.yml
-
+      ansible.builtin.include_tasks: ../tasks/validate-services.yml
     - name: Test SSH access (critical validation)
       block:
         - name: Attempt SSH connection test
-          wait_for:
+          ansible.builtin.wait_for:
             host: "{{ inventory_hostname }}"
             port: 22
             timeout: 10
@@ -154,29 +152,29 @@
 
       rescue:
         - name: SSH validation failed - initiate rollback
-          debug:
-            msg: "SSH access validation FAILED - rolling back changes"
+          ansible.builtin.debug:
+            msg: SSH access validation FAILED - rolling back changes
 
         - name: Execute rollback
-          include_tasks: ../tasks/rollback.yml
+          ansible.builtin.include_tasks: ../tasks/rollback.yml
           when: security_staging_rollback_on_failure
 
     - name: Test sudo access (critical validation)
-      command: sudo -n true
+      ansible.builtin.command: sudo -n true
       register: sudo_test
       failed_when: false
       changed_when: false
 
     - name: Verify sudo is functional
-      assert:
+      ansible.builtin.assert:
         that:
-          - sudo_test.rc in [0, 1]  # 0 = success, 1 = password required (OK)
-        fail_msg: "Sudo is broken - rolling back"
-        success_msg: "Sudo is functional"
+          - sudo_test.rc in [0, 1] # 0 = success, 1 = password required (OK)
+        fail_msg: Sudo is broken - rolling back
+        success_msg: Sudo is functional
 
     - name: Generate staging validation report
-      copy:
-        dest: "/tmp/staging-validation-{{ ansible_date_time.epoch }}.txt"
+      ansible.builtin.copy:
+        dest: /tmp/staging-validation-{{ ansible_date_time.epoch }}.txt
         content: |
           Staging Security Enforcement Report
           ====================================
@@ -192,15 +190,15 @@
 
           Validation Results:
           - SSH Access: {{ 'PASS' if ansible_connection == 'ssh' else 'UNKNOWN' }}
-          - Sudo Access: {{ 'PASS' if sudo_test.rc in [0,1] else 'FAIL' }}
+          - Sudo Access: {{ 'PASS' if sudo_test.rc in [0, 1] else 'FAIL' }}
 
           Backup Location: /root/security-backup-{{ ansible_date_time.epoch }}
 
-          Status: {{ 'SUCCESS' if sudo_test.rc in [0,1] else 'FAILED - ROLLED BACK' }}
-        mode: '0640'
+          Status: {{ 'SUCCESS' if sudo_test.rc in [0, 1] else 'FAILED - ROLLED BACK' }}
+        mode: "0640"
 
     - name: Display staging summary
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           STAGING ENFORCEMENT COMPLETE
@@ -209,7 +207,7 @@
 
           Validation Status:
           - SSH Access: ✓
-          - Sudo Functionality: {{ '✓' if sudo_test.rc in [0,1] else '✗ FAILED' }}
+          - Sudo Functionality: {{ '✓' if sudo_test.rc in [0, 1] else '✗ FAILED' }}
 
           Next Steps:
           1. Test all application functionality

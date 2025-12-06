@@ -1,19 +1,19 @@
 ---
-- name: "Skip SELinux enforcement when disabled"
+- name: Skip SELinux enforcement when disabled
   ansible.builtin.debug:
-    msg: "SELinux enforcement disabled"
+    msg: SELinux enforcement disabled
   when: not selinux_enforcement_enabled
 
-- name: "Apply SELinux enforcement controls"
+- name: Apply SELinux enforcement controls
   when:
     - selinux_enforcement_enabled
     - security_mode | default('enforce') == 'enforce'
   block:
-    - name: "Include common SELinux tasks"
+    - name: Include common SELinux tasks
       ansible.builtin.include_tasks: common.yml
       tags: [enforce]
 
-    - name: "Include platform-specific SELinux tasks"
+    - name: Include platform-specific SELinux tasks
       ansible.builtin.set_fact:
         selinux_enforcement_platform_task: >-
           {{
@@ -25,7 +25,7 @@
           }}
       tags: [enforce]
 
-    - name: "Platform-specific SELinux tasks"
+    - name: Platform-specific SELinux tasks
       ansible.builtin.include_tasks: "{{ selinux_enforcement_platform_task }}"
       when:
         - selinux_enforcement_platform_task is not none

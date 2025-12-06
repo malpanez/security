@@ -104,7 +104,6 @@ argument_specs:
         type: list
         elements: str
         default: []
-
       pam_mfa_totp_enabled:
         description:
           - Enable TOTP as backup authentication method
@@ -131,7 +130,6 @@ argument_specs:
         type: list
         elements: str
         default: []
-
       pam_mfa_u2f_keys_path:
         description:
           - Path to U2F/FIDO2 keys directory

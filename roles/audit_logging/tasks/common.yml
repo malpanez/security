@@ -1,11 +1,11 @@
 ---
-- name: "common | Ensure auditd package present"
+- name: common | Ensure auditd package present
   ansible.builtin.package:
     name: auditd
     state: present
   tags: [enforce]
 
-- name: "common | Deploy audit rules"
+- name: common | Deploy audit rules
   ansible.builtin.copy:
     dest: "{{ audit_logging_rules_path }}"
     content: |
@@ -16,7 +16,7 @@
   notify: Restart auditd
   tags: [enforce]
 
-- name: "common | Ensure auditd service running"
+- name: common | Ensure auditd service running
   ansible.builtin.service:
     name: "{{ audit_logging_service }}"
     state: started

@@ -25,12 +25,12 @@ security_phase_audit: true
 # ========================================
 
 sshd_hardening_permit_root_login: false
-sshd_hardening_password_authentication: false  # No passwords allowed
+sshd_hardening_password_authentication: false # No passwords allowed
 sshd_hardening_pubkey_authentication: true
-sshd_hardening_max_auth_tries: 3  # Strict
+sshd_hardening_max_auth_tries: 3 # Strict
 sshd_hardening_log_level: VERBOSE
 sshd_hardening_x11_forwarding: false
-sshd_hardening_allow_tcp_forwarding: false  # Stricter
+sshd_hardening_allow_tcp_forwarding: false # Stricter
 sshd_hardening_use_pam: true
 
 # Only modern ciphers
@@ -50,50 +50,50 @@ sshd_hardening_kex_algorithms:
 
 # New servers - use modular approach immediately
 sudoers_baseline_preserve_main: false
-sudoers_baseline_manage_main_file: true  # Full control
+sudoers_baseline_manage_main_file: true # Full control
 
 # Comprehensive logging
 sudoers_baseline_defaults:
-  - "use_pty"
-  - "logfile=/var/log/sudo.log"
-  - "log_output"
-  - "log_input"
+  - use_pty
+  - logfile=/var/log/sudo.log
+  - log_output
+  - log_input
   - "!visiblepw"
-  - "always_set_home"
-  - "env_reset"
-  - "secure_path=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  - always_set_home
+  - env_reset
+  - secure_path=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Example groups (customize for your environment)
 sudoers_baseline_groups:
   linux_admins:
     require_password: true
     commands:
-      - "/usr/bin/systemctl restart *"
-      - "/usr/bin/systemctl status *"
-      - "/usr/bin/systemctl start *"
-      - "/usr/bin/systemctl stop *"
-      - "/usr/sbin/service *"
-      - "/usr/bin/journalctl *"
+      - /usr/bin/systemctl restart *
+      - /usr/bin/systemctl status *
+      - /usr/bin/systemctl start *
+      - /usr/bin/systemctl stop *
+      - /usr/sbin/service *
+      - /usr/bin/journalctl *
 
   devops:
     require_password: false
     commands:
-      - "/usr/bin/docker *"
-      - "/usr/bin/kubectl *"
-      - "/usr/local/bin/helm *"
+      - /usr/bin/docker *
+      - /usr/bin/kubectl *
+      - /usr/local/bin/helm *
 
   monitoring:
     require_password: false
     commands:
-      - "/usr/bin/systemctl status *"
-      - "/usr/bin/journalctl *"
+      - /usr/bin/systemctl status *
+      - /usr/bin/journalctl *
 
 # ========================================
 # PAM MFA (ENABLED BY DEFAULT)
 # ========================================
 
 pam_mfa_enabled: true
-pam_mfa_yubikey_enabled: auto  # Detect based on capabilities
+pam_mfa_yubikey_enabled: auto # Detect based on capabilities
 pam_mfa_totp_enabled: true
 
 # Service accounts (customize for your automation)
@@ -115,7 +115,7 @@ pam_mfa_user_verification: required
 # ========================================
 
 selinux_enforcement_enabled: true
-selinux_enforcement_mode: enforcing  # Aggressive on new servers
+selinux_enforcement_mode: enforcing # Aggressive on new servers
 
 selinux_enforcement_packages:
   - policycoreutils
@@ -147,7 +147,7 @@ cis_baseline_mode: enforce
 # ========================================
 
 # Process new servers in larger batches (they're not production yet)
-rollout_percentage: "50%"
+rollout_percentage: 50%
 
 # No maintenance window required for new servers
 security_require_maintenance_window: false

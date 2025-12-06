@@ -1,6 +1,6 @@
 ---
 # Auto / forced mode selection
-security_capabilities_auth_mode: auto  # auto|sk_keys|pam_mfa|legacy
+security_capabilities_auth_mode: auto # auto|sk_keys|pam_mfa|legacy
 security_capabilities_force_mode: ""
 security_capabilities_force_openssh_version: ""
 

@@ -1,14 +1,14 @@
 ---
-- name: "Load OS-specific variables"
+- name: Load OS-specific variables
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
 
-- name: "Apply sudoers baseline when strict mode enabled"
+- name: Apply sudoers baseline when strict mode enabled
   when: sudoers_baseline_strict | bool
   block:
-    - name: "Include common sudoers tasks"
+    - name: Include common sudoers tasks
       ansible.builtin.include_tasks: common.yml
 
-    - name: "Resolve platform-specific sudoers tasks"
+    - name: Resolve platform-specific sudoers tasks
       ansible.builtin.set_fact:
         sudoers_baseline_platform_task: >-
           {{
@@ -19,7 +19,7 @@
             )
           }}
 
-    - name: "Include platform-specific sudoers tasks"
+    - name: Include platform-specific sudoers tasks
       ansible.builtin.include_tasks: "{{ sudoers_baseline_platform_task }}"
       when:
         - sudoers_baseline_platform_task is not none

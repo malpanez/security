@@ -54,23 +54,23 @@ sudoers_baseline_manage_main_file: false
 
 # Sudo defaults
 sudoers_baseline_defaults:
-  - "use_pty"
-  - "logfile=/var/log/sudo.log"
+  - use_pty
+  - logfile=/var/log/sudo.log
   - "!visiblepw"
-  - "always_set_home"
-  - "env_reset"
+  - always_set_home
+  - env_reset
 
 # Default sudo groups (customize per environment)
 sudoers_baseline_groups:
   linux_admins:
     require_password: true
     commands:
-      - "/usr/bin/systemctl restart *"
-      - "/usr/bin/systemctl status *"
-      - "/usr/bin/systemctl start *"
-      - "/usr/bin/systemctl stop *"
-      - "/usr/sbin/service *"
-      - "/usr/bin/journalctl *"
+      - /usr/bin/systemctl restart *
+      - /usr/bin/systemctl status *
+      - /usr/bin/systemctl start *
+      - /usr/bin/systemctl stop *
+      - /usr/sbin/service *
+      - /usr/bin/journalctl *
 
 # ============================================
 # PAM MFA (Phase 3)
@@ -85,7 +85,7 @@ pam_mfa_totp_enabled: true
 
 # CRITICAL: Service accounts that bypass MFA
 pam_mfa_service_accounts:
-  - "{{ ansible_user }}"  # Ansible itself
+  - "{{ ansible_user }}" # Ansible itself
   - ansible
   - awx
   - tower
@@ -108,7 +108,7 @@ pam_mfa_service_accounts:
 
 # Only for RHEL-based systems
 selinux_enforcement_enabled: false
-selinux_enforcement_mode: permissive  # Start permissive
+selinux_enforcement_mode: permissive # Start permissive
 
 # ============================================
 # AUDIT LOGGING (Phase 5)
@@ -131,14 +131,14 @@ compliance_evidence_frameworks:
 # ============================================
 
 cis_baseline_enabled: true
-cis_baseline_mode: review  # review or enforce
+cis_baseline_mode: review # review or enforce
 
 # ============================================
 # ROLLOUT SETTINGS
 # ============================================
 
 # Conservative rollout
-rollout_percentage: "10%"
+rollout_percentage: 10%
 max_fail_percentage: 5
 
 # Require maintenance window

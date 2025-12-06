@@ -8,7 +8,7 @@
 #     include_tasks: tasks/rollback.yml
 
 - name: Display rollback warning
-  debug:
+  ansible.builtin.debug:
     msg: |
       ========================================
       EMERGENCY ROLLBACK INITIATED
@@ -18,19 +18,19 @@
       ========================================
 
 - name: Find most recent backup directory
-  find:
+  ansible.builtin.find:
     paths: /root
-    patterns: "security-backup-*"
+    patterns: security-backup-*
     file_type: directory
   register: backup_dirs
 
 - name: Identify latest backup
-  set_fact:
+  ansible.builtin.set_fact:
     latest_backup: "{{ backup_dirs.files | sort(attribute='mtime', reverse=true) | first }}"
   when: backup_dirs.matched > 0
 
 - name: Verify backup exists
-  assert:
+  ansible.builtin.assert:
     that:
       - backup_dirs.matched > 0
       - latest_backup is defined
@@ -38,26 +38,27 @@
     success_msg: "Backup found: {{ latest_backup.path }}"
 
 - name: Set backup path
-  set_fact:
+  ansible.builtin.set_fact:
     rollback_backup_dir: "{{ latest_backup.path }}"
 
 - name: Display rollback source
-  debug:
+  ansible.builtin.debug:
     msg: "Rolling back from: {{ rollback_backup_dir }}"
 
 # Rollback SSH Configuration
 - name: Rollback sshd_config
+  when: security_phase_ssh_hardening | default(false)
   block:
     - name: Restore sshd_config from backup
-      copy:
+      ansible.builtin.copy:
         src: "{{ rollback_backup_dir }}/sshd_config"
         dest: /etc/ssh/sshd_config
         remote_src: true
-        mode: '0600'
+        mode: "0600"
         backup: true
 
     - name: Restore sshd_config.d directory
-      shell: |
+      ansible.builtin.shell: |
         if [ -d "{{ rollback_backup_dir }}/sshd_config.d" ]; then
           rm -rf /etc/ssh/sshd_config.d
           cp -r "{{ rollback_backup_dir }}/sshd_config.d" /etc/ssh/sshd_config.d
@@ -66,39 +67,39 @@
         executable: /bin/bash
 
     - name: Validate restored sshd configuration
-      command: sshd -t
+      ansible.builtin.command: sshd -t
       register: sshd_validation
       failed_when: sshd_validation.rc != 0
 
     - name: Restart sshd service
-      service:
+      ansible.builtin.service:
         name: sshd
         state: restarted
       when: sshd_validation.rc == 0
 
     - name: Confirm sshd rollback
-      debug:
-        msg: "✓ SSH configuration rolled back successfully"
+      ansible.builtin.debug:
+        msg: ✓ SSH configuration rolled back successfully
 
-  when: security_phase_ssh_hardening | default(false)
   rescue:
     - name: SSH rollback failed
-      debug:
-        msg: "✗ SSH rollback failed - manual intervention required"
+      ansible.builtin.debug:
+        msg: ✗ SSH rollback failed - manual intervention required
 
 # Rollback Sudoers Configuration
 - name: Rollback sudoers configuration
+  when: security_phase_sudoers | default(false)
   block:
     - name: Restore /etc/sudoers from backup
-      copy:
+      ansible.builtin.copy:
         src: "{{ rollback_backup_dir }}/sudoers"
         dest: /etc/sudoers
         remote_src: true
-        mode: '0440'
+        mode: "0440"
         backup: true
 
     - name: Restore /etc/sudoers.d directory
-      shell: |
+      ansible.builtin.shell: |
         if [ -d "{{ rollback_backup_dir }}/sudoers.d" ]; then
           rm -rf /etc/sudoers.d
           cp -r "{{ rollback_backup_dir }}/sudoers.d" /etc/sudoers.d
@@ -108,138 +109,135 @@
         executable: /bin/bash
 
     - name: Validate restored sudoers
-      command: visudo -cf /etc/sudoers
+      ansible.builtin.command: visudo -cf /etc/sudoers
       register: sudoers_validation
       failed_when: sudoers_validation.rc != 0
 
     - name: Confirm sudoers rollback
-      debug:
-        msg: "✓ Sudoers configuration rolled back successfully"
+      ansible.builtin.debug:
+        msg: ✓ Sudoers configuration rolled back successfully
 
-  when: security_phase_sudoers | default(false)
   rescue:
     - name: Sudoers rollback failed
-      debug:
-        msg: "✗ Sudoers rollback failed - manual intervention required"
+      ansible.builtin.debug:
+        msg: ✗ Sudoers rollback failed - manual intervention required
 
 # Rollback PAM Configuration
 - name: Rollback PAM configuration
+  when: security_phase_mfa | default(false)
   block:
     - name: Restore PAM sshd
-      copy:
+      ansible.builtin.copy:
         src: "{{ rollback_backup_dir }}/pam.d-sshd"
         dest: /etc/pam.d/sshd
         remote_src: true
-        mode: '0644'
+        mode: "0644"
         backup: true
 
     - name: Restore PAM common-auth (Debian/Ubuntu)
-      copy:
+      ansible.builtin.copy:
         src: "{{ rollback_backup_dir }}/pam.d-common-auth"
         dest: /etc/pam.d/common-auth
         remote_src: true
-        mode: '0644'
+        mode: "0644"
         backup: true
       when: ansible_os_family == 'Debian'
 
     - name: Restore PAM system-auth (RHEL/CentOS)
-      copy:
+      ansible.builtin.copy:
         src: "{{ rollback_backup_dir }}/pam.d-system-auth"
         dest: /etc/pam.d/system-auth
         remote_src: true
-        mode: '0644'
+        mode: "0644"
         backup: true
       when: ansible_os_family == 'RedHat'
 
     - name: Restore PAM password-auth (RHEL/CentOS)
-      copy:
+      ansible.builtin.copy:
         src: "{{ rollback_backup_dir }}/pam.d-password-auth"
         dest: /etc/pam.d/password-auth
         remote_src: true
-        mode: '0644'
+        mode: "0644"
         backup: true
       when: ansible_os_family == 'RedHat'
 
     - name: Restart sshd after PAM rollback
-      service:
+      ansible.builtin.service:
         name: sshd
         state: restarted
 
     - name: Confirm PAM rollback
-      debug:
-        msg: "✓ PAM configuration rolled back successfully"
+      ansible.builtin.debug:
+        msg: ✓ PAM configuration rolled back successfully
 
-  when: security_phase_mfa | default(false)
   rescue:
     - name: PAM rollback failed
-      debug:
-        msg: "✗ PAM rollback failed - manual intervention required"
+      ansible.builtin.debug:
+        msg: ✗ PAM rollback failed - manual intervention required
 
 # Rollback SELinux Configuration
 - name: Rollback SELinux configuration
-  block:
-    - name: Restore SELinux config
-      copy:
-        src: "{{ rollback_backup_dir }}/selinux-config"
-        dest: /etc/selinux/config
-        remote_src: true
-        mode: '0644'
-        backup: true
-
-    - name: Confirm SELinux rollback
-      debug:
-        msg: "✓ SELinux configuration rolled back (reboot required for mode change)"
-
   when:
     - security_phase_selinux | default(false)
     - ansible_os_family == 'RedHat'
+  block:
+    - name: Restore SELinux config
+      ansible.builtin.copy:
+        src: "{{ rollback_backup_dir }}/selinux-config"
+        dest: /etc/selinux/config
+        remote_src: true
+        mode: "0644"
+        backup: true
+
+    - name: Confirm SELinux rollback
+      ansible.builtin.debug:
+        msg: ✓ SELinux configuration rolled back (reboot required for mode change)
+
   rescue:
     - name: SELinux rollback failed
-      debug:
-        msg: "✗ SELinux rollback failed - manual intervention required"
+      ansible.builtin.debug:
+        msg: ✗ SELinux rollback failed - manual intervention required
 
 # Rollback Audit Configuration
 - name: Rollback audit configuration
+  when: security_phase_audit | default(false)
   block:
     - name: Restore auditd.conf
-      copy:
+      ansible.builtin.copy:
         src: "{{ rollback_backup_dir }}/auditd.conf"
         dest: /etc/audit/auditd.conf
         remote_src: true
-        mode: '0640'
+        mode: "0640"
         backup: true
 
     - name: Restore audit.rules
-      copy:
+      ansible.builtin.copy:
         src: "{{ rollback_backup_dir }}/audit.rules"
         dest: /etc/audit/rules.d/audit.rules
         remote_src: true
-        mode: '0640'
+        mode: "0640"
         backup: true
 
     - name: Restart auditd
-      shell: service auditd restart
+      ansible.builtin.shell: service auditd restart
       args:
         executable: /bin/bash
 
     - name: Confirm audit rollback
-      debug:
-        msg: "✓ Audit configuration rolled back successfully"
+      ansible.builtin.debug:
+        msg: ✓ Audit configuration rolled back successfully
 
-  when: security_phase_audit | default(false)
   rescue:
     - name: Audit rollback failed
-      debug:
-        msg: "✗ Audit rollback failed - manual intervention required"
+      ansible.builtin.debug:
+        msg: ✗ Audit rollback failed - manual intervention required
 
 # Post-Rollback Validation
 - name: Validate services after rollback
-  include_tasks: validate-services.yml
-
-# Generate rollback report
+  ansible.builtin.include_tasks: validate-services.yml
 - name: Create rollback report
-  copy:
-    dest: "/var/log/security-rollback-{{ ansible_date_time.epoch }}.log"
+  ansible.builtin.copy:
+    dest: /var/log/security-rollback-{{ ansible_date_time.epoch }}.log
     content: |
       Security Configuration Rollback Report
       ======================================
@@ -279,10 +277,10 @@
       5. Fix issues before retrying enforcement
 
       DO NOT retry enforcement until root cause is identified and fixed!
-    mode: '0640'
+    mode: "0640"
 
 - name: Display rollback summary
-  debug:
+  ansible.builtin.debug:
     msg: |
       ========================================
       EMERGENCY ROLLBACK COMPLETE
@@ -318,7 +316,7 @@
       ========================================
 
 - name: Final rollback reminder
-  debug:
+  ansible.builtin.debug:
     msg: |
       ⚠️  ROLLBACK EXECUTED - INVESTIGATION REQUIRED ⚠️
 

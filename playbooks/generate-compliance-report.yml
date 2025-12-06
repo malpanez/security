@@ -19,15 +19,15 @@
 
   pre_tasks:
     - name: Create compliance output directory
-      file:
+      ansible.builtin.file:
         path: "{{ compliance_output_dir }}"
         state: directory
-        mode: '0750'
+        mode: "0750"
       delegate_to: localhost
       run_once: true
 
     - name: Display report generation header
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           COMPLIANCE EVIDENCE COLLECTION
@@ -41,17 +41,17 @@
     # Collect SSH Configuration Evidence
     # ============================================
     - name: Collect SSH configuration
-      slurp:
+      ansible.builtin.slurp:
         src: /etc/ssh/sshd_config
       register: sshd_config_content
 
     - name: Test SSH configuration
-      command: sshd -T
+      ansible.builtin.command: sshd -T
       register: sshd_test_config
       changed_when: false
 
     - name: Get SSH daemon version
-      shell: ssh -V 2>&1
+      ansible.builtin.shell: ssh -V 2>&1
       register: ssh_version
       changed_when: false
 
@@ -59,12 +59,12 @@
     # Collect Sudoers Configuration Evidence
     # ============================================
     - name: Validate sudoers syntax
-      command: visudo -c
+      ansible.builtin.command: visudo -c
       register: sudoers_validation
       changed_when: false
 
     - name: List sudoers.d files
-      find:
+      ansible.builtin.find:
         paths: /etc/sudoers.d
         file_type: file
       register: sudoers_d_files
@@ -73,13 +73,13 @@
     # Collect PAM Configuration Evidence
     # ============================================
     - name: Collect PAM SSH configuration
-      slurp:
+      ansible.builtin.slurp:
         src: /etc/pam.d/sshd
       register: pam_sshd_config
       failed_when: false
 
     - name: Check for MFA modules
-      shell: grep -E "pam_u2f|pam_google_authenticator" /etc/pam.d/sshd || echo "none"
+      ansible.builtin.shell: grep -E "pam_u2f|pam_google_authenticator" /etc/pam.d/sshd || echo "none"
       register: pam_mfa_check
       changed_when: false
 
@@ -87,14 +87,14 @@
     # Collect SELinux Evidence (RHEL)
     # ============================================
     - name: Get SELinux status
-      command: getenforce
+      ansible.builtin.command: getenforce
       register: selinux_status
       changed_when: false
       failed_when: false
       when: ansible_os_family == 'RedHat'
 
     - name: Get SELinux denials (last 100)
-      shell: ausearch -m avc -ts recent 2>/dev/null | tail -100 || echo "none"
+      ansible.builtin.shell: ausearch -m avc -ts recent 2>/dev/null | tail -100 || echo "none"
       register: selinux_denials
       changed_when: false
       when: ansible_os_family == 'RedHat'
@@ -103,13 +103,13 @@
     # Collect Audit Log Evidence
     # ============================================
     - name: Check auditd status
-      command: systemctl status auditd
+      ansible.builtin.command: systemctl status auditd
       register: auditd_status
       changed_when: false
       failed_when: false
 
     - name: Get loaded audit rules
-      command: auditctl -l
+      ansible.builtin.command: auditctl -l
       register: audit_rules
       changed_when: false
       failed_when: false
@@ -118,13 +118,13 @@
     # Collect User/Group Evidence
     # ============================================
     - name: List users with UID >= 1000
-      shell: |
+      ansible.builtin.shell: |
         getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 {print $1":"$3":"$6":"$7}'
       register: user_list
       changed_when: false
 
     - name: List sudo-capable users
-      shell: |
+      ansible.builtin.shell: |
         getent group sudo wheel 2>/dev/null | cut -d: -f4 | tr ',' '\n' | sort -u
       register: sudo_users
       changed_when: false
@@ -133,12 +133,12 @@
     # Collect Network Configuration Evidence
     # ============================================
     - name: Get listening ports
-      shell: ss -tuln | grep LISTEN
+      ansible.builtin.shell: ss -tuln | grep LISTEN
       register: listening_ports
       changed_when: false
 
     - name: Get firewall status
-      command: "{{ 'firewall-cmd --list-all' if ansible_os_family == 'RedHat' else 'ufw status verbose' }}"
+      ansible.builtin.command: "{{ 'firewall-cmd --list-all' if ansible_os_family == 'RedHat' else 'ufw status verbose' }}"
       register: firewall_status
       changed_when: false
       failed_when: false
@@ -147,11 +147,11 @@
     # Collect Package Evidence
     # ============================================
     - name: Get security-related packages
-      package_facts:
+      ansible.builtin.package_facts:
         manager: auto
 
     - name: Extract security packages
-      set_fact:
+      ansible.builtin.set_fact:
         security_packages:
           openssh: "{{ packages['openssh-server'] | default(packages['openssh'] | default({'version': 'not installed'})) }}"
           sudo: "{{ packages['sudo'] | default({'version': 'not installed'}) }}"
@@ -163,7 +163,7 @@
     # Generate JSON Report
     # ============================================
     - name: Generate JSON compliance report
-      copy:
+      ansible.builtin.copy:
         dest: "{{ compliance_output_dir }}/{{ inventory_hostname }}-{{ compliance_timestamp }}.json"
         content: |
           {
@@ -221,14 +221,14 @@
               "auditd_version": "{{ security_packages.auditd.version | default('N/A') }}"
             }
           }
-        mode: '0640'
+        mode: "0640"
       delegate_to: localhost
 
     # ============================================
     # Generate Markdown Report
     # ============================================
     - name: Generate Markdown compliance report
-      copy:
+      ansible.builtin.copy:
         dest: "{{ compliance_output_dir }}/{{ inventory_hostname }}-{{ compliance_timestamp }}.md"
         content: |
           # Compliance Evidence Report
@@ -326,11 +326,11 @@
 
           **Report generated by**: malpanez.security collection v1.0.0
           **Generated at**: {{ ansible_date_time.iso8601 }}
-        mode: '0640'
+        mode: "0640"
       delegate_to: localhost
 
     - name: Display completion summary
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           COMPLIANCE REPORT GENERATED

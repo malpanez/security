@@ -1,11 +1,11 @@
 ---
-- name: "Load OS-specific variables"
+- name: Load OS-specific variables
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
 
-- name: "Include common sshd hardening tasks"
+- name: Include common sshd hardening tasks
   ansible.builtin.include_tasks: common.yml
 
-- name: "Resolve platform-specific sshd tasks"
+- name: Resolve platform-specific sshd tasks
   ansible.builtin.set_fact:
     sshd_hardening_platform_task: >-
       {{
@@ -16,6 +16,6 @@
         )
       }}
 
-- name: "Platform-specific sshd hardening tasks"
+- name: Platform-specific sshd hardening tasks
   ansible.builtin.include_tasks: "{{ sshd_hardening_platform_task }}"
   when: sshd_hardening_platform_task is not none

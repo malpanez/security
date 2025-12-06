@@ -1,5 +1,5 @@
 ---
-- name: "Capabilities | Gather minimal facts"
+- name: Capabilities | Gather minimal facts
   ansible.builtin.setup:
     gather_subset:
       - os_family
@@ -7,16 +7,17 @@
       - distribution_version
       - distribution_major_version
 
-- name: "Capabilities | Gather package facts"
+- name: Capabilities | Gather package facts
   ansible.builtin.package_facts:
     manager: auto
 
-- name: "Capabilities | Determine SSH package name"
+- name: Capabilities | Determine SSH package name
   ansible.builtin.set_fact:
     security_capabilities_pkg_name: >-
-      {{ security_capabilities_pkg_names.get(ansible_distribution | lower, security_capabilities_pkg_names.get(ansible_os_family | lower, 'openssh-server')) }}
+      {{ security_capabilities_pkg_names.get(ansible_distribution | lower, security_capabilities_pkg_names.get(ansible_os_family
+      | lower, 'openssh-server')) }}
 
-- name: "Capabilities | Extract OpenSSH version"
+- name: Capabilities | Extract OpenSSH version
   ansible.builtin.set_fact:
     security_capabilities_detected_version: >-
       {{ security_capabilities_force_openssh_version
@@ -25,7 +26,7 @@
                if security_capabilities_pkg_name in ansible_facts.packages
                else '') }}
 
-- name: "Capabilities | Derive OpenSSH major.minor"
+- name: Capabilities | Derive OpenSSH major.minor
   ansible.builtin.set_fact:
     security_capabilities_version_major_minor: >-
       {{
@@ -36,7 +37,7 @@
         | default('0.0')
       }}
 
-- name: "Capabilities | Compute capability flags"
+- name: Capabilities | Compute capability flags
   ansible.builtin.set_fact:
     security_capabilities:
       openssh_version_detected: "{{ security_capabilities_detected_version }}"
@@ -57,7 +58,7 @@
       pam_fido2_available: "{{ ('libpam-fido2' in ansible_facts.packages) or ('pam_fido2' in ansible_facts.packages) }}"
       selinux_available: "{{ ansible_os_family == 'RedHat' }}"
 
-- name: "Capabilities | Select auth mode"
+- name: Capabilities | Select auth mode
   ansible.builtin.set_fact:
     security_capabilities_selected_auth_mode: >-
       {{
@@ -80,7 +81,7 @@
     # Backward-compatible alias, will be removed in future.
     security_selected_auth_mode: "{{ security_capabilities_selected_auth_mode }}"
 
-- name: "Capabilities | Summary"
+- name: Capabilities | Summary
   ansible.builtin.debug:
     msg:
       detected_version: "{{ security_capabilities_detected_version }}"

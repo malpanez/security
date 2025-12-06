@@ -1,5 +1,5 @@
 ---
-- name: "RedHat | Ensure authselect present (if available)"
+- name: RedHat | Ensure authselect present (if available)
   ansible.builtin.package:
     name: authselect
     state: present
@@ -10,7 +10,7 @@
     - pam_mfa_should_configure | default(false)
   tags: [enforce]
 
-- name: "RedHat | Ensure MFA packages are installed (RedHat)"
+- name: RedHat | Ensure MFA packages are installed (RedHat)
   ansible.builtin.package:
     name:
       - "{{ pam_mfa_package_u2f }}"
@@ -21,7 +21,7 @@
     - security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
-- name: "RedHat | Apply authselect profile if available"
+- name: RedHat | Apply authselect profile if available
   community.general.authselect:
     profile: "{{ pam_mfa_rhel_authselect_profile }}"
     features: "{{ pam_mfa_rhel_authselect_features }}"

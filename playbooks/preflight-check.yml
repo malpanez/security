@@ -6,24 +6,23 @@
 - name: Pre-flight Security Checks
   hosts: all
   gather_facts: true
-  become: false  # Most checks don't need privilege
+  become: false # Most checks don't need privilege
 
   vars:
     preflight_output: /tmp/preflight-check
     preflight_failures: []
     preflight_warnings: []
-
   pre_tasks:
     - name: Create preflight output directory
-      file:
+      ansible.builtin.file:
         path: "{{ preflight_output }}"
         state: directory
-        mode: '0755'
+        mode: "0755"
       delegate_to: localhost
       run_once: true
 
     - name: Display preflight check header
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           PRE-FLIGHT SECURITY VALIDATION
@@ -38,7 +37,7 @@
     # CRITICAL: Check Ansible Version
     # ============================================
     - name: Check Ansible version
-      assert:
+      ansible.builtin.assert:
         that:
           - ansible_version.full is version('2.16.0', '>=')
         fail_msg: "CRITICAL: Ansible >= 2.16 required. Current: {{ ansible_version.full }}"
@@ -50,14 +49,14 @@
     # CRITICAL: Check Platform Support
     # ============================================
     - name: Check if platform is supported
-      assert:
+      ansible.builtin.assert:
         that:
           - ansible_os_family in ['Debian', 'RedHat']
         fail_msg: "CRITICAL: Unsupported OS family: {{ ansible_os_family }}"
         success_msg: "✓ OS family supported: {{ ansible_os_family }}"
 
     - name: Check Debian version
-      assert:
+      ansible.builtin.assert:
         that:
           - ansible_distribution_major_version | int >= 10
         fail_msg: "CRITICAL: Debian {{ ansible_distribution_version }} not supported. Need >= 10"
@@ -65,7 +64,7 @@
       when: ansible_distribution == 'Debian'
 
     - name: Check Ubuntu version
-      assert:
+      ansible.builtin.assert:
         that:
           - ansible_distribution_version is version('18.04', '>=')
         fail_msg: "CRITICAL: Ubuntu {{ ansible_distribution_version }} not supported. Need >= 18.04"
@@ -73,7 +72,7 @@
       when: ansible_distribution == 'Ubuntu'
 
     - name: Check RHEL/CentOS version
-      assert:
+      ansible.builtin.assert:
         that:
           - ansible_distribution_major_version | int >= 7
         fail_msg: "CRITICAL: EL {{ ansible_distribution_major_version }} not supported. Need >= 7"
@@ -84,7 +83,7 @@
     # CRITICAL: Check Python Version
     # ============================================
     - name: Check Python version
-      assert:
+      ansible.builtin.assert:
         that:
           - ansible_python_version is version('3.6', '>=')
         fail_msg: "CRITICAL: Python >= 3.6 required. Current: {{ ansible_python_version }}"
@@ -94,101 +93,101 @@
     # CRITICAL: Check sudo/become
     # ============================================
     - name: Test become/sudo access
-      command: id -u
+      ansible.builtin.command: id -u
       become: true
       register: become_test
       changed_when: false
 
     - name: Verify become works
-      assert:
+      ansible.builtin.assert:
         that:
           - become_test.stdout == "0"
         fail_msg: "CRITICAL: become/sudo not working. Got UID: {{ become_test.stdout }}"
-        success_msg: "✓ Become/sudo access works"
+        success_msg: ✓ Become/sudo access works
 
     # ============================================
     # CRITICAL: Check SSH Service
     # ============================================
     - name: Check if SSH daemon is running
-      service_facts:
+      ansible.builtin.service_facts:
       become: true
 
     - name: Verify SSH service exists and is running
-      assert:
+      ansible.builtin.assert:
         that:
           - "'sshd.service' in services or 'ssh.service' in services"
           - services['sshd.service'].state == 'running' or services['ssh.service'].state == 'running'
         fail_msg: "CRITICAL: SSH service not running"
-        success_msg: "✓ SSH service is running"
+        success_msg: ✓ SSH service is running
 
     # ============================================
     # CRITICAL: Validate sudoers syntax
     # ============================================
     - name: Check sudoers file syntax
-      command: visudo -cf /etc/sudoers
+      ansible.builtin.command: visudo -cf /etc/sudoers
       become: true
       register: sudoers_check
       changed_when: false
       failed_when: sudoers_check.rc != 0
 
     - name: Verify sudoers syntax
-      assert:
+      ansible.builtin.assert:
         that:
           - sudoers_check.rc == 0
         fail_msg: "CRITICAL: /etc/sudoers has syntax errors!"
-        success_msg: "✓ Sudoers syntax is valid"
+        success_msg: ✓ Sudoers syntax is valid
 
     # ============================================
     # CRITICAL: Check sshd_config syntax
     # ============================================
     - name: Check sshd_config syntax
-      command: sshd -t
+      ansible.builtin.command: sshd -t
       become: true
       register: sshd_check
       changed_when: false
       failed_when: false
 
     - name: Verify sshd_config syntax
-      assert:
+      ansible.builtin.assert:
         that:
           - sshd_check.rc == 0
         fail_msg: "CRITICAL: sshd_config has syntax errors!"
-        success_msg: "✓ SSH config syntax is valid"
+        success_msg: ✓ SSH config syntax is valid
 
     # ============================================
     # WARNING: Check for existing backups
     # ============================================
     - name: Check for existing security backups
-      find:
+      ansible.builtin.find:
         paths: /root
-        patterns: 'security-backup-*'
+        patterns: security-backup-*
         file_type: directory
       become: true
       register: existing_backups
 
     - name: Warn if no backups exist
-      debug:
+      ansible.builtin.debug:
         msg: |
           ⚠️  WARNING: No existing backups found
           First deployment will create backups automatically
       when: existing_backups.matched == 0
 
     - name: Show existing backups
-      debug:
-        msg: "✓ Found {{ existing_backups.matched }} existing backup(s)"
+      ansible.builtin.debug:
+        msg: ✓ Found {{ existing_backups.matched }} existing backup(s)
       when: existing_backups.matched > 0
 
     # ============================================
     # WARNING: Check disk space
     # ============================================
     - name: Check disk space
-      shell: df -h / | tail -1 | awk '{print $5}' | sed 's/%//'
+      ansible.builtin.shell: df -h / | tail -1 | awk '{print $5}' | sed 's/%//'
       register: disk_usage
       changed_when: false
       become: true
 
     - name: Warn if disk space low
-      debug:
+      ansible.builtin.debug:
         msg: |
           ⚠️  WARNING: Disk usage at {{ disk_usage.stdout }}%
           Ensure adequate space for logs and backups
@@ -198,14 +197,14 @@
     # CRITICAL: Check if service accounts exist
     # ============================================
     - name: Check if Ansible user exists
-      getent:
+      ansible.builtin.getent:
         database: passwd
         key: "{{ ansible_user }}"
       register: ansible_user_check
       failed_when: false
 
     - name: Verify Ansible user exists
-      assert:
+      ansible.builtin.assert:
         that:
           - ansible_user_check.ansible_facts is defined
         fail_msg: "CRITICAL: Ansible user '{{ ansible_user }}' does not exist"
@@ -216,28 +215,29 @@
     # WARNING: Check for required packages
     # ============================================
     - name: Check if required packages are installed
-      package_facts:
+      ansible.builtin.package_facts:
         manager: auto
 
     - name: Check for openssh-server
-      debug:
-        msg: "{{ '✓ OpenSSH server installed' if ('openssh-server' in packages or 'openssh' in packages) else '⚠️  WARNING: OpenSSH server may not be installed' }}"
+      ansible.builtin.debug:
+        msg: "{{ '✓ OpenSSH server installed' if ('openssh-server' in packages or 'openssh' in packages) else '⚠️  WARNING:
+          OpenSSH server may not be installed' }}"
 
     - name: Check for sudo
-      debug:
+      ansible.builtin.debug:
         msg: "{{ '✓ Sudo installed' if 'sudo' in packages else '⚠️  WARNING: Sudo may not be installed' }}"
 
     # ============================================
     # INFO: MFA Capability Detection
     # ============================================
     - name: Check OpenSSH version for SK keys support
-      shell: ssh -V 2>&1 | grep -oP 'OpenSSH_\K[0-9]+\.[0-9]+'
+      ansible.builtin.shell: ssh -V 2>&1 | grep -oP 'OpenSSH_\K[0-9]+\.[0-9]+'
       register: ssh_version
       changed_when: false
       failed_when: false
 
     - name: Display MFA capabilities
-      debug:
+      ansible.builtin.debug:
         msg: |
           MFA Capabilities:
           - OpenSSH version: {{ ssh_version.stdout | default('unknown') }}
@@ -248,14 +248,14 @@
     # WARNING: Check SELinux status (RHEL only)
     # ============================================
     - name: Check SELinux status
-      command: getenforce
+      ansible.builtin.command: getenforce
       register: selinux_status
       changed_when: false
       failed_when: false
       when: ansible_os_family == 'RedHat'
 
     - name: Display SELinux status
-      debug:
+      ansible.builtin.debug:
         msg: "SELinux status: {{ selinux_status.stdout | default('Not applicable') }}"
       when: ansible_os_family == 'RedHat'
 
@@ -263,14 +263,14 @@
     # CRITICAL: Check for conflicting configurations
     # ============================================
     - name: Check for PasswordAuthentication yes in sshd_config
-      shell: grep -i "^PasswordAuthentication yes" /etc/ssh/sshd_config
+      ansible.builtin.command: grep -i "^PasswordAuthentication yes" /etc/ssh/sshd_config
       register: password_auth_check
       changed_when: false
       failed_when: false
       become: true
 
     - name: Warn about password authentication
-      debug:
+      ansible.builtin.debug:
         msg: |
           ⚠️  INFO: Password authentication currently ENABLED
           Will be DISABLED during SSH hardening phase
@@ -281,7 +281,7 @@
     # CRITICAL: Emergency access verification
     # ============================================
     - name: Check for console access availability
-      debug:
+      ansible.builtin.debug:
         msg: |
           ⚠️  CRITICAL REMINDER:
 
@@ -312,7 +312,7 @@
     # Generate Pre-flight Report
     # ============================================
     - name: Generate preflight report
-      copy:
+      ansible.builtin.copy:
         dest: "{{ preflight_output }}/{{ inventory_hostname }}.txt"
         content: |
           Pre-flight Security Validation Report
@@ -371,11 +371,11 @@
           ✗ System FAILED pre-flight checks
           ✗ Fix critical issues before deployment
           {% endif %}
-        mode: '0640'
+        mode: "0640"
       delegate_to: localhost
 
     - name: Display final summary
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           PRE-FLIGHT CHECK COMPLETE

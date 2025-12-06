@@ -6,16 +6,16 @@ service_accounts_transfer_accounts:
     sftp_only: true
     chroot: /srv/sftp_svc
     allow_from: []
-    command: "internal-sftp"
+    command: internal-sftp
     keys: []
     match_extra:
-      - "AuthorizedKeysFile .ssh/authorized_keys"
+      - AuthorizedKeysFile .ssh/authorized_keys
   - name: rsync_svc
     shell: /usr/sbin/nologin
     home: /srv/rsync_svc
     rsync_only: true
     allow_from: []
-    command: "/usr/bin/rrsync /srv/rsync_svc"
+    command: /usr/bin/rrsync /srv/rsync_svc
     keys: []
     match_extra: []
 service_accounts_transfer_authorized_keys: {}

@@ -1,27 +1,27 @@
 ---
-- name: "common | Ensure OpenSSH server package is installed"
+- name: common | Ensure OpenSSH server package is installed
   ansible.builtin.package:
     name: "{{ sshd_hardening_package_name }}"
     state: present
   when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
-- name: "common | Detect SSH service name"
+- name: common | Detect SSH service name
   ansible.builtin.service_facts:
 
-- name: "common | Resolve SSH service name"
+- name: common | Resolve SSH service name
   ansible.builtin.set_fact:
     sshd_hardening_resolved_service_name: >-
       {{ 'ssh' if 'ssh.service' in ansible_facts.services else
          ('sshd' if 'sshd.service' in ansible_facts.services else sshd_service_name) }}
 
-- name: "common | Detect OpenSSH version"
+- name: common | Detect OpenSSH version
   ansible.builtin.command: "{{ sshd_binary_path }} -V"
   register: sshd_hardening_version_raw
   failed_when: false
   changed_when: false
 
-- name: "common | Derive OpenSSH version string"
+- name: common | Derive OpenSSH version string
   ansible.builtin.set_fact:
     sshd_hardening_version: >-
       {{
@@ -34,7 +34,7 @@
         | default(omit)
       }}
 
-- name: "common | Select algorithm profile"
+- name: common | Select algorithm profile
   ansible.builtin.set_fact:
     sshd_hardening_algorithm_profile_effective: >-
       {{
@@ -47,14 +47,17 @@
         )
       }}
 
-- name: "common | Compute effective algorithm lists"
+- name: common | Compute effective algorithm lists
   ansible.builtin.set_fact:
-    sshd_hardening_effective_ciphers: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].ciphers }}"
+    sshd_hardening_effective_ciphers: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].ciphers
+      }}"
     sshd_hardening_effective_macs: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].macs }}"
-    sshd_hardening_effective_kex: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].kex_algorithms }}"
-    sshd_hardening_effective_hostkeys: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].hostkey_algorithms }}"
+    sshd_hardening_effective_kex: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].kex_algorithms
+      }}"
+    sshd_hardening_effective_hostkeys: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].hostkey_algorithms
+      }}"
 
-- name: "common | Write trusted CA public key for SSH certificates"
+- name: common | Write trusted CA public key for SSH certificates
   ansible.builtin.copy:
     dest: "{{ sshd_hardening_trusted_ca_path }}"
     content: "{{ sshd_hardening_trusted_ca_key }}"
@@ -64,7 +67,7 @@
   when: security_mode | default('enforce') == 'enforce' and sshd_hardening_trusted_ca_key | length > 0
   tags: [enforce]
 
-- name: "common | Configure sshd_config"
+- name: common | Configure sshd_config
   ansible.builtin.template:
     src: sshd_config.j2
     dest: "{{ sshd_config_path }}"
@@ -76,7 +79,7 @@
   when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
-- name: "common | Ensure sshd service is enabled and running"
+- name: common | Ensure sshd service is enabled and running
   ansible.builtin.service:
     name: "{{ sshd_hardening_resolved_service_name | default(sshd_service_name) }}"
     state: started

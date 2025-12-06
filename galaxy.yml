@@ -19,7 +19,6 @@ readme: README.md
 authors:
   - Miguel Alpañez
 
-
 ### OPTIONAL but strongly recommended
 # A short summary description of the collection
 description: Harden hosts with SSH configuration best practices.
@@ -41,7 +40,6 @@ tags:
 # L(specifiers,https://python-semanticversion.readthedocs.io/en/latest/#requirement-specification). Multiple version
 # range specifiers can be set and are separated by ','
 dependencies: {}
-
 # The URL of the originating SCM repository
 repository: https://github.com/malpanez/security
 

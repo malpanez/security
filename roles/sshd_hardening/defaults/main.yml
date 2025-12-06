@@ -10,7 +10,7 @@ sshd_hardening_client_alive_interval: 300
 sshd_hardening_client_alive_count_max: 2
 sshd_hardening_max_auth_tries: 4
 sshd_hardening_max_sessions: 10
-sshd_hardening_max_startups: "10:30:60"
+sshd_hardening_max_startups: 10:30:60
 sshd_hardening_print_motd: false
 sshd_hardening_use_dns: false
 sshd_hardening_compression: false
@@ -71,5 +71,5 @@ sshd_hardening_algorithm_sets:
       - ssh-ed25519
       - ssh-rsa
 sshd_hardening_service_match_blocks: []
-sshd_hardening_service_name: "sshd"
-sshd_hardening_package_name: "openssh-server"
+sshd_hardening_service_name: sshd
+sshd_hardening_package_name: openssh-server
