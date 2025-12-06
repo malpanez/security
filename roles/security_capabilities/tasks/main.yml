@@ -29,13 +29,11 @@
   ansible.builtin.set_fact:
     security_capabilities_version_major_minor: >-
       {{
-        (security_capabilities_detected_version
-         | regex_replace('^\\d+:','')
-         | regex_replace('p\\d+.*','')
-         | regex_search('^(\\d+\\.\\d+)', '\\1')
-         | default([])
-         | first
-         | default('0.0'))
+        security_capabilities_detected_version
+        | regex_replace('^\\d+:','')
+        | regex_replace('p\\d+.*','')
+        | regex_search('^(\\d+\\.\\d+)')
+        | default('0.0')
       }}
 
 - name: "Capabilities | Compute capability flags"

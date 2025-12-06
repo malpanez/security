@@ -1,0 +1,52 @@
+ARG BASE_IMAGE=ghcr.io/malpanez/devcontainer-ansible:latest
+ARG UV_VERSION=0.4.20
+ARG UV_CHECKSUM=sha256:UNSET
+ARG SYFT_VERSION=v1.7.0
+ARG GITLEAKS_VERSION=v8.23.1
+
+FROM ${BASE_IMAGE}
+
+USER root
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_DISABLE_PIP_VERSION_CHECK=on
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    age \
+    ca-certificates \
+    curl \
+    git \
+    gnupg \
+    sops \
+    xz-utils \
+ && rm -rf /var/lib/apt/lists/*
+
+# Install uv (optional; only if checksum provided)
+RUN if [ "${UV_CHECKSUM}" != "sha256:UNSET" ]; then \
+      curl -sSfL https://astral.sh/uv/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.xz -o /tmp/uv.tar.xz && \
+      echo "${UV_CHECKSUM}  /tmp/uv.tar.xz" | sha256sum -c - && \
+      tar -xf /tmp/uv.tar.xz -C /usr/local/bin --strip-components=1 uv && \
+      rm /tmp/uv.tar.xz; \
+    else \
+      echo "[compliance-devcontainer] UV_CHECKSUM unset; skipping uv install"; \
+    fi
+
+# Install syft for SBOM generation
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin ${SYFT_VERSION}
+
+# Install gitleaks for secret scanning
+RUN curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz \
+  | tar -xz -C /usr/local/bin gitleaks
+
+COPY requirements-dev.txt /tmp/requirements-dev.txt
+COPY scripts/*.sh /usr/local/bin/
+
+RUN chmod +x /usr/local/bin/*.sh \
+ && if command -v uv >/dev/null 2>&1; then \
+      uv pip install --system --requirement /tmp/requirements-dev.txt; \
+    else \
+      pip install --no-cache-dir --requirement /tmp/requirements-dev.txt; \
+    fi \
+ && rm /tmp/requirements-dev.txt
+
+USER vscode

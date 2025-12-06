@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    cis_baseline_enabled: true
+    cis_baseline_mode: enforce
+  roles:
+    - role: cis_baseline

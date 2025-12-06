@@ -3,11 +3,11 @@
   hosts: all
   become: true
   roles:
-    - malpanez.security.security_capabilities
-    - malpanez.security.sshd_hardening
-    - malpanez.security.pam_mfa
-    - malpanez.security.sudoers_baseline
-    - malpanez.security.selinux_enforcement
-    - malpanez.security.service_accounts_transfer
-    - malpanez.security.audit_logging
-    - malpanez.security.compliance_evidence
+    - security_capabilities
+    - service_accounts_transfer
+    - sshd_hardening
+    - pam_mfa
+    - sudoers_baseline
+    - selinux_enforcement
+    - audit_logging
+    - compliance_evidence

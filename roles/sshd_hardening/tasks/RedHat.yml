@@ -1,0 +1,10 @@
+---
+- name: "RedHat | Ensure sshd binary path is present"
+  ansible.builtin.stat:
+    path: "{{ sshd_binary_path }}"
+  register: sshd_hardening_sshd_path
+
+- name: "RedHat | Fail if sshd not found"
+  ansible.builtin.fail:
+    msg: "sshd binary not found at {{ sshd_binary_path }}"
+  when: not sshd_hardening_sshd_path.stat.exists

@@ -1,4 +1,0 @@
-# Managed by security.sudoers_baseline
-{% for group, cfg in sudoers_baseline_groups.items() %}
-%{{ group }} ALL=(ALL){{ '' if cfg.require_password else ' NOPASSWD:' }} {{ cfg.commands | join(', ') }}
-{% endfor %}

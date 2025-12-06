@@ -39,3 +39,19 @@ Colección orientada a endurecer la configuración de SSH.
 - `sshd_hardening_human_groups` / `sshd_hardening_service_groups`: definen Match blocks para exigir MFA a humanos (publickey+keyboard-interactive) y restringir cuentas de servicio a publickey sin TTY/forwarding.
 
 Consulta `roles/sshd_hardening/meta/argument_specs.yml` para el catálogo completo de opciones.
+
+## Modos de ejecución (review vs enforce)
+
+- Usa `security_mode=review` para evitar cambios disruptivos; los roles que tocan el sistema tienen `when: security_mode == 'enforce'`.
+- El playbook `playbooks/review.yml` ejecuta únicamente `security_capabilities` + `compliance_evidence` con `tags: review` para obtener reportes sin tocar servicios.
+- Para pasar a enforcement, vuelve a `security_mode=enforce` y ejecuta `playbooks/site.yml`.
+- Aprovecha que `service_accounts_transfer` corre antes que `sshd_hardening`: primero define cuentas/certificados, luego `sshd_config` renderiza los `Match` según los facts generados.
+
+## Devcontainer compliance-ready
+
+En `.devcontainer/` hay dos perfiles:
+
+- `devcontainer.json`: entorno estándar (imagen publicada `ghcr.io/malpanez/devcontainer-ansible`).
+- `devcontainer.compliance.json` + `Dockerfile.compliance`: configuración reforzada (root FS `--read-only`, tmpfs para `/tmp`/`/run`/`/var/log`, sops/age, syft y gitleaks preinstalados). Ejecuta el build con los valores `BASE_IMAGE`, `UV_VERSION` y `UV_CHECKSUM` fijados a los checksums oficiales; si dejas `UV_CHECKSUM=sha256:UNSET` se omite la instalación de uv para evitar binarios sin verificar.
+
+Lanza VS Code Remote Containers apuntando al perfil compliance para validar SOC2/HIPAA/FedRAMP: se instala `ansible-lint --profile production --strict`, hooks de `pre-commit` y se generan SBOMs automáticamente.

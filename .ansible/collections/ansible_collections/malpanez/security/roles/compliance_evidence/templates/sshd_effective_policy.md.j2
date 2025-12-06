@@ -1,7 +1,0 @@
-# SSHD Effective Policy
-- Selected mode: {{ security_capabilities_selected_auth_mode | default('legacy') }}
-- Human groups: {{ sshd_hardening_human_groups | default([]) }}
-- Service groups: {{ sshd_hardening_service_groups | default([]) }}
-- AuthenticationMethods (humans): {{ 'publickey,keyboard-interactive' if (security_capabilities_selected_auth_mode=='pam_mfa' or (security_capabilities_selected_auth_mode=='sk_keys' and security_capabilities_mfa_for_humans_even_with_sk_keys | default(false))) else 'publickey' }}
-- AuthenticationMethods (service): publickey
-- Match blocks (service accounts): {{ sshd_hardening_service_match_blocks | default([]) }}

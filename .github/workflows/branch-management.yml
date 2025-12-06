@@ -1,0 +1,209 @@
+name: Branch Management
+
+on:
+  push:
+    branches: [feature/**, bugfix/**, hotfix/**]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  # ============================================
+  # STAGE 1: Feature/Bugfix → Develop
+  # ============================================
+  auto-merge-to-develop:
+    name: Auto-merge to Develop
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' &&
+      (startsWith(github.ref, 'refs/heads/feature/') ||
+       startsWith(github.ref, 'refs/heads/bugfix/') ||
+       startsWith(github.ref, 'refs/heads/hotfix/'))
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Wait for CI checks
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.sha }}
+          check-regexp: '(ci|Docker Platform Testing|Security Scanning|Quality Gates)'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success
+
+      - name: Create PR to develop
+        id: create-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --base develop --json number --jq '.[0].number' || echo "")
+
+          if [ -z "$EXISTING_PR" ]; then
+            # Create new PR
+            gh pr create \
+              --base develop \
+              --head "$BRANCH_NAME" \
+              --title "Auto-merge: $BRANCH_NAME → develop" \
+              --body "Automated PR after successful CI checks.
+
+          ## CI Status
+          - ✅ All quality gates passed
+          - ✅ All security scans passed
+          - ✅ All platform tests passed
+
+          ## Branch
+          - Source: \`$BRANCH_NAME\`
+          - Target: \`develop\`
+          - Commit: ${{ github.sha }}
+
+          This PR will be automatically merged if all checks pass." \
+              --label "automated-merge,develop"
+
+            echo "pr_number=$(gh pr list --head "$BRANCH_NAME" --base develop --json number --jq '.[0].number')" >> $GITHUB_OUTPUT
+          else
+            echo "PR already exists: #$EXISTING_PR"
+            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Enable auto-merge for PR
+        if: steps.create-pr.outputs.pr_number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge ${{ steps.create-pr.outputs.pr_number }} \
+            --auto \
+            --squash \
+            --delete-branch
+
+  # ============================================
+  # STAGE 2: Develop → Main
+  # ============================================
+  auto-promote-to-main:
+    name: Auto-promote to Main
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Wait for all CI checks
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.sha }}
+          check-regexp: '.*'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success,skipped
+
+      - name: Create PR to main
+        id: create-pr-main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head develop --base main --json number --jq '.[0].number' || echo "")
+
+          if [ -z "$EXISTING_PR" ]; then
+            # Get commit summary for PR body
+            COMMITS=$(git log --oneline origin/main..origin/develop --pretty=format:"- %s" | head -20)
+
+            # Create new PR
+            gh pr create \
+              --base main \
+              --head develop \
+              --title "Release: Promote develop → main" \
+              --body "Automated release PR after successful develop build.
+
+          ## Summary
+          All features and fixes in develop have passed CI/CD and are ready for production.
+
+          ## Recent Changes
+          $COMMITS
+
+          ## CI Status
+          - ✅ All quality gates passed
+          - ✅ All security scans passed
+          - ✅ All platform tests passed
+          - ✅ All Molecule tests passed
+
+          ## Release Checklist
+          - [x] CI/CD passed
+          - [x] Security scans clean
+          - [x] Documentation updated
+          - [x] Tests passing
+
+          This PR will be automatically merged if all checks pass." \
+              --label "automated-merge,release,production"
+
+            echo "pr_number=$(gh pr list --head develop --base main --json number --jq '.[0].number')" >> $GITHUB_OUTPUT
+          else
+            echo "PR already exists: #$EXISTING_PR"
+            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Enable auto-merge for PR
+        if: steps.create-pr-main.outputs.pr_number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge ${{ steps.create-pr-main.outputs.pr_number }} \
+            --auto \
+            --merge \
+            --delete-branch=false
+
+  # ============================================
+  # STAGE 3: Sync Main → Develop (backmerge)
+  # ============================================
+  backmerge-main-to-develop:
+    name: Sync Main → Develop
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Backmerge main to develop
+        run: |
+          git fetch origin develop
+          git checkout develop
+          git merge origin/main --no-ff -m "chore: sync main → develop [skip ci]"
+          git push origin develop

@@ -1,0 +1,151 @@
+---
+argument_specs:
+  main:
+    short_description: Configure multi-factor authentication with YubiKey/FIDO2 and TOTP backup
+    description:
+      - Implements MFA using PAM modules (pam_u2f, pam_fido2, pam_google_authenticator)
+      - Supports YubiKey hardware keys with TOTP fallback
+      - Exempts service accounts from MFA requirements
+      - Integrates with SSH and sudo authentication
+    author: Miguel Alpañez
+    options:
+      pam_mfa_enabled:
+        description:
+          - Enable PAM-based multi-factor authentication
+          - CRITICAL - Test in review mode first to prevent lockout
+        type: bool
+        default: false
+        required: false
+
+      pam_mfa_breakglass_group:
+        description:
+          - Unix group for TOTP breakglass access
+          - Members can use TOTP when hardware key unavailable
+        type: str
+        default: mfa-breakglass
+
+      pam_mfa_human_groups:
+        description:
+          - List of groups containing human users requiring MFA
+        type: list
+        elements: str
+        default:
+          - humans
+
+      pam_mfa_service_accounts:
+        description:
+          - List of service account usernames exempt from MFA
+          - CRITICAL - Ensure automation accounts are included
+        type: list
+        elements: str
+        default:
+          - ansible
+          - ci
+          - sftp
+          - rsync
+
+      pam_mfa_method_primary:
+        description:
+          - Primary MFA method
+          - C(yubikey) - YubiKey U2F/FIDO2
+        type: str
+        default: yubikey
+        choices:
+          - yubikey
+
+      pam_mfa_method_backup:
+        description:
+          - Backup MFA method for emergencies
+          - C(totp) - Time-based one-time password
+        type: str
+        default: totp
+        choices:
+          - totp
+
+      pam_mfa_pam_module_u2f:
+        description:
+          - Path to pam_u2f.so module
+          - Auto-detected per OS
+        type: str
+        default: /lib/security/pam_u2f.so
+
+      pam_mfa_pam_module_fido2:
+        description:
+          - Path to pam_fido2.so module
+          - Auto-detected per OS
+        type: str
+        default: /lib/security/pam_fido2.so
+
+      pam_mfa_pam_module_google_authenticator:
+        description:
+          - Path to pam_google_authenticator.so module
+          - Auto-detected per OS
+        type: str
+        default: /lib/security/pam_google_authenticator.so
+
+      pam_mfa_service_bypass_group:
+        description:
+          - Unix group for MFA bypass
+          - Service accounts should be members
+        type: str
+        default: mfa-bypass
+
+      pam_mfa_rhel_authselect_profile:
+        description:
+          - Authselect profile to use on RHEL 8+ systems
+          - Only applicable to RHEL/Rocky/Alma 8+
+        type: str
+        default: minimal
+
+      pam_mfa_rhel_authselect_features:
+        description:
+          - Authselect features to enable
+          - Only applicable to RHEL/Rocky/Alma 8+
+        type: list
+        elements: str
+        default: []
+
+      pam_mfa_totp_enabled:
+        description:
+          - Enable TOTP as backup authentication method
+          - Recommended for breakglass access
+        type: bool
+        default: true
+
+      pam_mfa_totp_allowed_group:
+        description:
+          - Group allowed to use TOTP backup
+        type: str
+        default: mfa-breakglass
+
+      pam_mfa_totp_rate_limit:
+        description:
+          - Enable rate limiting for TOTP attempts
+        type: bool
+        default: true
+
+      pam_mfa_service_bypass_allow_from:
+        description:
+          - IP addresses/networks from which service accounts can connect
+          - Empty list means allow from anywhere
+        type: list
+        elements: str
+        default: []
+
+      pam_mfa_u2f_keys_path:
+        description:
+          - Path to U2F/FIDO2 keys directory
+        type: str
+        default: /etc/Yubico/u2f_keys
+
+      pam_mfa_fido2_authfile:
+        description:
+          - Path to FIDO2 authorized keys file
+        type: str
+        default: /etc/fido2/authorized_fido2
+
+      pam_mfa_totp_dir:
+        description:
+          - Directory for TOTP secrets
+        type: str
+        default: /etc/google-authenticator.d

@@ -1,0 +1,84 @@
+---
+argument_specs:
+  main:
+    short_description: Detect system security capabilities and select authentication mode
+    description:
+      - Automatically detects OpenSSH version, PAM modules, SELinux availability
+      - Determines optimal authentication mode (SK keys, PAM MFA, or legacy)
+      - Classifies user groups (humans vs service accounts)
+    author: Miguel Alpañez
+    options:
+      security_capabilities_auth_mode:
+        description:
+          - Authentication mode selection strategy
+          - C(auto) - Automatically detect based on system capabilities
+          - C(sk_keys) - Force SK keys (FIDO2/U2F) mode
+          - C(pam_mfa) - Force PAM MFA mode
+          - C(legacy) - Force legacy password-based mode
+        type: str
+        default: auto
+        choices:
+          - auto
+          - sk_keys
+          - pam_mfa
+          - legacy
+
+      security_capabilities_force_mode:
+        description:
+          - Override automatic mode selection
+          - Empty string means respect auto-detection
+        type: str
+        default: ""
+
+      security_capabilities_force_openssh_version:
+        description:
+          - Override detected OpenSSH version for testing
+          - Format C(8.2) or C(7.4)
+        type: str
+        default: ""
+
+      security_capabilities_human_groups:
+        description:
+          - List of Unix groups containing human users
+          - These users require MFA when enabled
+        type: list
+        elements: str
+        default:
+          - linux-admins
+          - devops
+
+      security_capabilities_service_groups:
+        description:
+          - List of Unix groups for service accounts
+          - These accounts bypass MFA requirements
+        type: list
+        elements: str
+        default:
+          - svc-automation
+          - svc-transfer
+
+      security_capabilities_mfa_for_humans_even_with_sk_keys:
+        description:
+          - Enforce PAM MFA even when SK keys are available
+          - Provides defense in depth
+        type: bool
+        default: false
+
+      security_capabilities_totp_breakglass_enabled:
+        description:
+          - Enable TOTP as fallback when hardware keys unavailable
+          - Recommended for emergency access
+        type: bool
+        default: true
+
+      security_capabilities_pkg_names:
+        description:
+          - OpenSSH package names per distribution
+          - Normally auto-detected
+        type: dict
+        default:
+          debian: openssh-server
+          ubuntu: openssh-server
+          redhat: openssh-server
+          rocky: openssh-server
+          centos: openssh-server

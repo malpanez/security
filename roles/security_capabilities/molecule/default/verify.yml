@@ -3,7 +3,7 @@
   hosts: all
   gather_facts: false
   tasks:
-    - name: "verify | Assert selected mode is sk_keys (forced version)"
+    - name: "Verify | Assert selected mode is sk_keys (forced version)"
       ansible.builtin.assert:
         that:
           - security_capabilities_selected_auth_mode == 'sk_keys'

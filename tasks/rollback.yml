@@ -1,0 +1,326 @@
+---
+# Emergency Rollback
+# Automatically restore security configurations from the most recent backup
+# Used when validation fails or critical issues are detected
+#
+# Usage (in playbook):
+#   - name: Execute rollback
+#     include_tasks: tasks/rollback.yml
+
+- name: Display rollback warning
+  debug:
+    msg: |
+      ========================================
+      EMERGENCY ROLLBACK INITIATED
+      ========================================
+      A validation failure has triggered automatic rollback.
+      Security configurations will be restored from backup.
+      ========================================
+
+- name: Find most recent backup directory
+  find:
+    paths: /root
+    patterns: "security-backup-*"
+    file_type: directory
+  register: backup_dirs
+
+- name: Identify latest backup
+  set_fact:
+    latest_backup: "{{ backup_dirs.files | sort(attribute='mtime', reverse=true) | first }}"
+  when: backup_dirs.matched > 0
+
+- name: Verify backup exists
+  assert:
+    that:
+      - backup_dirs.matched > 0
+      - latest_backup is defined
+    fail_msg: "CRITICAL: No backup found! Cannot rollback automatically."
+    success_msg: "Backup found: {{ latest_backup.path }}"
+
+- name: Set backup path
+  set_fact:
+    rollback_backup_dir: "{{ latest_backup.path }}"
+
+- name: Display rollback source
+  debug:
+    msg: "Rolling back from: {{ rollback_backup_dir }}"
+
+# Rollback SSH Configuration
+- name: Rollback sshd_config
+  block:
+    - name: Restore sshd_config from backup
+      copy:
+        src: "{{ rollback_backup_dir }}/sshd_config"
+        dest: /etc/ssh/sshd_config
+        remote_src: true
+        mode: '0600'
+        backup: true
+
+    - name: Restore sshd_config.d directory
+      shell: |
+        if [ -d "{{ rollback_backup_dir }}/sshd_config.d" ]; then
+          rm -rf /etc/ssh/sshd_config.d
+          cp -r "{{ rollback_backup_dir }}/sshd_config.d" /etc/ssh/sshd_config.d
+        fi
+      args:
+        executable: /bin/bash
+
+    - name: Validate restored sshd configuration
+      command: sshd -t
+      register: sshd_validation
+      failed_when: sshd_validation.rc != 0
+
+    - name: Restart sshd service
+      service:
+        name: sshd
+        state: restarted
+      when: sshd_validation.rc == 0
+
+    - name: Confirm sshd rollback
+      debug:
+        msg: "✓ SSH configuration rolled back successfully"
+
+  when: security_phase_ssh_hardening | default(false)
+  rescue:
+    - name: SSH rollback failed
+      debug:
+        msg: "✗ SSH rollback failed - manual intervention required"
+
+# Rollback Sudoers Configuration
+- name: Rollback sudoers configuration
+  block:
+    - name: Restore /etc/sudoers from backup
+      copy:
+        src: "{{ rollback_backup_dir }}/sudoers"
+        dest: /etc/sudoers
+        remote_src: true
+        mode: '0440'
+        backup: true
+
+    - name: Restore /etc/sudoers.d directory
+      shell: |
+        if [ -d "{{ rollback_backup_dir }}/sudoers.d" ]; then
+          rm -rf /etc/sudoers.d
+          cp -r "{{ rollback_backup_dir }}/sudoers.d" /etc/sudoers.d
+          chmod 750 /etc/sudoers.d
+        fi
+      args:
+        executable: /bin/bash
+
+    - name: Validate restored sudoers
+      command: visudo -cf /etc/sudoers
+      register: sudoers_validation
+      failed_when: sudoers_validation.rc != 0
+
+    - name: Confirm sudoers rollback
+      debug:
+        msg: "✓ Sudoers configuration rolled back successfully"
+
+  when: security_phase_sudoers | default(false)
+  rescue:
+    - name: Sudoers rollback failed
+      debug:
+        msg: "✗ Sudoers rollback failed - manual intervention required"
+
+# Rollback PAM Configuration
+- name: Rollback PAM configuration
+  block:
+    - name: Restore PAM sshd
+      copy:
+        src: "{{ rollback_backup_dir }}/pam.d-sshd"
+        dest: /etc/pam.d/sshd
+        remote_src: true
+        mode: '0644'
+        backup: true
+
+    - name: Restore PAM common-auth (Debian/Ubuntu)
+      copy:
+        src: "{{ rollback_backup_dir }}/pam.d-common-auth"
+        dest: /etc/pam.d/common-auth
+        remote_src: true
+        mode: '0644'
+        backup: true
+      when: ansible_os_family == 'Debian'
+
+    - name: Restore PAM system-auth (RHEL/CentOS)
+      copy:
+        src: "{{ rollback_backup_dir }}/pam.d-system-auth"
+        dest: /etc/pam.d/system-auth
+        remote_src: true
+        mode: '0644'
+        backup: true
+      when: ansible_os_family == 'RedHat'
+
+    - name: Restore PAM password-auth (RHEL/CentOS)
+      copy:
+        src: "{{ rollback_backup_dir }}/pam.d-password-auth"
+        dest: /etc/pam.d/password-auth
+        remote_src: true
+        mode: '0644'
+        backup: true
+      when: ansible_os_family == 'RedHat'
+
+    - name: Restart sshd after PAM rollback
+      service:
+        name: sshd
+        state: restarted
+
+    - name: Confirm PAM rollback
+      debug:
+        msg: "✓ PAM configuration rolled back successfully"
+
+  when: security_phase_mfa | default(false)
+  rescue:
+    - name: PAM rollback failed
+      debug:
+        msg: "✗ PAM rollback failed - manual intervention required"
+
+# Rollback SELinux Configuration
+- name: Rollback SELinux configuration
+  block:
+    - name: Restore SELinux config
+      copy:
+        src: "{{ rollback_backup_dir }}/selinux-config"
+        dest: /etc/selinux/config
+        remote_src: true
+        mode: '0644'
+        backup: true
+
+    - name: Confirm SELinux rollback
+      debug:
+        msg: "✓ SELinux configuration rolled back (reboot required for mode change)"
+
+  when:
+    - security_phase_selinux | default(false)
+    - ansible_os_family == 'RedHat'
+  rescue:
+    - name: SELinux rollback failed
+      debug:
+        msg: "✗ SELinux rollback failed - manual intervention required"
+
+# Rollback Audit Configuration
+- name: Rollback audit configuration
+  block:
+    - name: Restore auditd.conf
+      copy:
+        src: "{{ rollback_backup_dir }}/auditd.conf"
+        dest: /etc/audit/auditd.conf
+        remote_src: true
+        mode: '0640'
+        backup: true
+
+    - name: Restore audit.rules
+      copy:
+        src: "{{ rollback_backup_dir }}/audit.rules"
+        dest: /etc/audit/rules.d/audit.rules
+        remote_src: true
+        mode: '0640'
+        backup: true
+
+    - name: Restart auditd
+      shell: service auditd restart
+      args:
+        executable: /bin/bash
+
+    - name: Confirm audit rollback
+      debug:
+        msg: "✓ Audit configuration rolled back successfully"
+
+  when: security_phase_audit | default(false)
+  rescue:
+    - name: Audit rollback failed
+      debug:
+        msg: "✗ Audit rollback failed - manual intervention required"
+
+# Post-Rollback Validation
+- name: Validate services after rollback
+  include_tasks: validate-services.yml
+
+# Generate rollback report
+- name: Create rollback report
+  copy:
+    dest: "/var/log/security-rollback-{{ ansible_date_time.epoch }}.log"
+    content: |
+      Security Configuration Rollback Report
+      ======================================
+      Timestamp: {{ ansible_date_time.iso8601 }}
+      Hostname: {{ ansible_hostname }}
+
+      Rollback Reason: Validation failure or manual intervention
+      Backup Source: {{ rollback_backup_dir }}
+
+      Rolled Back Components:
+      {% if security_phase_ssh_hardening | default(false) %}
+      - SSH configuration (/etc/ssh/sshd_config)
+      {% endif %}
+      {% if security_phase_sudoers | default(false) %}
+      - Sudoers configuration (/etc/sudoers, /etc/sudoers.d/)
+      {% endif %}
+      {% if security_phase_mfa | default(false) %}
+      - PAM configuration (/etc/pam.d/*)
+      {% endif %}
+      {% if security_phase_selinux | default(false) and ansible_os_family == 'RedHat' %}
+      - SELinux configuration (/etc/selinux/config)
+      {% endif %}
+      {% if security_phase_audit | default(false) %}
+      - Audit configuration (/etc/audit/*)
+      {% endif %}
+
+      Post-Rollback Status:
+      - SSH service: Restarted
+      - Sudo functionality: Should be restored
+      - System state: Reverted to pre-enforcement configuration
+
+      Next Steps:
+      1. Verify SSH access works
+      2. Verify sudo works: sudo -l
+      3. Investigate why enforcement failed
+      4. Review logs for errors
+      5. Fix issues before retrying enforcement
+
+      DO NOT retry enforcement until root cause is identified and fixed!
+    mode: '0640'
+
+- name: Display rollback summary
+  debug:
+    msg: |
+      ========================================
+      EMERGENCY ROLLBACK COMPLETE
+      ========================================
+      Backup restored from: {{ rollback_backup_dir }}
+
+      Rolled Back:
+      {% if security_phase_ssh_hardening | default(false) %}
+      - SSH: ✓
+      {% endif %}
+      {% if security_phase_sudoers | default(false) %}
+      - Sudoers: ✓
+      {% endif %}
+      {% if security_phase_mfa | default(false) %}
+      - PAM MFA: ✓
+      {% endif %}
+      {% if security_phase_selinux | default(false) %}
+      - SELinux: ✓
+      {% endif %}
+      {% if security_phase_audit | default(false) %}
+      - Audit: ✓
+      {% endif %}
+
+      System should now be in pre-enforcement state.
+
+      CRITICAL NEXT STEPS:
+      1. Verify SSH access in new terminal
+      2. Verify sudo: sudo -l
+      3. Investigate failure cause
+      4. Review rollback log: /var/log/security-rollback-{{ ansible_date_time.epoch }}.log
+
+      DO NOT RETRY ENFORCEMENT until issues are resolved!
+      ========================================
+
+- name: Final rollback reminder
+  debug:
+    msg: |
+      ⚠️  ROLLBACK EXECUTED - INVESTIGATION REQUIRED ⚠️
+
+      Your system has been restored to its previous state.
+      Review logs to understand what failed before attempting enforcement again.

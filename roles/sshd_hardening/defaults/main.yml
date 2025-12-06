@@ -22,6 +22,11 @@ sshd_hardening_human_groups: "{{ security_capabilities_human_groups | default([]
 sshd_hardening_service_groups: "{{ security_capabilities_service_groups | default([]) }}"
 sshd_hardening_trusted_ca_key: ""
 sshd_hardening_trusted_ca_path: /etc/ssh/trusted_user_ca_keys
+sshd_config_path: /etc/ssh/sshd_config
+sshd_config_dir: /etc/ssh/sshd_config.d
+sshd_service_name: sshd
+sshd_binary_path: /usr/sbin/sshd
+ssh_auth_log: /var/log/auth.log
 sshd_hardening_algorithm_profile: auto
 sshd_hardening_algorithm_sets:
   modern:

@@ -1,0 +1,12 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  roles:
+    - role: audit_logging
+      vars:
+        audit_logging_rules:
+          - "-w /etc/ssh/sshd_config -p wa -k sshd-config"
+          - "-w /etc/sudoers -p wa -k sudoers"
+          - "-w /etc/sudoers.d -p wa -k sudoers"
+          - "-w /var/log/secure -p wa -k secure-log"

@@ -5,6 +5,10 @@ galaxy_info:
   license: GPL-2.0-or-later
   min_ansible_version: "2.16"
   platforms:
-    - name: all
-      versions: [all]
-dependencies: []
+    - name: Debian
+      versions: [buster, bullseye, bookworm]
+    - name: Ubuntu
+      versions: [bionic, focal, jammy]
+    - name: EL
+      versions: ["7", "8", "9"]
+dependencies:

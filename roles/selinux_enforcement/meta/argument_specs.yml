@@ -1,0 +1,64 @@
+---
+argument_specs:
+  main:
+    short_description: Manage SELinux enforcement mode, booleans, and file contexts
+    description:
+      - Configure SELinux mode (enforcing, permissive, disabled)
+      - Manage SELinux booleans
+      - Apply file security contexts
+      - Primarily for RHEL-based systems (native SELinux support)
+    author: Miguel Alpañez
+    options:
+      selinux_enforcement_enabled:
+        description:
+          - Enable SELinux enforcement configuration
+          - Only effective on systems with SELinux available
+        type: bool
+        default: false
+
+      selinux_enforcement_mode:
+        description:
+          - SELinux enforcement mode
+          - C(enforcing) - Enforce SELinux policies (recommended)
+          - C(permissive) - Log violations but don't block
+          - C(disabled) - Disable SELinux (not recommended)
+        type: str
+        default: enforcing
+        choices:
+          - enforcing
+          - permissive
+          - disabled
+
+      selinux_enforcement_booleans:
+        description:
+          - List of SELinux booleans to set
+          - Each item should be C(name=value) format
+          - Example C(httpd_can_network_connect=on)
+        type: list
+        elements: str
+        default: []
+
+      selinux_enforcement_contexts:
+        description:
+          - List of file contexts to apply
+          - Each item should specify path and SELinux context
+        type: list
+        elements: dict
+        default: []
+
+      selinux_enforcement_packages:
+        description:
+          - SELinux management packages to install
+        type: list
+        elements: str
+        default:
+          - policycoreutils
+          - policycoreutils-python-utils
+          - setools-console
+
+      selinux_enforcement_restorecon:
+        description:
+          - Run restorecon after applying contexts
+          - Recommended to ensure contexts are properly applied
+        type: bool
+        default: true

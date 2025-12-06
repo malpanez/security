@@ -5,18 +5,43 @@
     state: directory
     mode: "0750"
 
-- name: "common | Collect file-based evidence"
-  ansible.builtin.copy:
-    src: "{{ item.path }}"
-    dest: "{{ compliance_evidence_output_dir }}/{{ inventory_hostname }}-{{ item.name }}"
-    remote_src: true
-    mode: "0640"
+- name: "common | Stat evidence paths"
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  register: compliance_evidence_stats
   loop: "{{ compliance_evidence_items | selectattr('path', 'defined') | list }}"
   failed_when: false
   tags: [review]
 
+- name: "common | Copy file evidence"
+  ansible.builtin.copy:
+    src: "{{ item.item.path }}"
+    dest: "{{ compliance_evidence_output_dir }}/{{ inventory_hostname }}-{{ item.item.name }}"
+    remote_src: true
+    mode: "0640"
+  loop: "{{ compliance_evidence_stats.results | default([]) }}"
+  when:
+    - item.stat.exists | default(false)
+    - not item.stat.isdir | default(false)
+  failed_when: false
+  tags: [review]
+
+- name: "common | Archive directory evidence"
+  community.general.archive:
+    path: "{{ item.item.path }}"
+    dest: "{{ compliance_evidence_output_dir }}/{{ inventory_hostname }}-{{ item.item.name }}.tar.gz"
+    format: gz
+  loop: "{{ compliance_evidence_stats.results | default([]) }}"
+  when:
+    - item.stat.exists | default(false)
+    - item.stat.isdir | default(false)
+  failed_when: false
+  tags: [review]
+
 - name: "common | Collect command output evidence"
-  ansible.builtin.command: "{{ item.command }}"
+  ansible.builtin.shell: "{{ item.command }}"
+  args:
+    executable: /bin/bash
   register: compliance_evidence_cmd
   changed_when: false
   loop: "{{ compliance_evidence_items | selectattr('command', 'defined') | list }}"
@@ -25,7 +50,9 @@
 
 - name: "common | Write command evidence to files"
   ansible.builtin.copy:
-    dest: "{{ compliance_evidence_output_dir }}/{{ inventory_hostname }}-{{ item.item.name | default(item.item.command | regex_replace('[^A-Za-z0-9_-]', '_')) }}.log"
+    dest: >-
+      {{ compliance_evidence_output_dir }}/{{ inventory_hostname }}-{{ item.item.name
+      | default(item.item.command | regex_replace('[^A-Za-z0-9_-]', '_')) }}.log
     content: "{{ item.stdout | default('') }}"
     mode: "0640"
   loop: "{{ compliance_evidence_cmd.results | default([]) }}"

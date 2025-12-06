@@ -7,6 +7,7 @@
     state: present
     create_home: true
   loop: "{{ service_accounts_transfer_accounts }}"
+  when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
 - name: "common | Ensure chroot directories exist (if configured)"
@@ -17,7 +18,9 @@
     group: root
     mode: "0755"
   loop: "{{ service_accounts_transfer_accounts }}"
-  when: item.chroot is defined
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - item.chroot is defined
   tags: [enforce]
 
 - name: "common | Ensure authorized_keys with restrictions for service accounts"
@@ -48,7 +51,9 @@
   loop: "{{ service_accounts_transfer_accounts | subelements('keys', skip_missing=True) }}"
   loop_control:
     label: "{{ item.0.name }}"
-  when: item.1 is defined
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - item.1 is defined
   tags: [enforce]
 
 - name: "common | Configure sshd Match blocks for service accounts"
@@ -72,4 +77,5 @@
         (item.match_extra | default([]))
       }}
   loop: "{{ service_accounts_transfer_accounts }}"
+  when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]

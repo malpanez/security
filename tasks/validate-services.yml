@@ -1,0 +1,311 @@
+---
+# Validate Security Services
+# Post-deployment validation to ensure critical services are functional
+# Tests SSH, sudo, PAM, SELinux, and audit services
+#
+# Usage (in playbook):
+#   - name: Validate services
+#     include_tasks: tasks/validate-services.yml
+
+- name: Display validation start
+  debug:
+    msg: "Starting post-deployment service validation..."
+
+# SSH Service Validation
+- name: Check if sshd is running
+  service:
+    name: sshd
+    state: started
+  check_mode: true
+  register: sshd_status
+  failed_when: false
+  changed_when: false
+
+- name: Validate sshd configuration syntax
+  command: sshd -t
+  register: sshd_syntax
+  failed_when: sshd_syntax.rc != 0
+  changed_when: false
+  when: security_phase_ssh_hardening | default(false)
+
+- name: Assert sshd is functional
+  assert:
+    that:
+      - sshd_status is success
+      - sshd_syntax.rc == 0
+    fail_msg: "CRITICAL: SSH service validation failed!"
+    success_msg: "✓ SSH service is functional"
+  when: security_phase_ssh_hardening | default(false)
+
+- name: Test SSH port is listening
+  wait_for:
+    port: 22
+    timeout: 10
+    state: started
+  register: ssh_port_test
+  failed_when: false
+
+- name: Assert SSH port is accessible
+  assert:
+    that:
+      - ssh_port_test is success
+    fail_msg: "CRITICAL: SSH port 22 is not accessible!"
+    success_msg: "✓ SSH port 22 is accessible"
+
+# Sudoers Validation
+- name: Validate /etc/sudoers syntax
+  command: visudo -cf /etc/sudoers
+  register: sudoers_syntax
+  failed_when: sudoers_syntax.rc != 0
+  changed_when: false
+  when: security_phase_sudoers | default(false)
+
+- name: Validate /etc/sudoers.d/ files
+  shell: |
+    set -e
+    for file in /etc/sudoers.d/*; do
+      if [ -f "$file" ] && [ ! -L "$file" ]; then
+        visudo -cf "$file" || exit 1
+      fi
+    done
+  register: sudoers_d_syntax
+  failed_when: sudoers_d_syntax.rc != 0
+  changed_when: false
+  when: security_phase_sudoers | default(false)
+
+- name: Assert sudoers configuration is valid
+  assert:
+    that:
+      - sudoers_syntax.rc == 0
+      - sudoers_d_syntax.rc == 0
+    fail_msg: "CRITICAL: Sudoers configuration has syntax errors!"
+    success_msg: "✓ Sudoers configuration is valid"
+  when: security_phase_sudoers | default(false)
+
+- name: Test sudo functionality
+  command: sudo -n true
+  register: sudo_test
+  failed_when: false
+  changed_when: false
+
+- name: Assert sudo command is functional
+  assert:
+    that:
+      - sudo_test.rc in [0, 1]  # 0 = success, 1 = password required (both OK)
+    fail_msg: "CRITICAL: Sudo command is not functional!"
+    success_msg: "✓ Sudo command is functional"
+
+# PAM Validation (if MFA enabled)
+- name: Check PAM sshd configuration exists
+  stat:
+    path: /etc/pam.d/sshd
+  register: pam_sshd_file
+  when: security_phase_mfa | default(false)
+
+- name: Validate PAM sshd has required entries
+  shell: |
+    grep -q "pam_u2f\|pam_google_authenticator" /etc/pam.d/sshd
+  register: pam_mfa_check
+  failed_when: false
+  changed_when: false
+  when:
+    - security_phase_mfa | default(false)
+    - pam_mfa_enabled | default(false)
+
+- name: Verify PAM service account bypass exists
+  shell: |
+    grep -q "pam_succeed_if.*mfa-bypass" /etc/pam.d/sshd
+  register: pam_bypass_check
+  failed_when: false
+  changed_when: false
+  when:
+    - security_phase_mfa | default(false)
+    - pam_mfa_enabled | default(false)
+
+- name: Assert PAM MFA is configured correctly
+  assert:
+    that:
+      - pam_sshd_file.stat.exists
+      - pam_mfa_check.rc == 0
+      - pam_bypass_check.rc == 0
+    fail_msg: "WARNING: PAM MFA configuration may be incomplete"
+    success_msg: "✓ PAM MFA is configured with service account bypass"
+  when:
+    - security_phase_mfa | default(false)
+    - pam_mfa_enabled | default(false)
+  ignore_errors: true
+
+# SELinux Validation (RHEL-based only)
+- name: Check SELinux status
+  command: getenforce
+  register: selinux_status
+  failed_when: false
+  changed_when: false
+  when:
+    - security_phase_selinux | default(false)
+    - ansible_os_family == 'RedHat'
+
+- name: Verify SELinux mode
+  assert:
+    that:
+      - selinux_status.stdout in ['Enforcing', 'Permissive', 'Disabled']
+    fail_msg: "WARNING: SELinux status is unknown"
+    success_msg: "✓ SELinux mode: {{ selinux_status.stdout }}"
+  when:
+    - security_phase_selinux | default(false)
+    - ansible_os_family == 'RedHat'
+  ignore_errors: true
+
+- name: Check for SELinux denials (last 100 entries)
+  shell: |
+    ausearch -m avc -ts recent 2>/dev/null | tail -100 || echo "No recent denials"
+  register: selinux_denials
+  failed_when: false
+  changed_when: false
+  when:
+    - security_phase_selinux | default(false)
+    - ansible_os_family == 'RedHat'
+    - selinux_status.stdout == 'Enforcing'
+
+- name: Display SELinux denial summary
+  debug:
+    msg: |
+      Recent SELinux denials (last 100):
+      {{ selinux_denials.stdout }}
+  when:
+    - security_phase_selinux | default(false)
+    - ansible_os_family == 'RedHat'
+    - selinux_status.stdout == 'Enforcing'
+    - "'avc' in selinux_denials.stdout"
+
+# Audit Service Validation
+- name: Check if auditd is running
+  service:
+    name: auditd
+    state: started
+  check_mode: true
+  register: auditd_status
+  failed_when: false
+  changed_when: false
+  when: security_phase_audit | default(false)
+
+- name: Verify audit rules are loaded
+  command: auditctl -l
+  register: audit_rules
+  failed_when: false
+  changed_when: false
+  when: security_phase_audit | default(false)
+
+- name: Assert auditd is functional
+  assert:
+    that:
+      - auditd_status is success
+      - audit_rules.rc == 0
+    fail_msg: "WARNING: Audit service may not be fully functional"
+    success_msg: "✓ Audit service is functional"
+  when: security_phase_audit | default(false)
+  ignore_errors: true
+
+# Service Account Validation (if MFA enabled)
+- name: Test service account SSH access (if configured)
+  block:
+    - name: Check if ansible user exists
+      getent:
+        database: passwd
+        key: ansible
+      register: ansible_user
+      failed_when: false
+
+    - name: Verify service account can bypass MFA
+      shell: |
+        grep -q "{{ item }}" /etc/pam.d/sshd || echo "not found"
+      loop:
+        - ansible
+        - ci
+        - jenkins
+      register: service_account_bypass
+      failed_when: false
+      changed_when: false
+
+    - name: Display service account status
+      debug:
+        msg: |
+          Service accounts configured in PAM:
+          {{ service_account_bypass.results | map(attribute='stdout') | list }}
+  when:
+    - security_phase_mfa | default(false)
+    - pam_mfa_enabled | default(false)
+
+# Generate validation report
+- name: Create validation report
+  copy:
+    dest: "/tmp/security-validation-{{ ansible_date_time.epoch }}.txt"
+    content: |
+      Security Services Validation Report
+      ====================================
+      Timestamp: {{ ansible_date_time.iso8601 }}
+      Hostname: {{ ansible_hostname }}
+
+      Validation Results:
+
+      SSH Service:
+      - sshd running: {{ 'PASS' if sshd_status is success else 'FAIL' }}
+      - sshd syntax: {{ 'PASS' if sshd_syntax.rc == 0 else 'FAIL' }}
+      - Port 22 accessible: {{ 'PASS' if ssh_port_test is success else 'FAIL' }}
+
+      {% if security_phase_sudoers | default(false) %}
+      Sudoers:
+      - /etc/sudoers syntax: {{ 'PASS' if sudoers_syntax.rc == 0 else 'FAIL' }}
+      - /etc/sudoers.d/ syntax: {{ 'PASS' if sudoers_d_syntax.rc == 0 else 'FAIL' }}
+      - sudo command functional: {{ 'PASS' if sudo_test.rc in [0,1] else 'FAIL' }}
+      {% endif %}
+
+      {% if security_phase_mfa | default(false) and pam_mfa_enabled | default(false) %}
+      PAM MFA:
+      - PAM sshd exists: {{ 'PASS' if pam_sshd_file.stat.exists else 'FAIL' }}
+      - MFA modules present: {{ 'PASS' if pam_mfa_check.rc == 0 else 'FAIL' }}
+      - Service account bypass: {{ 'PASS' if pam_bypass_check.rc == 0 else 'FAIL' }}
+      {% endif %}
+
+      {% if security_phase_selinux | default(false) and ansible_os_family == 'RedHat' %}
+      SELinux:
+      - Status: {{ selinux_status.stdout }}
+      - Recent denials: {{ 'Present' if 'avc' in selinux_denials.stdout else 'None' }}
+      {% endif %}
+
+      {% if security_phase_audit | default(false) %}
+      Audit Service:
+      - auditd running: {{ 'PASS' if auditd_status is success else 'FAIL' }}
+      - Audit rules loaded: {{ 'PASS' if audit_rules.rc == 0 else 'FAIL' }}
+      {% endif %}
+
+      Overall Status: {{ 'PASS' if (sshd_status is success and ssh_port_test is success) else 'FAIL - CRITICAL ISSUES' }}
+
+      Recommendations:
+      {% if not (sshd_status is success and ssh_port_test is success) %}
+      - CRITICAL: SSH service issues detected - investigate immediately
+      {% endif %}
+      {% if security_phase_sudoers | default(false) and sudo_test.rc not in [0,1] %}
+      - CRITICAL: Sudo functionality issues - may need rollback
+      {% endif %}
+      - Monitor logs for 24-48 hours post-deployment
+      - Verify application functionality
+      - Test service account access
+    mode: '0640'
+
+- name: Display validation summary
+  debug:
+    msg: |
+      ========================================
+      SERVICE VALIDATION COMPLETE
+      ========================================
+
+      Critical Services:
+      - SSH: {{ '✓ PASS' if (sshd_status is success and ssh_port_test is success) else '✗ FAIL' }}
+      - Sudo: {{ '✓ PASS' if sudo_test.rc in [0,1] else '✗ FAIL' }}
+      {% if security_phase_mfa | default(false) %}
+      - PAM MFA: {{ '✓ Configured' if pam_mfa_check.rc == 0 else '⚠ Check manually' }}
+      {% endif %}
+
+      Report: /tmp/security-validation-{{ ansible_date_time.epoch }}.txt
+      ========================================

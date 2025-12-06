@@ -1,0 +1,365 @@
+---
+# Backup Security Configurations
+# Creates timestamped backups of critical security files before modifications
+# Also generates an automatic restore script
+#
+# Usage (in playbook):
+#   - name: Backup configurations
+#     include_tasks: tasks/backup-configs.yml
+
+- name: Set backup directory path
+  set_fact:
+    security_backup_dir: "/root/security-backup-{{ ansible_date_time.epoch }}"
+    security_backup_timestamp: "{{ ansible_date_time.iso8601 }}"
+
+- name: Create backup directory
+  file:
+    path: "{{ security_backup_dir }}"
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+
+- name: Display backup location
+  debug:
+    msg: "Creating security backup at: {{ security_backup_dir }}"
+
+# SSH Configuration Backup
+- name: Backup sshd_config
+  copy:
+    src: /etc/ssh/sshd_config
+    dest: "{{ security_backup_dir }}/sshd_config"
+    remote_src: true
+    mode: '0600'
+  when: security_phase_ssh_hardening | default(false)
+  ignore_errors: true
+
+- name: Backup sshd_config.d directory
+  command: cp -r /etc/ssh/sshd_config.d "{{ security_backup_dir }}/sshd_config.d"
+  args:
+    creates: "{{ security_backup_dir }}/sshd_config.d"
+  when:
+    - security_phase_ssh_hardening | default(false)
+  failed_when: false
+  changed_when: false
+
+# Sudoers Backup
+- name: Backup /etc/sudoers
+  copy:
+    src: /etc/sudoers
+    dest: "{{ security_backup_dir }}/sudoers"
+    remote_src: true
+    mode: '0600'
+  when: security_phase_sudoers | default(false)
+  ignore_errors: true
+
+- name: Backup /etc/sudoers.d directory
+  command: cp -r /etc/sudoers.d "{{ security_backup_dir }}/sudoers.d"
+  args:
+    creates: "{{ security_backup_dir }}/sudoers.d"
+  when: security_phase_sudoers | default(false)
+  failed_when: false
+  changed_when: false
+
+# PAM Configuration Backup
+- name: Backup PAM sshd configuration
+  copy:
+    src: /etc/pam.d/sshd
+    dest: "{{ security_backup_dir }}/pam.d-sshd"
+    remote_src: true
+    mode: '0600'
+  when: security_phase_mfa | default(false)
+  ignore_errors: true
+
+- name: Backup PAM common-auth (Debian/Ubuntu)
+  copy:
+    src: /etc/pam.d/common-auth
+    dest: "{{ security_backup_dir }}/pam.d-common-auth"
+    remote_src: true
+    mode: '0600'
+  when:
+    - security_phase_mfa | default(false)
+    - ansible_os_family == 'Debian'
+  ignore_errors: true
+
+- name: Backup PAM system-auth (RHEL/CentOS)
+  copy:
+    src: /etc/pam.d/system-auth
+    dest: "{{ security_backup_dir }}/pam.d-system-auth"
+    remote_src: true
+    mode: '0600'
+  when:
+    - security_phase_mfa | default(false)
+    - ansible_os_family == 'RedHat'
+  ignore_errors: true
+
+- name: Backup PAM password-auth (RHEL/CentOS)
+  copy:
+    src: /etc/pam.d/password-auth
+    dest: "{{ security_backup_dir }}/pam.d-password-auth"
+    remote_src: true
+    mode: '0600'
+  when:
+    - security_phase_mfa | default(false)
+    - ansible_os_family == 'RedHat'
+  ignore_errors: true
+
+# SELinux Configuration Backup
+- name: Backup SELinux config
+  copy:
+    src: /etc/selinux/config
+    dest: "{{ security_backup_dir }}/selinux-config"
+    remote_src: true
+    mode: '0600'
+  when:
+    - security_phase_selinux | default(false)
+    - ansible_os_family == 'RedHat'
+  ignore_errors: true
+
+# Audit Configuration Backup
+- name: Backup auditd.conf
+  copy:
+    src: /etc/audit/auditd.conf
+    dest: "{{ security_backup_dir }}/auditd.conf"
+    remote_src: true
+    mode: '0600'
+  when: security_phase_audit | default(false)
+  ignore_errors: true
+
+- name: Backup audit.rules
+  copy:
+    src: /etc/audit/rules.d/audit.rules
+    dest: "{{ security_backup_dir }}/audit.rules"
+    remote_src: true
+    mode: '0600'
+  when: security_phase_audit | default(false)
+  ignore_errors: true
+
+# Generate backup manifest
+- name: Create backup manifest
+  copy:
+    dest: "{{ security_backup_dir }}/BACKUP_MANIFEST.txt"
+    content: |
+      Security Configuration Backup Manifest
+      ======================================
+      Timestamp: {{ security_backup_timestamp }}
+      Hostname: {{ ansible_hostname }}
+      FQDN: {{ ansible_fqdn }}
+      OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+
+      Backup Directory: {{ security_backup_dir }}
+
+      Backed Up Configurations:
+      {% if security_phase_ssh_hardening | default(false) %}
+      - SSH: /etc/ssh/sshd_config
+      - SSH: /etc/ssh/sshd_config.d/ (if exists)
+      {% endif %}
+      {% if security_phase_sudoers | default(false) %}
+      - Sudoers: /etc/sudoers
+      - Sudoers: /etc/sudoers.d/
+      {% endif %}
+      {% if security_phase_mfa | default(false) %}
+      - PAM: /etc/pam.d/sshd
+      {% if ansible_os_family == 'Debian' %}
+      - PAM: /etc/pam.d/common-auth
+      {% elif ansible_os_family == 'RedHat' %}
+      - PAM: /etc/pam.d/system-auth
+      - PAM: /etc/pam.d/password-auth
+      {% endif %}
+      {% endif %}
+      {% if security_phase_selinux | default(false) and ansible_os_family == 'RedHat' %}
+      - SELinux: /etc/selinux/config
+      {% endif %}
+      {% if security_phase_audit | default(false) %}
+      - Audit: /etc/audit/auditd.conf
+      - Audit: /etc/audit/rules.d/audit.rules
+      {% endif %}
+
+      Restore Instructions:
+      Use the restore script: {{ security_backup_dir }}/restore.sh
+      Or manually copy files back to original locations.
+
+      WARNING: Restore may require restarting services:
+      - SSH: systemctl restart sshd
+      - Auditd: service auditd restart
+    mode: '0600'
+
+# Generate automatic restore script
+- name: Create automatic restore script
+  copy:
+    dest: "{{ security_backup_dir }}/restore.sh"
+    content: |
+      #!/bin/bash
+      # Automatic Security Configuration Restore Script
+      # Generated: {{ security_backup_timestamp }}
+      # Hostname: {{ ansible_hostname }}
+
+      set -e
+
+      BACKUP_DIR="{{ security_backup_dir }}"
+
+      echo "=========================================="
+      echo "Security Configuration Restore"
+      echo "=========================================="
+      echo "Backup from: {{ security_backup_timestamp }}"
+      echo "Hostname: {{ ansible_hostname }}"
+      echo ""
+      echo "This will restore security configurations from backup."
+      echo "Services may be restarted."
+      echo ""
+      read -p "Continue? (yes/no): " confirm
+
+      if [ "$confirm" != "yes" ]; then
+          echo "Restore cancelled."
+          exit 1
+      fi
+
+      echo ""
+      echo "Starting restore..."
+
+      {% if security_phase_ssh_hardening | default(false) %}
+      # Restore SSH configuration
+      if [ -f "$BACKUP_DIR/sshd_config" ]; then
+          echo "Restoring /etc/ssh/sshd_config..."
+          cp "$BACKUP_DIR/sshd_config" /etc/ssh/sshd_config
+          chmod 600 /etc/ssh/sshd_config
+      fi
+
+      if [ -d "$BACKUP_DIR/sshd_config.d" ]; then
+          echo "Restoring /etc/ssh/sshd_config.d/..."
+          rm -rf /etc/ssh/sshd_config.d
+          cp -r "$BACKUP_DIR/sshd_config.d" /etc/ssh/sshd_config.d
+      fi
+
+      # Validate and restart sshd
+      echo "Validating sshd configuration..."
+      if sshd -t; then
+          echo "Restarting sshd..."
+          systemctl restart sshd
+          echo "✓ SSH restored"
+      else
+          echo "ERROR: sshd configuration invalid! Not restarting."
+          exit 1
+      fi
+      {% endif %}
+
+      {% if security_phase_sudoers | default(false) %}
+      # Restore sudoers configuration
+      if [ -f "$BACKUP_DIR/sudoers" ]; then
+          echo "Restoring /etc/sudoers..."
+          visudo -cf "$BACKUP_DIR/sudoers"
+          if [ $? -eq 0 ]; then
+              cp "$BACKUP_DIR/sudoers" /etc/sudoers
+              chmod 440 /etc/sudoers
+              echo "✓ /etc/sudoers restored"
+          else
+              echo "ERROR: Backup sudoers file has invalid syntax! Not restoring."
+              exit 1
+          fi
+      fi
+
+      if [ -d "$BACKUP_DIR/sudoers.d" ]; then
+          echo "Restoring /etc/sudoers.d/..."
+          rm -rf /etc/sudoers.d
+          cp -r "$BACKUP_DIR/sudoers.d" /etc/sudoers.d
+          chmod 750 /etc/sudoers.d
+          echo "✓ /etc/sudoers.d/ restored"
+      fi
+      {% endif %}
+
+      {% if security_phase_mfa | default(false) %}
+      # Restore PAM configuration
+      if [ -f "$BACKUP_DIR/pam.d-sshd" ]; then
+          echo "Restoring /etc/pam.d/sshd..."
+          cp "$BACKUP_DIR/pam.d-sshd" /etc/pam.d/sshd
+          chmod 644 /etc/pam.d/sshd
+          echo "✓ PAM sshd restored"
+      fi
+
+      {% if ansible_os_family == 'Debian' %}
+      if [ -f "$BACKUP_DIR/pam.d-common-auth" ]; then
+          echo "Restoring /etc/pam.d/common-auth..."
+          cp "$BACKUP_DIR/pam.d-common-auth" /etc/pam.d/common-auth
+          chmod 644 /etc/pam.d/common-auth
+          echo "✓ PAM common-auth restored"
+      fi
+      {% elif ansible_os_family == 'RedHat' %}
+      if [ -f "$BACKUP_DIR/pam.d-system-auth" ]; then
+          echo "Restoring /etc/pam.d/system-auth..."
+          cp "$BACKUP_DIR/pam.d-system-auth" /etc/pam.d/system-auth
+          chmod 644 /etc/pam.d/system-auth
+          echo "✓ PAM system-auth restored"
+      fi
+
+      if [ -f "$BACKUP_DIR/pam.d-password-auth" ]; then
+          echo "Restoring /etc/pam.d/password-auth..."
+          cp "$BACKUP_DIR/pam.d-password-auth" /etc/pam.d/password-auth
+          chmod 644 /etc/pam.d/password-auth
+          echo "✓ PAM password-auth restored"
+      fi
+      {% endif %}
+
+      # Restart sshd to apply PAM changes
+      echo "Restarting sshd to apply PAM changes..."
+      systemctl restart sshd
+      {% endif %}
+
+      {% if security_phase_selinux | default(false) and ansible_os_family == 'RedHat' %}
+      # Restore SELinux configuration
+      if [ -f "$BACKUP_DIR/selinux-config" ]; then
+          echo "Restoring /etc/selinux/config..."
+          cp "$BACKUP_DIR/selinux-config" /etc/selinux/config
+          chmod 644 /etc/selinux/config
+          echo "✓ SELinux config restored (reboot required for mode change)"
+      fi
+      {% endif %}
+
+      {% if security_phase_audit | default(false) %}
+      # Restore audit configuration
+      if [ -f "$BACKUP_DIR/auditd.conf" ]; then
+          echo "Restoring /etc/audit/auditd.conf..."
+          cp "$BACKUP_DIR/auditd.conf" /etc/audit/auditd.conf
+          chmod 640 /etc/audit/auditd.conf
+          echo "✓ auditd.conf restored"
+      fi
+
+      if [ -f "$BACKUP_DIR/audit.rules" ]; then
+          echo "Restoring /etc/audit/rules.d/audit.rules..."
+          cp "$BACKUP_DIR/audit.rules" /etc/audit/rules.d/audit.rules
+          chmod 640 /etc/audit/rules.d/audit.rules
+          echo "Restarting auditd..."
+          service auditd restart
+          echo "✓ Audit rules restored"
+      fi
+      {% endif %}
+
+      echo ""
+      echo "=========================================="
+      echo "Restore Complete"
+      echo "=========================================="
+      echo "All configurations have been restored from backup."
+      echo ""
+      echo "Verification steps:"
+      echo "1. Test SSH access in a new terminal"
+      echo "2. Test sudo: sudo -l"
+      {% if security_phase_mfa | default(false) %}
+      echo "3. MFA should be disabled (restored to pre-MFA state)"
+      {% endif %}
+      echo ""
+      echo "If you still cannot access the system:"
+      echo "- Use console access"
+      echo "- Boot into single-user mode"
+      echo "- Contact system administrator"
+      echo "=========================================="
+    mode: '0700'
+
+- name: Display backup summary
+  debug:
+    msg: |
+      Backup created successfully:
+      - Location: {{ security_backup_dir }}
+      - Manifest: {{ security_backup_dir }}/BACKUP_MANIFEST.txt
+      - Restore script: {{ security_backup_dir }}/restore.sh
+
+      To restore manually:
+        sudo bash {{ security_backup_dir }}/restore.sh

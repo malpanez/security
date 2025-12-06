@@ -1,0 +1,93 @@
+---
+argument_specs:
+  main:
+    short_description: Create and secure service accounts for SFTP and rsync transfers
+    description:
+      - Create restricted service accounts with no interactive shell
+      - Configure SFTP with chroot jails
+      - Configure rsync with restricted command execution
+      - Generate SSH authorized_keys with command restrictions
+      - Integrate with SSH Match blocks
+    author: Miguel Alpañez
+    options:
+      service_accounts_transfer_accounts:
+        description:
+          - List of service accounts to create and configure
+        type: list
+        elements: dict
+        default:
+          - name: sftp_svc
+            shell: /usr/sbin/nologin
+            home: /srv/sftp_svc
+            sftp_only: true
+            chroot: /srv/sftp_svc
+            allow_from: []
+            command: internal-sftp
+            keys: []
+            match_extra:
+              - "AuthorizedKeysFile .ssh/authorized_keys"
+          - name: rsync_svc
+            shell: /usr/sbin/nologin
+            home: /srv/rsync_svc
+            rsync_only: true
+            allow_from: []
+            command: "/usr/bin/rrsync /srv/rsync_svc"
+            keys: []
+            match_extra: []
+        options:
+          name:
+            description: Unix username for service account
+            type: str
+            required: true
+          shell:
+            description: Login shell (should be /usr/sbin/nologin for security)
+            type: str
+            default: /usr/sbin/nologin
+          home:
+            description: Home directory path
+            type: str
+            required: true
+          sftp_only:
+            description: Restrict to SFTP access only
+            type: bool
+            default: false
+          rsync_only:
+            description: Restrict to rsync access only
+            type: bool
+            default: false
+          chroot:
+            description: Chroot directory for SFTP
+            type: str
+            required: false
+          allow_from:
+            description: List of IP addresses/networks allowed to connect
+            type: list
+            elements: str
+            default: []
+          command:
+            description: Forced command to execute
+            type: str
+            required: false
+          keys:
+            description: List of SSH public keys for authorized_keys
+            type: list
+            elements: str
+            default: []
+          match_extra:
+            description: Extra SSH Match block directives
+            type: list
+            elements: str
+            default: []
+
+      service_accounts_transfer_authorized_keys:
+        description:
+          - Dictionary of username to authorized_keys configuration
+        type: dict
+        default: {}
+
+      service_accounts_transfer_force_command:
+        description:
+          - Force command execution for all service accounts
+          - Enhances security by restricting commands
+        type: bool
+        default: true

@@ -13,7 +13,7 @@
   tags: [cis_review]
 
 - name: "Cis Review | Check sudoers use_pty"
-  ansible.builtin.command: "grep -E '^Defaults.*use_pty' /etc/sudoers /etc/sudoers.d/*"
+  ansible.builtin.command: "grep -E '^Defaults.*use_pty' {{ cis_baseline_sudoers_path }} {{ cis_baseline_sudoers_dir }}/*"
   register: cis_baseline_sudo_use_pty
   changed_when: false
   failed_when: false

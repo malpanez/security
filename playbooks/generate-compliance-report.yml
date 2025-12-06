@@ -1,0 +1,346 @@
+---
+# Compliance Report Generator
+# Generates comprehensive compliance evidence for auditors
+# Outputs: HTML, JSON, Markdown formats
+
+- name: Generate Compliance Evidence Report
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    compliance_output_dir: "{{ playbook_dir }}/../compliance-reports"
+    compliance_timestamp: "{{ ansible_date_time.epoch }}"
+    compliance_frameworks:
+      - soc2
+      - pci-dss
+      - hipaa
+      - cis
+
+  pre_tasks:
+    - name: Create compliance output directory
+      file:
+        path: "{{ compliance_output_dir }}"
+        state: directory
+        mode: '0750'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Display report generation header
+      debug:
+        msg: |
+          ========================================
+          COMPLIANCE EVIDENCE COLLECTION
+          ========================================
+          Generating evidence for: {{ compliance_frameworks | join(', ') }}
+          Output: {{ compliance_output_dir }}
+          ========================================
+
+  tasks:
+    # ============================================
+    # Collect SSH Configuration Evidence
+    # ============================================
+    - name: Collect SSH configuration
+      slurp:
+        src: /etc/ssh/sshd_config
+      register: sshd_config_content
+
+    - name: Test SSH configuration
+      command: sshd -T
+      register: sshd_test_config
+      changed_when: false
+
+    - name: Get SSH daemon version
+      shell: ssh -V 2>&1
+      register: ssh_version
+      changed_when: false
+
+    # ============================================
+    # Collect Sudoers Configuration Evidence
+    # ============================================
+    - name: Validate sudoers syntax
+      command: visudo -c
+      register: sudoers_validation
+      changed_when: false
+
+    - name: List sudoers.d files
+      find:
+        paths: /etc/sudoers.d
+        file_type: file
+      register: sudoers_d_files
+
+    # ============================================
+    # Collect PAM Configuration Evidence
+    # ============================================
+    - name: Collect PAM SSH configuration
+      slurp:
+        src: /etc/pam.d/sshd
+      register: pam_sshd_config
+      failed_when: false
+
+    - name: Check for MFA modules
+      shell: grep -E "pam_u2f|pam_google_authenticator" /etc/pam.d/sshd || echo "none"
+      register: pam_mfa_check
+      changed_when: false
+
+    # ============================================
+    # Collect SELinux Evidence (RHEL)
+    # ============================================
+    - name: Get SELinux status
+      command: getenforce
+      register: selinux_status
+      changed_when: false
+      failed_when: false
+      when: ansible_os_family == 'RedHat'
+
+    - name: Get SELinux denials (last 100)
+      shell: ausearch -m avc -ts recent 2>/dev/null | tail -100 || echo "none"
+      register: selinux_denials
+      changed_when: false
+      when: ansible_os_family == 'RedHat'
+
+    # ============================================
+    # Collect Audit Log Evidence
+    # ============================================
+    - name: Check auditd status
+      command: systemctl status auditd
+      register: auditd_status
+      changed_when: false
+      failed_when: false
+
+    - name: Get loaded audit rules
+      command: auditctl -l
+      register: audit_rules
+      changed_when: false
+      failed_when: false
+
+    # ============================================
+    # Collect User/Group Evidence
+    # ============================================
+    - name: List users with UID >= 1000
+      shell: |
+        getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 {print $1":"$3":"$6":"$7}'
+      register: user_list
+      changed_when: false
+
+    - name: List sudo-capable users
+      shell: |
+        getent group sudo wheel 2>/dev/null | cut -d: -f4 | tr ',' '\n' | sort -u
+      register: sudo_users
+      changed_when: false
+
+    # ============================================
+    # Collect Network Configuration Evidence
+    # ============================================
+    - name: Get listening ports
+      shell: ss -tuln | grep LISTEN
+      register: listening_ports
+      changed_when: false
+
+    - name: Get firewall status
+      command: "{{ 'firewall-cmd --list-all' if ansible_os_family == 'RedHat' else 'ufw status verbose' }}"
+      register: firewall_status
+      changed_when: false
+      failed_when: false
+
+    # ============================================
+    # Collect Package Evidence
+    # ============================================
+    - name: Get security-related packages
+      package_facts:
+        manager: auto
+
+    - name: Extract security packages
+      set_fact:
+        security_packages:
+          openssh: "{{ packages['openssh-server'] | default(packages['openssh'] | default({'version': 'not installed'})) }}"
+          sudo: "{{ packages['sudo'] | default({'version': 'not installed'}) }}"
+          auditd: "{{ packages['audit'] | default(packages['auditd'] | default({'version': 'not installed'})) }}"
+          selinux: "{{ packages['selinux-policy'] | default({'version': 'N/A'}) }}"
+
+  post_tasks:
+    # ============================================
+    # Generate JSON Report
+    # ============================================
+    - name: Generate JSON compliance report
+      copy:
+        dest: "{{ compliance_output_dir }}/{{ inventory_hostname }}-{{ compliance_timestamp }}.json"
+        content: |
+          {
+            "metadata": {
+              "hostname": "{{ inventory_hostname }}",
+              "fqdn": "{{ ansible_fqdn | default('N/A') }}",
+              "timestamp": "{{ ansible_date_time.iso8601 }}",
+              "generated_by": "malpanez.security v1.0.0",
+              "auditor": "{{ lookup('env', 'USER') }}",
+              "frameworks": {{ compliance_frameworks | to_json }}
+            },
+            "system": {
+              "os": "{{ ansible_distribution }} {{ ansible_distribution_version }}",
+              "kernel": "{{ ansible_kernel }}",
+              "architecture": "{{ ansible_architecture }}",
+              "python": "{{ ansible_python_version }}"
+            },
+            "ssh": {
+              "version": "{{ ssh_version.stdout | default('unknown') }}",
+              "config_valid": {{ sshd_test_config.rc == 0 }},
+              "password_auth": {{ 'PasswordAuthentication yes' in sshd_config_content['content'] | b64decode }},
+              "root_login": {{ 'PermitRootLogin yes' in sshd_config_content['content'] | b64decode }},
+              "pubkey_auth": {{ 'PubkeyAuthentication yes' in sshd_config_content['content'] | b64decode | default(true) }}
+            },
+            "sudo": {
+              "config_valid": {{ sudoers_validation.rc == 0 }},
+              "modular_config": {{ sudoers_d_files.matched > 0 }},
+              "sudoers_d_count": {{ sudoers_d_files.matched }},
+              "sudo_users": {{ sudo_users.stdout_lines | to_json }}
+            },
+            "mfa": {
+              "enabled": {{ 'pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout }},
+              "methods": "{{ pam_mfa_check.stdout }}"
+            },
+            "selinux": {
+              "available": {{ ansible_os_family == 'RedHat' }},
+              "status": "{{ selinux_status.stdout | default('N/A') }}",
+              "recent_denials": {{ selinux_denials.stdout_lines | length if ansible_os_family == 'RedHat' else 0 }}
+            },
+            "audit": {
+              "enabled": {{ audit_rules.rc == 0 }},
+              "rules_count": {{ audit_rules.stdout_lines | length if audit_rules.rc == 0 else 0 }}
+            },
+            "users": {
+              "human_users": {{ user_list.stdout_lines | length }},
+              "sudo_users": {{ sudo_users.stdout_lines | length }}
+            },
+            "network": {
+              "listening_ports": {{ listening_ports.stdout_lines | length }},
+              "firewall_active": {{ firewall_status.rc == 0 }}
+            },
+            "packages": {
+              "openssh_version": "{{ security_packages.openssh.version | default('N/A') }}",
+              "sudo_version": "{{ security_packages.sudo.version | default('N/A') }}",
+              "auditd_version": "{{ security_packages.auditd.version | default('N/A') }}"
+            }
+          }
+        mode: '0640'
+      delegate_to: localhost
+
+    # ============================================
+    # Generate Markdown Report
+    # ============================================
+    - name: Generate Markdown compliance report
+      copy:
+        dest: "{{ compliance_output_dir }}/{{ inventory_hostname }}-{{ compliance_timestamp }}.md"
+        content: |
+          # Compliance Evidence Report
+
+          ## System Information
+
+          - **Hostname**: {{ inventory_hostname }}
+          - **FQDN**: {{ ansible_fqdn | default('N/A') }}
+          - **OS**: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          - **Kernel**: {{ ansible_kernel }}
+          - **Generated**: {{ ansible_date_time.iso8601 }}
+          - **Frameworks**: {{ compliance_frameworks | join(', ') }}
+
+          ## SSH Hardening
+
+          | Control | Status | Details |
+          |---------|--------|---------|
+          | SSH Version | {{ ssh_version.stdout | default('unknown') }} | - |
+          | Config Valid | {{ '✓ Pass' if sshd_test_config.rc == 0 else '✗ Fail' }} | - |
+          | Password Auth | {{ '✗ Disabled' if 'PasswordAuthentication no' in sshd_config_content['content'] | b64decode else '⚠️  Enabled' }} | PCI-DSS 8.2.1 |
+          | Root Login | {{ '✗ Disabled' if 'PermitRootLogin no' in sshd_config_content['content'] | b64decode else '⚠️  Enabled' }} | CIS 5.2.10 |
+          | Pubkey Auth | {{ '✓ Enabled' if 'PubkeyAuthentication yes' in sshd_config_content['content'] | b64decode or 'PubkeyAuthentication' not in sshd_config_content['content'] | b64decode else '✗ Disabled' }} | PCI-DSS 8.3 |
+
+          ## Sudo Configuration
+
+          | Control | Status | Details |
+          |---------|--------|---------|
+          | Syntax Valid | {{ '✓ Pass' if sudoers_validation.rc == 0 else '✗ Fail' }} | - |
+          | Modular Config | {{ '✓ Yes' if sudoers_d_files.matched > 0 else '○ No' }} | Using /etc/sudoers.d/ |
+          | Sudo Users | {{ sudo_users.stdout_lines | length }} | - |
+
+          ## Multi-Factor Authentication
+
+          | Control | Status | Details |
+          |---------|--------|---------|
+          | MFA Enabled | {{ '✓ Yes' if ('pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout) else '○ No' }} | PCI-DSS 8.3, SOC2 CC6.1 |
+          | Methods | {{ pam_mfa_check.stdout if pam_mfa_check.stdout != 'none' else 'None configured' }} | - |
+
+          {% if ansible_os_family == 'RedHat' %}
+          ## SELinux
+
+          | Control | Status | Details |
+          |---------|--------|---------|
+          | SELinux Status | {{ selinux_status.stdout | default('N/A') }} | NIST 800-53 AC-3 |
+          | Recent Denials | {{ selinux_denials.stdout_lines | length }} | Last 100 entries |
+          {% endif %}
+
+          ## Audit Logging
+
+          | Control | Status | Details |
+          |---------|--------|---------|
+          | Auditd Enabled | {{ '✓ Yes' if audit_rules.rc == 0 else '○ No' }} | PCI-DSS 10.2, SOC2 CC7.2 |
+          | Active Rules | {{ audit_rules.stdout_lines | length if audit_rules.rc == 0 else 0 }} | - |
+
+          ## User Management
+
+          | Metric | Count | Details |
+          |--------|-------|---------|
+          | Human Users | {{ user_list.stdout_lines | length }} | UID >= 1000 |
+          | Sudo Users | {{ sudo_users.stdout_lines | length }} | Members of sudo/wheel |
+
+          ## Network Security
+
+          | Control | Status | Details |
+          |---------|--------|---------|
+          | Listening Ports | {{ listening_ports.stdout_lines | length }} | - |
+          | Firewall Active | {{ '✓ Yes' if firewall_status.rc == 0 else '○ No' }} | - |
+
+          ## Installed Packages
+
+          - **OpenSSH**: {{ security_packages.openssh.version | default('N/A') }}
+          - **Sudo**: {{ security_packages.sudo.version | default('N/A') }}
+          - **Auditd**: {{ security_packages.auditd.version | default('N/A') }}
+
+          ## Compliance Mapping
+
+          ### SOC 2 Type II
+
+          - **CC6.1** (Logical Access) - MFA: {{ '✓' if ('pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout) else '✗' }}
+          - **CC6.2** (Access Removal) - Audit: {{ '✓' if audit_rules.rc == 0 else '✗' }}
+          - **CC7.2** (Logging) - Auditd: {{ '✓' if audit_rules.rc == 0 else '✗' }}
+
+          ### PCI-DSS v4.0
+
+          - **8.2.1** (MFA for admin) - MFA: {{ '✓' if ('pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout) else '✗' }}
+          - **8.3** (Strong cryptography) - SSH keys: {{ '✓' if 'PasswordAuthentication no' in sshd_config_content['content'] | b64decode else '✗' }}
+          - **10.2** (Audit trails) - Auditd: {{ '✓' if audit_rules.rc == 0 else '✗' }}
+
+          ### CIS Benchmark
+
+          - **5.2.10** (Disable root login) - {{ '✓' if 'PermitRootLogin no' in sshd_config_content['content'] | b64decode else '✗' }}
+          - **5.2.4** (Disable password auth) - {{ '✓' if 'PasswordAuthentication no' in sshd_config_content['content'] | b64decode else '✗' }}
+
+          ---
+
+          **Report generated by**: malpanez.security collection v1.0.0
+          **Generated at**: {{ ansible_date_time.iso8601 }}
+        mode: '0640'
+      delegate_to: localhost
+
+    - name: Display completion summary
+      debug:
+        msg: |
+          ========================================
+          COMPLIANCE REPORT GENERATED
+          ========================================
+
+          Reports created:
+          - JSON: {{ compliance_output_dir }}/{{ inventory_hostname }}-{{ compliance_timestamp }}.json
+          - Markdown: {{ compliance_output_dir }}/{{ inventory_hostname }}-{{ compliance_timestamp }}.md
+
+          Frameworks covered:
+          {{ compliance_frameworks | join('\n          ') }}
+
+          ========================================

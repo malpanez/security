@@ -1,19 +1,31 @@
 ---
-- name: "Skip audit logging when disabled"
-  ansible.builtin.meta: end_play
-  when: not audit_logging_enabled
+- name: "Load OS-specific variables"
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
 
-- name: "Include common audit logging tasks"
-  ansible.builtin.include_tasks: common.yml
-  when: security_mode | default('enforce') == 'enforce'
-  tags: [enforce]
+- name: "Apply audit logging controls when enabled"
+  when:
+    - audit_logging_enabled
+    - security_mode | default('enforce') == 'enforce'
+  block:
+    - name: "Include common audit logging tasks"
+      ansible.builtin.include_tasks: common.yml
+      tags: [enforce]
 
-- name: "Include platform-specific audit logging tasks"
-  ansible.builtin.set_fact:
-    audit_logging_platform_task: "{{ lookup('ansible.builtin.first_found', params={'files': [ansible_os_family | lower ~ '.yml'], 'paths': [role_path ~ '/tasks']}, errors='ignore') }}"
-  tags: [enforce]
+    - name: "Include platform-specific audit logging tasks"
+      ansible.builtin.set_fact:
+        audit_logging_platform_task: >-
+          {{
+            lookup(
+              'ansible.builtin.first_found',
+              params={'files': [ansible_os_family ~ '.yml'], 'paths': [role_path ~ '/tasks']},
+              errors='ignore'
+            )
+          }}
+      tags: [enforce]
 
-- name: "Platform-specific audit logging tasks"
-  ansible.builtin.include_tasks: "{{ audit_logging_platform_task }}"
-  when: audit_logging_platform_task is not none and security_mode | default('enforce') == 'enforce'
-  tags: [enforce]
+    - name: "Platform-specific audit logging tasks"
+      ansible.builtin.include_tasks: "{{ audit_logging_platform_task }}"
+      when:
+        - audit_logging_platform_task is not none
+        - audit_logging_platform_task | length > 0
+      tags: [enforce]

@@ -11,6 +11,10 @@ galaxy_info:
     - name: Ubuntu
       versions:
         - jammy
+    - name: EL
+      versions:
+        - "8"
+        - "9"
   galaxy_tags:
     - security
     - ssh

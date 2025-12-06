@@ -1,0 +1,141 @@
+---
+# Production-specific security settings
+# CONSERVATIVE approach - never break production
+
+# ============================================
+# PRODUCTION PHASE CONTROL
+# ============================================
+
+# Start at Phase 1, progress slowly
+current_security_phase: 1
+
+# Enforce mode (but controlled by phase)
+security_mode: enforce
+
+# ============================================
+# PRODUCTION SAFETY
+# ============================================
+
+# CRITICAL: Preserve existing sudoers
+sudoers_baseline_preserve_main: true
+sudoers_baseline_manage_main_file: false
+
+# Gradual rollout - 10% at a time
+rollout_percentage: "10%"
+max_fail_percentage: 5
+
+# Maintenance window REQUIRED
+security_require_maintenance_window: true
+security_maintenance_day: Saturday
+security_maintenance_hour_start: 2
+security_maintenance_hour_end: 6
+
+# Automatic rollback on any failure
+security_production_rollback_on_failure: true
+
+# ============================================
+# PRODUCTION SSH SETTINGS
+# ============================================
+
+# Slightly more lenient for production stability
+sshd_hardening_max_auth_tries: 4
+sshd_hardening_login_grace_time: 60
+
+# ============================================
+# PRODUCTION PAM MFA
+# ============================================
+
+# Start disabled, enable only in Phase 3
+pam_mfa_enabled: "{{ current_security_phase >= 3 }}"
+
+# CRITICAL: Comprehensive service account list for production
+pam_mfa_service_accounts:
+  # Automation
+  - ansible
+  - awx
+  - tower
+  - ci
+  - jenkins
+  - gitlab-runner
+  - github-runner
+  - bitbucket-runner
+  # Monitoring
+  - monitoring
+  - nagios
+  - zabbix
+  - icinga
+  - prometheus
+  - grafana
+  - datadog
+  - newrelic
+  - splunk
+  # Backup
+  - backup
+  - rsync
+  - sftp
+  - bacula
+  - bareos
+  - veeam
+  # Database
+  - postgres
+  - mysql
+  - mongodb
+  # Application-specific (ADD YOURS HERE)
+  - app_service
+  - api_service
+
+# ============================================
+# PRODUCTION SELINUX
+# ============================================
+
+# Only enable in Phase 4
+selinux_enforcement_enabled: "{{ current_security_phase >= 4 }}"
+
+# Start permissive, move to enforcing after 1 week validation
+selinux_enforcement_mode: "{{ 'enforcing' if selinux_enforcement_production_ready | default(false) else 'permissive' }}"
+
+# ============================================
+# PRODUCTION AUDIT LOGGING
+# ============================================
+
+# Enable in Phase 5
+audit_logging_enabled: "{{ current_security_phase >= 5 }}"
+
+# Conservative logging in production
+audit_logging_verbose: false
+audit_logging_log_commands: true
+
+# ============================================
+# PRODUCTION COMPLIANCE
+# ============================================
+
+compliance_evidence_output_path: /var/log/security-compliance
+compliance_evidence_frameworks:
+  - soc2
+  - pci-dss  # If applicable
+
+# ============================================
+# PRODUCTION-SPECIFIC SUDO GROUPS
+# ============================================
+
+sudoers_baseline_groups:
+  linux_admins:
+    require_password: true
+    commands:
+      - "/usr/bin/systemctl restart *"
+      - "/usr/bin/systemctl status *"
+      - "/usr/bin/journalctl *"
+
+  devops:
+    require_password: false
+    commands:
+      - "/usr/bin/docker ps"
+      - "/usr/bin/docker logs *"
+      - "/usr/bin/kubectl get *"
+      - "/usr/bin/kubectl describe *"
+
+  monitoring:
+    require_password: false
+    commands:
+      - "/usr/bin/systemctl status *"
+      - "/usr/bin/journalctl *"
