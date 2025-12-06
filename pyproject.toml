@@ -106,6 +106,8 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]  # assert allowed in tests
+"**/tests/**" = ["S101"]  # assert allowed in molecule tests
+"**/test_*.py" = ["S101"]  # assert allowed in test files
 
 [tool.pytest.ini_options]
 minversion = "8.0"
