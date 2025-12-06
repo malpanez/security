@@ -11,9 +11,9 @@
   become: true
   gather_facts: true
   serial: 1 # One at a time for staging validation
-  rollout_max_fail_percentage: 0 # Stop immediately on any failure
 
   vars:
+    rollout_max_fail_percentage: "{{ rollout_max_fail_percentage | default(0) }}" # Stop immediately on any failure
     security_mode: enforce
 
     # Enable all phases for full testing
