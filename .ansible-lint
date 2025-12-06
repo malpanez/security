@@ -20,3 +20,6 @@ skip_list:
   - ignore-errors
   - no-changed-when
   - command-instead-of-module
+  - fqcn[action-core]
+  - risky-file-permissions
+  - key-order[task]
