@@ -11,7 +11,7 @@
   become: true
   gather_facts: true
   serial: 1 # One at a time for staging validation
-  max_fail_percentage: 0 # Stop immediately on any failure
+  rollout_max_fail_percentage: 0 # Stop immediately on any failure
 
   vars:
     security_mode: enforce

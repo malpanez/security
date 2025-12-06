@@ -22,7 +22,7 @@ sudoers_baseline_manage_main_file: false
 
 # Gradual rollout - 10% at a time
 rollout_percentage: 10%
-max_fail_percentage: 5
+rollout_max_fail_percentage: 5
 
 # Maintenance window REQUIRED
 security_require_maintenance_window: true

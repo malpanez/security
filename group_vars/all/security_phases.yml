@@ -181,7 +181,7 @@ cis_baseline_mode: "{{ security_mode }}" # Follows global security_mode
 rollout_percentage: 10% # Process 10% of hosts at a time
 
 # Max failure percentage before stopping
-max_fail_percentage: 5
+rollout_max_fail_percentage: 5
 
 # Maintenance window requirement
 security_require_maintenance_window: true

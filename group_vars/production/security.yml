@@ -145,7 +145,7 @@ cis_baseline_mode: "{{ security_mode }}"
 rollout_percentage: 10%
 
 # Stop if more than 5% fail
-max_fail_percentage: 5
+rollout_max_fail_percentage: 5
 
 # REQUIRE maintenance window
 security_require_maintenance_window: true

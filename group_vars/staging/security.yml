@@ -134,7 +134,7 @@ cis_baseline_mode: enforce
 
 # Process one at a time for careful validation
 rollout_percentage: "1" # Serial processing
-max_fail_percentage: 0 # Stop immediately on failure
+rollout_max_fail_percentage: 0 # Stop immediately on failure
 
 # Flexible maintenance window for staging
 security_require_maintenance_window: false

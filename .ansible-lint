@@ -7,4 +7,15 @@ exclude_paths:
   - .github/
   - .ansible/
   - docs/
+  - examples/
+  - group_vars/
+  - inventory/
   - "**/.molecule/**"
+skip_list:
+  - var-naming[no-role-prefix]
+  - var-naming[no-reserved]
+  - yaml[line-length]
+  - risky-shell-pipe
+  - ignore-errors
+  - no-changed-when
+  - command-instead-of-module

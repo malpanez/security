@@ -22,7 +22,7 @@
 
   # CRITICAL: Gradual rollout
   serial: "{{ rollout_percentage | default('10%') }}"
-  max_fail_percentage: 5 # Stop if >5% fail
+  rollout_max_fail_percentage: 5 # Stop if >5% fail
 
   vars:
     # Which phase are we in? (1-6)

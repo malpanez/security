@@ -11,5 +11,4 @@ galaxy_info:
       versions: [bionic, focal, jammy]
     - name: EL
       versions: ["7", "8", "9"]
-dependencies:
-  - role: security_capabilities
+dependencies: []

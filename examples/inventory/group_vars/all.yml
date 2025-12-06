@@ -19,6 +19,8 @@ current_security_phase: 1
 # Always review first
 security_mode: review
 
+# Rollout failure threshold
+rollout_max_fail_percentage: 5
 # ============================================
 # SSH HARDENING (Phase 1)
 # ============================================
