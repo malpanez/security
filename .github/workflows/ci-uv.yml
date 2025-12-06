@@ -32,6 +32,9 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ env.PYTHON_VERSION }}
 
+      - name: Create virtualenv
+        run: uv venv
+
       - name: Install dependencies (pinned via requirements-dev.txt)
         run: |
           uv pip install -r requirements-dev.txt
@@ -81,6 +84,9 @@ jobs:
 
       - name: Set up Python
         run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Create virtualenv
+        run: uv venv
 
       - name: Install dependencies (pinned via requirements-dev.txt)
         run: |
