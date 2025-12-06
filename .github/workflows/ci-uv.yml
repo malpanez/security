@@ -41,19 +41,28 @@ jobs:
 
       - name: Install Ansible Galaxy collections
         run: |
-          uv run ansible-galaxy collection install -r requirements.yml
+          source .venv/bin/activate
+          ansible-galaxy collection install -r requirements.yml
 
       - name: Run ansible-lint
-        run: uv run ansible-lint --profile production
+        run: |
+          source .venv/bin/activate
+          ansible-lint --profile production
 
       - name: Run yamllint
-        run: uv run yamllint -c .yamllint.yml .
+        run: |
+          source .venv/bin/activate
+          yamllint -c .yamllint.yml .
 
       - name: Run ruff check
-        run: uv run ruff check .
+        run: |
+          source .venv/bin/activate
+          ruff check .
 
       - name: Run ruff format check
-        run: uv run ruff format --check .
+        run: |
+          source .venv/bin/activate
+          ruff format --check .
 
   test-roles:
     name: Test ${{ matrix.role }}
@@ -93,12 +102,15 @@ jobs:
           uv pip install -r requirements-dev.txt
 
       - name: Install Ansible Galaxy collections
-        run: uv run ansible-galaxy collection install -r requirements.yml
+        run: |
+          source .venv/bin/activate
+          ansible-galaxy collection install -r requirements.yml
 
       - name: Run Molecule test
         run: |
+          source .venv/bin/activate
           cd roles/${{ matrix.role }}
-          uv run molecule test
+          molecule test
 
   build:
     name: Build Collection
@@ -116,11 +128,16 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ env.PYTHON_VERSION }}
 
+      - name: Create virtualenv
+        run: uv venv
+
       - name: Install Ansible
         run: uv pip install -r requirements-dev.txt
 
       - name: Build collection
-        run: uv run ansible-galaxy collection build
+        run: |
+          source .venv/bin/activate
+          ansible-galaxy collection build
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
