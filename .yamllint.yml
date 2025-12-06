@@ -1,6 +1,14 @@
 ---
 extends: default
 
+ignore: |
+  .venv/
+  .ansible/
+  ansible_collections/
+  .devcontainer/
+  .github/
+  **/.molecule/
+
 rules:
   line-length:
     max: 120
