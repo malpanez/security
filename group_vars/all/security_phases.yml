@@ -1,0 +1,251 @@
+---
+# Security Phases - Global Configuration
+# This file defines the 6-phase security rollout strategy
+# Copy and customize for specific host groups
+#
+# Usage:
+#   - Set current_security_phase to control which phases are active
+#   - Override in group_vars/production/, group_vars/staging/, etc.
+
+# ========================================
+# PHASE SELECTION
+# ========================================
+
+# Current phase (0-6)
+# 0 = Discovery/Review only (no changes)
+# 1 = SSH Hardening
+# 2 = SSH + Sudoers
+# 3 = SSH + Sudoers + MFA (most critical)
+# 4 = SSH + Sudoers + MFA + SELinux
+# 5 = SSH + Sudoers + MFA + SELinux + Audit
+# 6 = Full enforcement (all phases)
+current_security_phase: 0
+
+# ========================================
+# PHASE 0: DISCOVERY & REVIEW
+# ========================================
+
+# Review mode - no changes
+security_mode: "{{ 'review' if current_security_phase == 0 else 'enforce' }}"
+
+# Review output directory
+security_review_output: /tmp/security-review
+
+# ========================================
+# PHASE CONTROLS (Auto-calculated)
+# ========================================
+
+# These are automatically set based on current_security_phase
+# Do not modify unless you want custom phase combinations
+security_phase_ssh_hardening: "{{ current_security_phase >= 1 }}"
+security_phase_sudoers: "{{ current_security_phase >= 2 }}"
+security_phase_mfa: "{{ current_security_phase >= 3 }}"
+security_phase_selinux: "{{ current_security_phase >= 4 }}"
+security_phase_audit: "{{ current_security_phase >= 5 }}"
+
+# ========================================
+# PHASE 1: SSH HARDENING
+# ========================================
+
+# SSH hardening settings (applied when phase >= 1)
+sshd_hardening_permit_root_login: false
+sshd_hardening_password_authentication: false
+sshd_hardening_pubkey_authentication: true
+sshd_hardening_max_auth_tries: 4
+sshd_hardening_log_level: VERBOSE
+sshd_hardening_x11_forwarding: false
+sshd_hardening_use_pam: true
+
+# Modern SSH ciphers
+sshd_hardening_ciphers:
+  - chacha20-poly1305@openssh.com
+  - aes256-gcm@openssh.com
+  - aes128-gcm@openssh.com
+
+sshd_hardening_macs:
+  - hmac-sha2-512-etm@openssh.com
+  - hmac-sha2-256-etm@openssh.com
+
+sshd_hardening_kex_algorithms:
+  - curve25519-sha256
+  - curve25519-sha256@libssh.org
+  - diffie-hellman-group-exchange-sha256
+
+# ========================================
+# PHASE 2: SUDOERS BASELINE
+# ========================================
+
+# Sudoers configuration (applied when phase >= 2)
+# IMPORTANT: Default is to preserve main file (production-safe)
+sudoers_baseline_preserve_main: true
+sudoers_baseline_manage_main_file: false  # Don't touch /etc/sudoers
+
+# Sudoers defaults (added to /etc/sudoers.d/)
+sudoers_baseline_defaults:
+  - "use_pty"
+  - "logfile=/var/log/sudo.log"
+  - "!visiblepw"
+  - "always_set_home"
+  - "env_reset"
+
+# Default sudoers groups (customize per environment)
+sudoers_baseline_groups:
+  linux_admins:
+    require_password: true
+    commands:
+      - "/usr/bin/systemctl restart *"
+      - "/usr/bin/systemctl status *"
+      - "/usr/bin/systemctl start *"
+      - "/usr/bin/systemctl stop *"
+      - "/usr/sbin/service *"
+
+# ========================================
+# PHASE 3: MFA (MOST CRITICAL)
+# ========================================
+
+# PAM MFA configuration (applied when phase >= 3)
+pam_mfa_enabled: "{{ current_security_phase >= 3 }}"
+pam_mfa_yubikey_enabled: auto  # Auto-detect based on capabilities
+pam_mfa_totp_enabled: true     # Always enable TOTP as backup
+
+# CRITICAL: Service accounts that bypass MFA
+# Add ALL automation accounts here!
+pam_mfa_service_accounts:
+  - ansible
+  - awx
+  - ci
+  - jenkins
+  - gitlab-runner
+  - github-runner
+  - monitoring
+  - nagios
+  - zabbix
+  - prometheus
+  - grafana
+  - backup
+  - rsync
+  - sftp
+  # Add your specific service accounts here
+
+# MFA security settings
+pam_mfa_require_resident_key: false
+pam_mfa_user_verification: required
+pam_mfa_pin_verification: false
+
+# ========================================
+# PHASE 4: SELINUX ENFORCEMENT
+# ========================================
+
+# SELinux configuration (applied when phase >= 4, RHEL only)
+selinux_enforcement_enabled: "{{ current_security_phase >= 4 }}"
+
+# Start with permissive for first week, then enforcing
+selinux_enforcement_mode: permissive  # Change to 'enforcing' after validation
+
+# SELinux packages
+selinux_enforcement_packages:
+  - policycoreutils
+  - policycoreutils-python-utils
+  - setools-console
+
+selinux_enforcement_restorecon: true
+
+# ========================================
+# PHASE 5: AUDIT LOGGING
+# ========================================
+
+# Audit logging configuration (applied when phase >= 5)
+audit_logging_enabled: "{{ current_security_phase >= 5 }}"
+audit_logging_verbose: false  # Conservative in production
+audit_logging_log_commands: true
+
+# ========================================
+# COMPLIANCE & EVIDENCE
+# ========================================
+
+# Always collect compliance evidence (read-only)
+compliance_evidence_output_path: "{{ security_review_output }}/compliance"
+compliance_evidence_frameworks:
+  - soc2
+  - pci-dss
+
+# CIS Baseline
+cis_baseline_enabled: true
+cis_baseline_mode: "{{ security_mode }}"  # Follows global security_mode
+
+# ========================================
+# ROLLOUT CONTROLS
+# ========================================
+
+# Gradual rollout percentage
+rollout_percentage: "10%"  # Process 10% of hosts at a time
+
+# Max failure percentage before stopping
+max_fail_percentage: 5
+
+# Maintenance window requirement
+security_require_maintenance_window: true
+security_maintenance_day: Saturday
+security_maintenance_hour_start: 2
+security_maintenance_hour_end: 6
+
+# Automatic rollback on failure
+security_staging_rollback_on_failure: true
+security_production_rollback_on_failure: true
+
+# ========================================
+# BACKUP CONFIGURATION
+# ========================================
+
+# Backup settings
+security_backup_enabled: true
+security_backup_base_dir: /root
+
+# ========================================
+# PHASE TIMELINE (Reference)
+# ========================================
+
+# Recommended timeline for production rollout:
+#
+# Phase 0 (Week 1-2):
+#   - Discovery and review
+#   - current_security_phase: 0
+#   - Collect compliance evidence
+#   - Identify gaps
+#
+# Phase 1 (Week 3-4):
+#   - SSH hardening
+#   - current_security_phase: 1
+#   - Disable password authentication
+#   - Test in staging first
+#
+# Phase 2 (Week 5-6):
+#   - Sudoers modular
+#   - current_security_phase: 2
+#   - Migrate to /etc/sudoers.d/
+#   - Keep main file untouched
+#
+# Phase 3 (Week 7-10):
+#   - MFA enablement (MOST CRITICAL)
+#   - current_security_phase: 3
+#   - EXTENSIVE testing required
+#   - Service account bypass validation
+#   - User training/provisioning
+#
+# Phase 4 (Week 11-12):
+#   - SELinux enforcement
+#   - current_security_phase: 4
+#   - Week 1: Permissive mode
+#   - Week 2: Enforcing mode (after validation)
+#
+# Phase 5 (Week 13-14):
+#   - Audit logging
+#   - current_security_phase: 5
+#   - Enable comprehensive logging
+#   - Monitor disk space
+#
+# Phase 6 (Week 15+):
+#   - Full enforcement
+#   - current_security_phase: 6
+#   - All phases active
+#   - Continuous monitoring

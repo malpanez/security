@@ -1,8 +1,0 @@
----
-- name: Converge
-  hosts: all
-  become: true
-  vars:
-    security_capabilities_force_openssh_version: "8.4"
-  roles:
-    - role: malpanez.security.security_capabilities

@@ -1,0 +1,182 @@
+---
+# Security Enforcement - New Servers (Aggressive)
+# Full security baseline for newly provisioned servers
+# No legacy compatibility concerns - apply best practices immediately
+#
+# Usage:
+#   ansible-playbook playbooks/enforce-new-servers.yml -i inventory --limit new_servers
+
+- name: Security Enforcement - New Servers (Full Baseline)
+  hosts: new_servers
+  become: true
+  gather_facts: true
+  serial: 5  # Process 5 at a time
+
+  vars:
+    # Aggressive enforcement for new servers
+    security_mode: enforce
+
+    # All phases enabled
+    security_phase_ssh_hardening: true
+    security_phase_sudoers: true
+    security_phase_mfa: true
+    security_phase_selinux: true
+    security_phase_audit: true
+
+  pre_tasks:
+    - name: Display enforcement warning
+      debug:
+        msg: |
+          ========================================
+          SECURITY ENFORCEMENT - NEW SERVERS
+          ========================================
+          Target: {{ inventory_hostname }}
+          Mode: ENFORCE (WILL MAKE CHANGES)
+
+          This playbook will:
+          - Apply full security baseline
+          - Configure SSH hardening (disable passwords)
+          - Configure modular sudoers
+          - Enable MFA (if capable)
+          - Enable SELinux enforcing (RHEL)
+          - Enable audit logging
+
+          Backup will be created before changes
+          ========================================
+
+    - name: Backup current configurations
+      include_tasks: ../tasks/backup-configs.yml
+
+    - name: Detect system capabilities
+      include_role:
+        name: security_capabilities
+
+  roles:
+    # Phase 1: SSH Hardening (AGGRESSIVE)
+    - role: sshd_hardening
+      when: security_phase_ssh_hardening
+      vars:
+        # Disable password authentication completely
+        sshd_hardening_password_authentication: false
+        sshd_hardening_permit_root_login: false
+        sshd_hardening_pubkey_authentication: true
+        sshd_hardening_max_auth_tries: 3
+        sshd_hardening_log_level: VERBOSE
+        sshd_hardening_x11_forwarding: false
+        sshd_hardening_use_pam: true
+        # Modern ciphers only
+        sshd_hardening_ciphers:
+          - chacha20-poly1305@openssh.com
+          - aes256-gcm@openssh.com
+          - aes128-gcm@openssh.com
+        sshd_hardening_macs:
+          - hmac-sha2-512-etm@openssh.com
+          - hmac-sha2-256-etm@openssh.com
+
+    # Phase 2: Sudoers Baseline (MODULAR)
+    - role: sudoers_baseline
+      when: security_phase_sudoers
+      vars:
+        # New servers - use modular approach from start
+        sudoers_baseline_preserve_main: false
+        sudoers_baseline_defaults:
+          - "use_pty"
+          - "logfile=/var/log/sudo.log"
+          - "log_output"
+          - "log_input"
+          - "!visiblepw"
+          - "always_set_home"
+          - "env_reset"
+        sudoers_baseline_groups:
+          linux_admins:
+            require_password: true
+            commands:
+              - "/usr/bin/systemctl restart *"
+              - "/usr/bin/systemctl status *"
+              - "/usr/bin/systemctl start *"
+              - "/usr/bin/systemctl stop *"
+          devops:
+            require_password: false
+            commands:
+              - "/usr/bin/docker *"
+              - "/usr/bin/kubectl *"
+
+    # Phase 3: PAM MFA (if capable)
+    - role: pam_mfa
+      when:
+        - security_phase_mfa
+        - security_capabilities_mfa_capable | default(false)
+      vars:
+        pam_mfa_enabled: true
+        pam_mfa_yubikey_enabled: "{{ security_capabilities_yubikey_available | default(false) }}"
+        pam_mfa_totp_enabled: true  # Always enable TOTP as backup
+        # Service accounts bypass MFA
+        pam_mfa_service_accounts:
+          - ansible
+          - ci
+          - jenkins
+          - awx
+          - monitoring
+        pam_mfa_require_resident_key: false
+        pam_mfa_user_verification: required
+
+    # Phase 4: SELinux Enforcement (RHEL-based)
+    - role: selinux_enforcement
+      when:
+        - security_phase_selinux
+        - ansible_os_family == 'RedHat'
+      vars:
+        selinux_enforcement_enabled: true
+        selinux_enforcement_mode: enforcing  # Aggressive on new servers
+
+    # Phase 5: Audit Logging
+    - role: audit_logging
+      when: security_phase_audit
+      vars:
+        audit_logging_enabled: true
+        audit_logging_verbose: true
+        audit_logging_log_commands: true
+
+    # CIS Baseline Enforcement
+    - role: cis_baseline
+      vars:
+        cis_baseline_enabled: true
+        cis_baseline_mode: enforce
+
+  post_tasks:
+    - name: Validate services after enforcement
+      include_tasks: ../tasks/validate-services.yml
+
+    - name: Display enforcement summary
+      debug:
+        msg: |
+          ========================================
+          SECURITY ENFORCEMENT COMPLETE
+          ========================================
+          Host: {{ inventory_hostname }}
+
+          Applied:
+          - SSH Hardening: ✓ (passwords disabled)
+          - Sudoers: ✓ (modular baseline)
+          - PAM MFA: {{ '✓' if (security_phase_mfa and security_capabilities_mfa_capable | default(false)) else '⊘ (not capable)' }}
+          - SELinux: {{ '✓ (enforcing)' if (security_phase_selinux and ansible_os_family == 'RedHat') else '⊘ (not applicable)' }}
+          - Audit Logging: ✓
+
+          Backup location: /root/security-backup-{{ ansible_date_time.epoch }}
+
+          CRITICAL: Verify SSH access before disconnecting!
+          ========================================
+
+    - name: Final access verification reminder
+      debug:
+        msg: |
+          ⚠️  CRITICAL REMINDER ⚠️
+
+          Before closing this session:
+          1. Open a NEW SSH session to verify access
+          2. Test sudo functionality: sudo -l
+          3. If MFA enabled, test MFA login
+
+          If you get locked out:
+          - Use console access
+          - Restore from backup: /root/security-backup-{{ ansible_date_time.epoch }}

@@ -1,0 +1,9 @@
+---
+- name: "Debian | Ensure MFA packages are installed (Debian/Ubuntu)"
+  ansible.builtin.package:
+    name:
+      - "{{ pam_mfa_package_u2f }}"
+      - "{{ pam_mfa_package_totp }}"
+    state: present
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]

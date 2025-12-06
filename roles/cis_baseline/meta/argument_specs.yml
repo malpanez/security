@@ -1,0 +1,70 @@
+---
+argument_specs:
+  main:
+    short_description: Verify and enforce CIS benchmark controls for SSH and sudo
+    description:
+      - Minimal CIS benchmark verification for SSH and sudoers
+      - Can run in review mode (non-destructive audit) or enforce mode
+      - Validates critical security controls
+      - Complementary to other hardening roles
+    author: Miguel Alpañez
+    options:
+      cis_baseline_enabled:
+        description:
+          - Enable CIS baseline verification/enforcement
+          - Default disabled - opt-in for compliance checking
+        type: bool
+        default: false
+
+      cis_baseline_mode:
+        description:
+          - CIS baseline operating mode
+          - C(enforce) - Apply corrections for failing controls
+          - C(review) - Only report on control compliance
+        type: str
+        default: enforce
+        choices:
+          - enforce
+          - review
+
+      cis_baseline_controls:
+        description:
+          - CIS controls to verify/enforce
+          - Organized by service (sshd, sudoers)
+        type: dict
+        default:
+          sshd:
+            - "No PasswordAuthentication"
+            - "PermitRootLogin no"
+            - "MaxAuthTries <=4"
+          sudoers:
+            - "require use_pty"
+            - "logfile configured"
+            - "no NOPASSWD:ALL"
+        options:
+          sshd:
+            description: SSH daemon controls
+            type: list
+            elements: str
+          sudoers:
+            description: Sudoers controls
+            type: list
+            elements: str
+
+      cis_baseline_sshd_config_path:
+        description:
+          - Path to sshd_config file
+        type: str
+        default: /etc/ssh/sshd_config
+
+      cis_baseline_sudoers_path:
+        description:
+          - Path to main sudoers file
+        type: str
+        default: /etc/sudoers
+
+      cis_baseline_sudoers_dir:
+        description:
+          - Path to sudoers.d directory
+        type: str
+        default: /etc/sudoers.d

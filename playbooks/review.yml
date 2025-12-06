@@ -3,11 +3,12 @@
   hosts: all
   become: true
   vars:
+    security_mode: review
     pam_mfa_enabled: false
     selinux_enforcement_enabled: false
     sudoers_baseline_strict: false
   roles:
-    - role: malpanez.security.security_capabilities
+    - role: security_capabilities
       tags: [review]
-    - role: malpanez.security.compliance_evidence
+    - role: compliance_evidence
       tags: [review]

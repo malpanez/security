@@ -13,17 +13,26 @@
   ansible.builtin.set_fact:
     sshd_hardening_resolved_service_name: >-
       {{ 'ssh' if 'ssh.service' in ansible_facts.services else
-         ('sshd' if 'sshd.service' in ansible_facts.services else sshd_hardening_service_name) }}
+         ('sshd' if 'sshd.service' in ansible_facts.services else sshd_service_name) }}
 
 - name: "common | Detect OpenSSH version"
-  ansible.builtin.command: /usr/sbin/sshd -V
+  ansible.builtin.command: "{{ sshd_binary_path }} -V"
   register: sshd_hardening_version_raw
   failed_when: false
   changed_when: false
 
 - name: "common | Derive OpenSSH version string"
   ansible.builtin.set_fact:
-    sshd_hardening_version: "{{ (sshd_hardening_version_raw.stderr | default('')) | regex_search('OpenSSH_([0-9]+\\.[0-9]+)', '\\1') | default([]) | first | default(omit) }}"
+    sshd_hardening_version: >-
+      {{
+        (
+          (sshd_hardening_version_raw.stderr | default(''))
+          | regex_search('OpenSSH_([0-9]+\\.[0-9]+)', '\\1')
+        )
+        or []
+        | first
+        | default(omit)
+      }}
 
 - name: "common | Select algorithm profile"
   ansible.builtin.set_fact:
@@ -58,18 +67,18 @@
 - name: "common | Configure sshd_config"
   ansible.builtin.template:
     src: sshd_config.j2
-    dest: /etc/ssh/sshd_config
+    dest: "{{ sshd_config_path }}"
     owner: root
     group: root
     mode: "0600"
-    validate: "/usr/sbin/sshd -t -f %s"
+    validate: "{{ sshd_binary_path }} -t -f %s"
   notify: Restart sshd
   when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
 - name: "common | Ensure sshd service is enabled and running"
   ansible.builtin.service:
-    name: "{{ sshd_hardening_resolved_service_name | default(sshd_hardening_service_name) }}"
+    name: "{{ sshd_hardening_resolved_service_name | default(sshd_service_name) }}"
     state: started
     enabled: true
   when: security_mode | default('enforce') == 'enforce'

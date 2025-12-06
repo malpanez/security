@@ -1,0 +1,388 @@
+---
+# Pre-flight Validation Playbook
+# Validates system meets requirements before running security hardening
+# ALWAYS run this before enforce mode
+
+- name: Pre-flight Security Checks
+  hosts: all
+  gather_facts: true
+  become: false  # Most checks don't need privilege
+
+  vars:
+    preflight_output: /tmp/preflight-check
+    preflight_failures: []
+    preflight_warnings: []
+
+  pre_tasks:
+    - name: Create preflight output directory
+      file:
+        path: "{{ preflight_output }}"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Display preflight check header
+      debug:
+        msg: |
+          ========================================
+          PRE-FLIGHT SECURITY VALIDATION
+          ========================================
+          Host: {{ inventory_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Ansible: {{ ansible_version.full }}
+          ========================================
+
+  tasks:
+    # ============================================
+    # CRITICAL: Check Ansible Version
+    # ============================================
+    - name: Check Ansible version
+      assert:
+        that:
+          - ansible_version.full is version('2.16.0', '>=')
+        fail_msg: "CRITICAL: Ansible >= 2.16 required. Current: {{ ansible_version.full }}"
+        success_msg: "✓ Ansible version: {{ ansible_version.full }}"
+      delegate_to: localhost
+      run_once: true
+
+    # ============================================
+    # CRITICAL: Check Platform Support
+    # ============================================
+    - name: Check if platform is supported
+      assert:
+        that:
+          - ansible_os_family in ['Debian', 'RedHat']
+        fail_msg: "CRITICAL: Unsupported OS family: {{ ansible_os_family }}"
+        success_msg: "✓ OS family supported: {{ ansible_os_family }}"
+
+    - name: Check Debian version
+      assert:
+        that:
+          - ansible_distribution_major_version | int >= 10
+        fail_msg: "CRITICAL: Debian {{ ansible_distribution_version }} not supported. Need >= 10"
+        success_msg: "✓ Debian version: {{ ansible_distribution_version }}"
+      when: ansible_distribution == 'Debian'
+
+    - name: Check Ubuntu version
+      assert:
+        that:
+          - ansible_distribution_version is version('18.04', '>=')
+        fail_msg: "CRITICAL: Ubuntu {{ ansible_distribution_version }} not supported. Need >= 18.04"
+        success_msg: "✓ Ubuntu version: {{ ansible_distribution_version }}"
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Check RHEL/CentOS version
+      assert:
+        that:
+          - ansible_distribution_major_version | int >= 7
+        fail_msg: "CRITICAL: EL {{ ansible_distribution_major_version }} not supported. Need >= 7"
+        success_msg: "✓ EL version: {{ ansible_distribution_major_version }}"
+      when: ansible_os_family == 'RedHat'
+
+    # ============================================
+    # CRITICAL: Check Python Version
+    # ============================================
+    - name: Check Python version
+      assert:
+        that:
+          - ansible_python_version is version('3.6', '>=')
+        fail_msg: "CRITICAL: Python >= 3.6 required. Current: {{ ansible_python_version }}"
+        success_msg: "✓ Python version: {{ ansible_python_version }}"
+
+    # ============================================
+    # CRITICAL: Check sudo/become
+    # ============================================
+    - name: Test become/sudo access
+      command: id -u
+      become: true
+      register: become_test
+      changed_when: false
+
+    - name: Verify become works
+      assert:
+        that:
+          - become_test.stdout == "0"
+        fail_msg: "CRITICAL: become/sudo not working. Got UID: {{ become_test.stdout }}"
+        success_msg: "✓ Become/sudo access works"
+
+    # ============================================
+    # CRITICAL: Check SSH Service
+    # ============================================
+    - name: Check if SSH daemon is running
+      service_facts:
+      become: true
+
+    - name: Verify SSH service exists and is running
+      assert:
+        that:
+          - "'sshd.service' in services or 'ssh.service' in services"
+          - services['sshd.service'].state == 'running' or services['ssh.service'].state == 'running'
+        fail_msg: "CRITICAL: SSH service not running"
+        success_msg: "✓ SSH service is running"
+
+    # ============================================
+    # CRITICAL: Validate sudoers syntax
+    # ============================================
+    - name: Check sudoers file syntax
+      command: visudo -cf /etc/sudoers
+      become: true
+      register: sudoers_check
+      changed_when: false
+      failed_when: sudoers_check.rc != 0
+
+    - name: Verify sudoers syntax
+      assert:
+        that:
+          - sudoers_check.rc == 0
+        fail_msg: "CRITICAL: /etc/sudoers has syntax errors!"
+        success_msg: "✓ Sudoers syntax is valid"
+
+    # ============================================
+    # CRITICAL: Check sshd_config syntax
+    # ============================================
+    - name: Check sshd_config syntax
+      command: sshd -t
+      become: true
+      register: sshd_check
+      changed_when: false
+      failed_when: false
+
+    - name: Verify sshd_config syntax
+      assert:
+        that:
+          - sshd_check.rc == 0
+        fail_msg: "CRITICAL: sshd_config has syntax errors!"
+        success_msg: "✓ SSH config syntax is valid"
+
+    # ============================================
+    # WARNING: Check for existing backups
+    # ============================================
+    - name: Check for existing security backups
+      find:
+        paths: /root
+        patterns: 'security-backup-*'
+        file_type: directory
+      become: true
+      register: existing_backups
+
+    - name: Warn if no backups exist
+      debug:
+        msg: |
+          ⚠️  WARNING: No existing backups found
+          First deployment will create backups automatically
+      when: existing_backups.matched == 0
+
+    - name: Show existing backups
+      debug:
+        msg: "✓ Found {{ existing_backups.matched }} existing backup(s)"
+      when: existing_backups.matched > 0
+
+    # ============================================
+    # WARNING: Check disk space
+    # ============================================
+    - name: Check disk space
+      shell: df -h / | tail -1 | awk '{print $5}' | sed 's/%//'
+      register: disk_usage
+      changed_when: false
+      become: true
+
+    - name: Warn if disk space low
+      debug:
+        msg: |
+          ⚠️  WARNING: Disk usage at {{ disk_usage.stdout }}%
+          Ensure adequate space for logs and backups
+      when: disk_usage.stdout | int > 80
+
+    # ============================================
+    # CRITICAL: Check if service accounts exist
+    # ============================================
+    - name: Check if Ansible user exists
+      getent:
+        database: passwd
+        key: "{{ ansible_user }}"
+      register: ansible_user_check
+      failed_when: false
+
+    - name: Verify Ansible user exists
+      assert:
+        that:
+          - ansible_user_check.ansible_facts is defined
+        fail_msg: "CRITICAL: Ansible user '{{ ansible_user }}' does not exist"
+        success_msg: "✓ Ansible user exists: {{ ansible_user }}"
+      when: ansible_user is defined
+
+    # ============================================
+    # WARNING: Check for required packages
+    # ============================================
+    - name: Check if required packages are installed
+      package_facts:
+        manager: auto
+
+    - name: Check for openssh-server
+      debug:
+        msg: "{{ '✓ OpenSSH server installed' if ('openssh-server' in packages or 'openssh' in packages) else '⚠️  WARNING: OpenSSH server may not be installed' }}"
+
+    - name: Check for sudo
+      debug:
+        msg: "{{ '✓ Sudo installed' if 'sudo' in packages else '⚠️  WARNING: Sudo may not be installed' }}"
+
+    # ============================================
+    # INFO: MFA Capability Detection
+    # ============================================
+    - name: Check OpenSSH version for SK keys support
+      shell: ssh -V 2>&1 | grep -oP 'OpenSSH_\K[0-9]+\.[0-9]+'
+      register: ssh_version
+      changed_when: false
+      failed_when: false
+
+    - name: Display MFA capabilities
+      debug:
+        msg: |
+          MFA Capabilities:
+          - OpenSSH version: {{ ssh_version.stdout | default('unknown') }}
+          - SK keys support: {{ 'yes' if (ssh_version.stdout | default('0') is version('8.2', '>=')) else 'no' }}
+          - PAM available: {{ 'yes' if ansible_os_family in ['Debian', 'RedHat'] else 'unknown' }}
+
+    # ============================================
+    # WARNING: Check SELinux status (RHEL only)
+    # ============================================
+    - name: Check SELinux status
+      command: getenforce
+      register: selinux_status
+      changed_when: false
+      failed_when: false
+      when: ansible_os_family == 'RedHat'
+
+    - name: Display SELinux status
+      debug:
+        msg: "SELinux status: {{ selinux_status.stdout | default('Not applicable') }}"
+      when: ansible_os_family == 'RedHat'
+
+    # ============================================
+    # CRITICAL: Check for conflicting configurations
+    # ============================================
+    - name: Check for PasswordAuthentication yes in sshd_config
+      shell: grep -i "^PasswordAuthentication yes" /etc/ssh/sshd_config
+      register: password_auth_check
+      changed_when: false
+      failed_when: false
+      become: true
+
+    - name: Warn about password authentication
+      debug:
+        msg: |
+          ⚠️  INFO: Password authentication currently ENABLED
+          Will be DISABLED during SSH hardening phase
+          Ensure SSH keys are configured for all users!
+      when: password_auth_check.rc == 0
+
+    # ============================================
+    # CRITICAL: Emergency access verification
+    # ============================================
+    - name: Check for console access availability
+      debug:
+        msg: |
+          ⚠️  CRITICAL REMINDER:
+
+          Before running enforcement playbooks:
+
+          1. ✓ Ensure you have CONSOLE ACCESS to this server
+             - Cloud console (AWS/Azure/GCP)
+             - IPMI/iDRAC/iLO
+             - Physical access
+
+          2. ✓ Keep EMERGENCY SSH SESSION open during deployment
+             - Open a second SSH session NOW
+             - Keep it open throughout deployment
+             - This session won't be affected by PAM changes
+
+          3. ✓ Know the rollback procedure:
+             - Backup location: /root/security-backup-*
+             - Restore command: bash /root/security-backup-*/restore.sh
+
+          4. ✓ Verify service accounts:
+             - Ansible user: {{ ansible_user }}
+             - Add ALL automation accounts to pam_mfa_service_accounts
+
+          Press Ctrl+C to abort if NOT ready!
+
+  post_tasks:
+    # ============================================
+    # Generate Pre-flight Report
+    # ============================================
+    - name: Generate preflight report
+      copy:
+        dest: "{{ preflight_output }}/{{ inventory_hostname }}.txt"
+        content: |
+          Pre-flight Security Validation Report
+          ======================================
+          Timestamp: {{ ansible_date_time.iso8601 }}
+          Hostname: {{ inventory_hostname }}
+          FQDN: {{ ansible_fqdn | default('N/A') }}
+
+          System Information:
+          -------------------
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Kernel: {{ ansible_kernel }}
+          Architecture: {{ ansible_architecture }}
+          Python: {{ ansible_python_version }}
+          Ansible: {{ ansible_version.full }}
+
+          SSH Information:
+          ---------------
+          OpenSSH version: {{ ssh_version.stdout | default('unknown') }}
+          SSH service: {{ 'running' if (services['sshd.service'].state == 'running' or services['ssh.service'].state == 'running') else 'stopped' }}
+          Config syntax: {{ 'valid' if sshd_check.rc == 0 else 'INVALID' }}
+
+          Security Capabilities:
+          ---------------------
+          SK keys support: {{ 'yes' if (ssh_version.stdout | default('0') is version('8.2', '>=')) else 'no' }}
+          PAM available: {{ 'yes' if ansible_os_family in ['Debian', 'RedHat'] else 'no' }}
+          SELinux: {{ selinux_status.stdout | default('N/A') }}
+
+          Sudo/Become:
+          -----------
+          Sudo syntax: {{ 'valid' if sudoers_check.rc == 0 else 'INVALID' }}
+          Become access: {{ 'working' if become_test.stdout == '0' else 'FAILED' }}
+
+          Disk Usage:
+          ----------
+          Root partition: {{ disk_usage.stdout }}% used
+
+          Existing Backups:
+          ----------------
+          Count: {{ existing_backups.matched }}
+
+          Status: {{ 'READY FOR DEPLOYMENT' if (sshd_check.rc == 0 and sudoers_check.rc == 0 and become_test.stdout == '0') else 'CRITICAL ISSUES DETECTED' }}
+
+          Next Steps:
+          ----------
+          {% if sshd_check.rc == 0 and sudoers_check.rc == 0 and become_test.stdout == '0' %}
+          ✓ System passed pre-flight checks
+          ✓ Ready for security hardening
+
+          Recommended deployment order:
+          1. playbooks/audit-only.yml (review current state)
+          2. playbooks/dry-run.yml --check --diff (see changes)
+          3. playbooks/enforce-staging.yml (test in staging)
+          4. playbooks/enforce-production-gradual.yml (production)
+          {% else %}
+          ✗ System FAILED pre-flight checks
+          ✗ Fix critical issues before deployment
+          {% endif %}
+        mode: '0640'
+      delegate_to: localhost
+
+    - name: Display final summary
+      debug:
+        msg: |
+          ========================================
+          PRE-FLIGHT CHECK COMPLETE
+          ========================================
+
+          Report saved to: {{ preflight_output }}/{{ inventory_hostname }}.txt
+
+          {{ '✓ READY FOR DEPLOYMENT' if (sshd_check.rc == 0 and sudoers_check.rc == 0 and become_test.stdout == '0') else '✗ CRITICAL ISSUES - DO NOT DEPLOY' }}
+
+          ========================================

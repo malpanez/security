@@ -1,0 +1,30 @@
+---
+argument_specs:
+  main:
+    short_description: Configure auditd rules and service
+    options:
+      audit_logging_enabled:
+        type: bool
+        default: true
+        description: Whether to manage auditd rules and service.
+      audit_logging_rules:
+        type: list
+        elements: str
+        default: []
+        description: List of auditd rule lines to deploy.
+      audit_logging_service:
+        type: str
+        default: auditd
+        description: Name of the audit daemon service.
+      audit_logging_rules_path:
+        type: str
+        default: /etc/audit/rules.d/99-security.rules
+        description: Destination path for the audit rules file.
+      audit_logging_auth_log:
+        type: str
+        default: /var/log/auth.log
+        description: Path to auth log (Debian/Ubuntu).
+      audit_logging_secure_log:
+        type: str
+        default: /var/log/secure
+        description: Path to secure log (RHEL/EL variants).

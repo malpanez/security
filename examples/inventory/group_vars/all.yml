@@ -1,0 +1,159 @@
+---
+# Global variables for all hosts
+# These apply unless overridden by more specific group_vars or host_vars
+
+# ============================================
+# ANSIBLE CONNECTION SETTINGS
+# ============================================
+ansible_connection: ssh
+ansible_ssh_pipelining: true
+ansible_ssh_transfer_method: piped
+
+# ============================================
+# SECURITY BASELINE DEFAULTS
+# ============================================
+
+# Start conservative - Phase 1 only
+current_security_phase: 1
+
+# Always review first
+security_mode: review
+
+# ============================================
+# SSH HARDENING (Phase 1)
+# ============================================
+sshd_hardening_permit_root_login: false
+sshd_hardening_password_authentication: false
+sshd_hardening_pubkey_authentication: true
+sshd_hardening_max_auth_tries: 4
+sshd_hardening_log_level: VERBOSE
+sshd_hardening_x11_forwarding: false
+sshd_hardening_use_pam: true
+
+# Modern ciphers only
+sshd_hardening_ciphers:
+  - chacha20-poly1305@openssh.com
+  - aes256-gcm@openssh.com
+  - aes128-gcm@openssh.com
+
+sshd_hardening_macs:
+  - hmac-sha2-512-etm@openssh.com
+  - hmac-sha2-256-etm@openssh.com
+
+sshd_hardening_kex_algorithms:
+  - curve25519-sha256@libssh.org
+  - diffie-hellman-group-exchange-sha256
+
+# ============================================
+# SUDOERS BASELINE (Phase 2)
+# ============================================
+
+# CRITICAL: Never touch main sudoers in production
+sudoers_baseline_preserve_main: true
+sudoers_baseline_manage_main_file: false
+
+# Sudo defaults
+sudoers_baseline_defaults:
+  - "use_pty"
+  - "logfile=/var/log/sudo.log"
+  - "!visiblepw"
+  - "always_set_home"
+  - "env_reset"
+
+# Default sudo groups (customize per environment)
+sudoers_baseline_groups:
+  linux_admins:
+    require_password: true
+    commands:
+      - "/usr/bin/systemctl restart *"
+      - "/usr/bin/systemctl status *"
+      - "/usr/bin/systemctl start *"
+      - "/usr/bin/systemctl stop *"
+      - "/usr/sbin/service *"
+      - "/usr/bin/journalctl *"
+
+# ============================================
+# PAM MFA (Phase 3)
+# ============================================
+
+# Disabled by default - enable per environment
+pam_mfa_enabled: false
+
+# When enabled, use both YubiKey and TOTP
+pam_mfa_yubikey_enabled: auto
+pam_mfa_totp_enabled: true
+
+# CRITICAL: Service accounts that bypass MFA
+pam_mfa_service_accounts:
+  - "{{ ansible_user }}"  # Ansible itself
+  - ansible
+  - awx
+  - tower
+  - ci
+  - jenkins
+  - gitlab-runner
+  - github-runner
+  - monitoring
+  - nagios
+  - zabbix
+  - prometheus
+  - grafana
+  - backup
+  - rsync
+  - sftp
+
+# ============================================
+# SELINUX (Phase 4)
+# ============================================
+
+# Only for RHEL-based systems
+selinux_enforcement_enabled: false
+selinux_enforcement_mode: permissive  # Start permissive
+
+# ============================================
+# AUDIT LOGGING (Phase 5)
+# ============================================
+
+# Disabled by default
+audit_logging_enabled: false
+audit_logging_verbose: false
+
+# ============================================
+# COMPLIANCE EVIDENCE
+# ============================================
+
+compliance_evidence_output_path: /var/log/security-compliance
+compliance_evidence_frameworks:
+  - soc2
+
+# ============================================
+# CIS BASELINE
+# ============================================
+
+cis_baseline_enabled: true
+cis_baseline_mode: review  # review or enforce
+
+# ============================================
+# ROLLOUT SETTINGS
+# ============================================
+
+# Conservative rollout
+rollout_percentage: "10%"
+max_fail_percentage: 5
+
+# Require maintenance window
+security_require_maintenance_window: true
+security_maintenance_day: Saturday
+security_maintenance_hour_start: 2
+security_maintenance_hour_end: 6
+
+# Automatic rollback enabled
+security_staging_rollback_on_failure: true
+security_production_rollback_on_failure: true
+
+# ============================================
+# BACKUP SETTINGS
+# ============================================
+
+security_backup_enabled: true
+security_backup_base_dir: /root

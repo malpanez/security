@@ -1,0 +1,7 @@
+---
+pam_mfa_package_u2f: pam_u2f
+pam_mfa_package_totp: google-authenticator
+pam_mfa_pam_module_u2f: /usr/lib64/security/pam_u2f.so
+pam_mfa_pam_module_google_authenticator: /usr/lib64/security/pam_google_authenticator.so
+pam_mfa_u2f_keys_path: /etc/Yubico/u2f_keys
+pam_mfa_totp_dir: /etc/google-authenticator.d

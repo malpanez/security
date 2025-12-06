@@ -1,0 +1,87 @@
+{
+  "name": "Ansible Collection - Compliance Hardened",
+  "build": {
+    "dockerfile": "Dockerfile.compliance",
+    "context": "..",
+    "args": {
+      "BASE_IMAGE": "ghcr.io/malpanez/devcontainer-ansible:latest",
+      "UV_VERSION": "0.4.20",
+      "UV_CHECKSUM": "sha256:UNSET"
+    }
+  },
+
+  "containerEnv": {
+    "PRE_COMMIT_HOME": "/home/vscode/.cache/pre-commit"
+  },
+
+  "runArgs": [
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges:true",
+    "--pids-limit=512",
+    "--read-only"
+  ],
+
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly",
+    "type=tmpfs,target=/tmp,size=1g",
+    "type=tmpfs,target=/run,size=128m",
+    "type=tmpfs,target=/var/tmp,size=512m",
+    "type=tmpfs,target=/var/log,size=256m",
+    "type=tmpfs,target=/home/vscode/.cache,size=512m"
+  ],
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "ansible.python.interpreterPath": "/usr/local/bin/python",
+        "ansible.validation.enabled": true,
+        "ansible.validation.lint.enabled": true,
+        "ansible.ansibleLint.enabled": true,
+        "ansible.ansibleLint.path": "/usr/local/bin/ansible-lint",
+        "yaml.schemas": {
+          "https://raw.githubusercontent.com/ansible/schemas/main/f/ansible.json": [
+            "*.yml",
+            "*.yaml"
+          ]
+        },
+        "files.associations": {
+          "*.yml": "ansible",
+          "*.yaml": "ansible"
+        },
+        "[yaml]": {
+          "editor.insertSpaces": true,
+          "editor.tabSize": 2,
+          "editor.quickSuggestions": {
+            "other": true,
+            "comments": false,
+            "strings": true
+          },
+          "editor.autoIndent": "advanced"
+        }
+      },
+      "extensions": [
+        "redhat.ansible",
+        "redhat.vscode-yaml",
+        "samuelcolvin.jinjahtml",
+        "eamodio.gitlens",
+        "ms-python.python",
+        "charliermarsh.ruff"
+      ]
+    }
+  },
+
+  "updateContentCommand": [
+    "bash",
+    "-c",
+    "mkdir -p /home/vscode/.cache/pre-commit && chown -R vscode:vscode /home/vscode/.cache"
+  ],
+
+  "postCreateCommand": [
+    "bash",
+    "-c",
+    "pre-commit install --install-hooks || true"
+  ],
+
+  "remoteUser": "vscode",
+  "overrideCommand": false
+}

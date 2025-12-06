@@ -1,0 +1,159 @@
+---
+# Security Configuration - Staging Environment
+# Full security testing before production deployment
+# All phases enabled for comprehensive validation
+
+# ========================================
+# FULL TESTING CONFIGURATION
+# ========================================
+
+# Phase 6 - all phases for testing
+current_security_phase: 6
+
+# Enforce mode (actual changes for testing)
+security_mode: enforce
+
+# All phases enabled
+security_phase_ssh_hardening: true
+security_phase_sudoers: true
+security_phase_mfa: true
+security_phase_selinux: true
+security_phase_audit: true
+
+# ========================================
+# SSH HARDENING
+# ========================================
+
+# Match production settings
+sshd_hardening_permit_root_login: false
+sshd_hardening_password_authentication: false
+sshd_hardening_pubkey_authentication: true
+sshd_hardening_max_auth_tries: 4
+sshd_hardening_log_level: VERBOSE
+sshd_hardening_x11_forwarding: false
+sshd_hardening_use_pam: true
+
+sshd_hardening_ciphers:
+  - chacha20-poly1305@openssh.com
+  - aes256-gcm@openssh.com
+  - aes128-gcm@openssh.com
+
+sshd_hardening_macs:
+  - hmac-sha2-512-etm@openssh.com
+  - hmac-sha2-256-etm@openssh.com
+
+# ========================================
+# SUDOERS (HYBRID - MATCH PRODUCTION)
+# ========================================
+
+# Match production approach - preserve main file
+sudoers_baseline_preserve_main: true
+sudoers_baseline_manage_main_file: false
+
+sudoers_baseline_defaults:
+  - "use_pty"
+  - "logfile=/var/log/sudo.log"
+  - "log_output"
+  - "!visiblepw"
+
+# Test the same groups as production
+sudoers_baseline_groups:
+  linux_admins:
+    require_password: true
+    commands:
+      - "/usr/bin/systemctl restart *"
+      - "/usr/bin/systemctl status *"
+
+  devops:
+    require_password: false
+    commands:
+      - "/usr/bin/docker *"
+
+# ========================================
+# PAM MFA (FULL TESTING)
+# ========================================
+
+pam_mfa_enabled: true
+pam_mfa_yubikey_enabled: auto
+pam_mfa_totp_enabled: true
+
+# Match production service accounts
+pam_mfa_service_accounts:
+  - ansible
+  - awx
+  - ci
+  - jenkins
+  - gitlab-runner
+  - monitoring
+  - nagios
+  - prometheus
+  - grafana
+  - backup
+
+pam_mfa_require_resident_key: false
+pam_mfa_user_verification: required
+
+# ========================================
+# SELINUX (TEST PERMISSIVE FIRST)
+# ========================================
+
+selinux_enforcement_enabled: true
+
+# Start permissive in staging to catch issues
+# Change to enforcing after 1 week of testing
+selinux_enforcement_mode: permissive
+
+selinux_enforcement_packages:
+  - policycoreutils
+  - policycoreutils-python-utils
+  - setools-console
+
+# ========================================
+# AUDIT LOGGING (VERBOSE FOR TESTING)
+# ========================================
+
+audit_logging_enabled: true
+audit_logging_verbose: true  # More verbose in staging
+audit_logging_log_commands: true
+
+# ========================================
+# COMPLIANCE
+# ========================================
+
+compliance_evidence_output_path: /tmp/security-review/compliance
+compliance_evidence_frameworks:
+  - soc2
+  - pci-dss
+
+cis_baseline_enabled: true
+cis_baseline_mode: enforce
+
+# ========================================
+# ROLLOUT SETTINGS
+# ========================================
+
+# Process one at a time for careful validation
+rollout_percentage: "1"  # Serial processing
+max_fail_percentage: 0   # Stop immediately on failure
+
+# Flexible maintenance window for staging
+security_require_maintenance_window: false
+
+# Automatic rollback on any failure
+security_staging_rollback_on_failure: true
+
+# ========================================
+# TESTING REMINDERS
+# ========================================
+
+# After applying to staging, validate:
+# 1. SSH access works (new terminal)
+# 2. Sudo works: sudo -l
+# 3. MFA login works (YubiKey + TOTP backup)
+# 4. Service accounts can login without MFA
+# 5. Applications function normally
+# 6. Monitor for 24-48 hours
+# 7. Check for SELinux denials: ausearch -m avc
+# 8. Verify audit logs are being written
+#
+# Only proceed to production after 1 week of stable staging

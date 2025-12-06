@@ -1,0 +1,145 @@
+---
+# Security Audit - Review Mode Only (No Changes)
+# This playbook ONLY evaluates security posture without making any modifications
+# Safe to run in production without risk of breaking anything
+#
+# Usage:
+#   ansible-playbook playbooks/audit-only.yml -i inventory
+#
+# Output:
+#   /tmp/security-review/ - Contains current state, proposed state, and diffs
+
+- name: Security Audit - Review Mode Only
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    # CRITICAL: Review mode - NO changes will be made
+    security_mode: review
+
+    # Output directory for review reports
+    security_review_output: /tmp/security-review
+
+  pre_tasks:
+    - name: Display audit mode warning
+      debug:
+        msg: |
+          ========================================
+          SECURITY AUDIT MODE (NO CHANGES)
+          ========================================
+          This playbook will:
+          - Analyze current security configuration
+          - Compare against security baseline
+          - Generate diff reports
+
+          This playbook will NOT:
+          - Modify any configuration files
+          - Restart any services
+          - Change system state
+
+          Reports will be saved to: {{ security_review_output }}
+          ========================================
+
+    - name: Ensure review output directory exists
+      file:
+        path: "{{ security_review_output }}"
+        state: directory
+        mode: '0750'
+
+  roles:
+    # Phase 0: Capability Detection
+    - role: security_capabilities
+      vars:
+        security_capabilities_output_path: "{{ security_review_output }}/capabilities.json"
+
+    # Phase 0: Compliance Evidence Collection
+    - role: compliance_evidence
+      vars:
+        compliance_evidence_output_path: "{{ security_review_output }}/compliance"
+        compliance_evidence_frameworks:
+          - soc2
+          - pci-dss
+          - hipaa
+
+    # Phase 1: SSH Hardening Review
+    - role: sshd_hardening
+      vars:
+        sshd_hardening_review_mode: true
+        sshd_hardening_review_output: "{{ security_review_output }}/sshd"
+
+    # Phase 2: Sudoers Review
+    - role: sudoers_baseline
+      vars:
+        sudoers_baseline_review_mode: true
+        sudoers_baseline_review_output: "{{ security_review_output }}/sudoers"
+
+    # Phase 3: PAM MFA Review (if applicable)
+    - role: pam_mfa
+      when: security_capabilities_mfa_capable | default(false)
+      vars:
+        pam_mfa_enabled: false  # Don't enable in review
+        pam_mfa_review_mode: true
+        pam_mfa_review_output: "{{ security_review_output }}/pam"
+
+    # Phase 4: SELinux Review (RHEL-based only)
+    - role: selinux_enforcement
+      when: ansible_os_family == 'RedHat'
+      vars:
+        selinux_enforcement_enabled: false  # Don't change in review
+        selinux_enforcement_review_mode: true
+        selinux_enforcement_review_output: "{{ security_review_output }}/selinux"
+
+    # Phase 5: Audit Logging Review
+    - role: audit_logging
+      vars:
+        audit_logging_review_mode: true
+        audit_logging_review_output: "{{ security_review_output }}/audit"
+
+    # CIS Baseline Review
+    - role: cis_baseline
+      vars:
+        cis_baseline_enabled: true
+        cis_baseline_mode: review  # Review only
+        cis_baseline_output: "{{ security_review_output }}/cis-baseline"
+
+  post_tasks:
+    - name: Display review summary
+      debug:
+        msg: |
+          ========================================
+          SECURITY AUDIT COMPLETE
+          ========================================
+          Review reports available at: {{ security_review_output }}
+
+          Next steps:
+          1. Review diffs in {{ security_review_output }}/
+          2. Identify potential issues with proposed changes
+          3. Test in dry-run mode: playbooks/dry-run.yml
+          4. Test in staging: playbooks/enforce-staging.yml
+
+          NO CHANGES WERE MADE TO THIS SYSTEM
+          ========================================
+
+    - name: Generate audit summary report
+      copy:
+        dest: "{{ security_review_output }}/AUDIT_SUMMARY.txt"
+        content: |
+          Security Audit Summary
+          ======================
+          Date: {{ ansible_date_time.iso8601 }}
+          Hostname: {{ ansible_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+
+          Audit Scope:
+          - SSH Hardening
+          - Sudoers Configuration
+          - PAM MFA (if capable)
+          - SELinux (RHEL-based)
+          - Audit Logging
+          - CIS Baseline Compliance
+
+          Review Output Directory: {{ security_review_output }}
+
+          Status: AUDIT COMPLETE (NO CHANGES MADE)
+        mode: '0640'

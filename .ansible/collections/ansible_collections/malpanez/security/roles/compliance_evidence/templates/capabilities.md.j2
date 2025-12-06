@@ -1,8 +1,0 @@
-# Capabilities
-- OpenSSH detected: {{ security_capabilities.openssh_version_detected | default('unknown') }}
-- Major.minor: {{ security_capabilities.openssh_version_major_minor | default('unknown') }}
-- Supports SK keys: {{ security_capabilities.openssh_supports_sk_keys | default(false) }}
-- PAM U2F available: {{ security_capabilities.pam_u2f_available | default(false) }}
-- PAM FIDO2 available: {{ security_capabilities.pam_fido2_available | default(false) }}
-- SELinux available: {{ security_capabilities.selinux_available | default(false) }}
-- Selected mode: {{ security_capabilities_selected_auth_mode | default('legacy') }}

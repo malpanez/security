@@ -7,7 +7,7 @@
 - name: "common | Deploy sudoers defaults"
   ansible.builtin.template:
     src: sudoers.j2
-    dest: /etc/sudoers
+    dest: "{{ sudoers_baseline_sudoers_path }}"
     owner: root
     group: root
     mode: "0440"

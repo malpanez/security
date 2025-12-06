@@ -1,0 +1,3 @@
+---
+sudoers_baseline_sudoers_path: /etc/sudoers
+sudoers_baseline_files_path: /etc/sudoers.d

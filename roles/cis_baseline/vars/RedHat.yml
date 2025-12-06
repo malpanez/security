@@ -1,0 +1,4 @@
+---
+cis_baseline_sshd_config_path: /etc/ssh/sshd_config
+cis_baseline_sudoers_path: /etc/sudoers
+cis_baseline_sudoers_dir: /etc/sudoers.d

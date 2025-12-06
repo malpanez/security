@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    compliance_evidence_enabled: true
+  roles:
+    - role: compliance_evidence

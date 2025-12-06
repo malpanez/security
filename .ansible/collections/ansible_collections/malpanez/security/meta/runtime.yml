@@ -1,4 +1,0 @@
----
-requires_ansible: ">=2.16.0"
-
-# Reserved for future plugin routing and import redirections.

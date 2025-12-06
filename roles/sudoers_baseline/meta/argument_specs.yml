@@ -1,0 +1,36 @@
+---
+argument_specs:
+  main:
+    short_description: Baseline sudoers configuration
+    options:
+      sudoers_baseline_strict:
+        type: bool
+        default: false
+        description: Enable management of sudoers files and defaults.
+      sudoers_baseline_defaults:
+        type: list
+        elements: str
+        default:
+          - use_pty
+          - logfile=/var/log/sudo.log
+          - timestamp_timeout=5
+          - passwd_tries=3
+          - requiretty
+          - "!authenticate"
+        description: List of Defaults lines to apply to sudoers.
+      sudoers_baseline_secure_path:
+        type: str
+        default: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        description: Secure path for sudoers Defaults.
+      sudoers_baseline_groups:
+        type: dict
+        default: {}
+        description: Map of group names to sudo rules (keys require_password and commands).
+      sudoers_baseline_sudoers_path:
+        type: str
+        default: /etc/sudoers
+        description: Path to main sudoers file.
+      sudoers_baseline_files_path:
+        type: str
+        default: /etc/sudoers.d
+        description: Directory for included sudoers snippets.

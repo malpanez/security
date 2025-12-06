@@ -4,3 +4,5 @@ __pycache__/
 .collections/
 .molecule/
 .DS_Store
+.ansible/
+.claude/

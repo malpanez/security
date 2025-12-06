@@ -1,0 +1,22 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Create test directory for SELinux context
+      ansible.builtin.file:
+        path: /srv/app/data
+        state: directory
+        mode: "0755"
+
+  vars:
+    selinux_enforcement_enabled: true
+    selinux_enforcement_mode: enforcing
+    selinux_enforcement_booleans:
+      - name: nis_enabled
+        state: yes
+    selinux_enforcement_contexts:
+      - target: /srv/app/data(/.*)?
+        setype: public_content_rw_t
+  roles:
+    - role: selinux_enforcement

@@ -1,0 +1,6 @@
+---
+sshd_config_path: /etc/ssh/sshd_config
+sshd_config_dir: /etc/ssh/sshd_config.d
+sshd_service_name: ssh
+sshd_binary_path: /usr/sbin/sshd
+ssh_auth_log: /var/log/auth.log

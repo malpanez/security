@@ -99,6 +99,26 @@ argument_specs:
         type: str
         default: /etc/ssh/trusted_user_ca_keys
         description: Path to write the trusted CA public key.
+      sshd_config_path:
+        type: str
+        default: /etc/ssh/sshd_config
+        description: Destination path for the managed sshd_config.
+      sshd_config_dir:
+        type: str
+        default: /etc/ssh/sshd_config.d
+        description: Directory for drop-in SSHD configuration files.
+      sshd_service_name:
+        type: str
+        default: sshd
+        description: Preferred SSH service name on the target platform.
+      sshd_binary_path:
+        type: str
+        default: /usr/sbin/sshd
+        description: Path to the sshd binary used for validation/version checks.
+      ssh_auth_log:
+        type: str
+        default: /var/log/auth.log
+        description: Primary SSH authentication log file path for evidence collection.
       sshd_hardening_algorithm_profile:
         type: str
         default: auto
@@ -153,7 +173,7 @@ argument_specs:
         type: list
         elements: dict
         default: []
-        description: List of Match blocks for service accounts (keys: group/match, options).
+        description: "List of Match blocks for service accounts (keys: group/match, options)."
       sshd_hardening_service_name:
         type: str
         default: "sshd"

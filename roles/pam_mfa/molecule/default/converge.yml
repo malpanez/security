@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    pam_mfa_enabled: true
+    pam_mfa_totp_enabled: true
+    pam_mfa_breakglass_group: mfa-breakglass
+  roles:
+    - role: pam_mfa

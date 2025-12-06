@@ -7,7 +7,7 @@
 
 - name: "common | Deploy audit rules"
   ansible.builtin.copy:
-    dest: /etc/audit/rules.d/99-security.rules
+    dest: "{{ audit_logging_rules_path }}"
     content: |
       {{ audit_logging_rules | join('\n') }}
     owner: root
