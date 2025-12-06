@@ -1,0 +1,81 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":automergeDigest",
+    ":automergePr"
+  ],
+  "timezone": "Europe/Madrid",
+  "schedule": ["before 5am on monday"],
+  "labels": ["dependencies", "security"],
+  "commitMessagePrefix": "chore(deps):",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "rebaseWhen": "behind-base-branch",
+  "packageRules": [
+    {
+      "description": "Ansible and Python dependencies",
+      "matchManagers": ["pip_requirements", "pip_setup"],
+      "matchFiles": ["requirements*.txt"],
+      "groupName": "ansible-dependencies",
+      "schedule": ["before 5am on monday"],
+      "automerge": false,
+      "labels": ["ansible", "dependencies"]
+    },
+    {
+      "description": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "automerge": true,
+      "schedule": ["before 5am on monday"],
+      "labels": ["github-actions", "dependencies"]
+    },
+    {
+      "description": "Docker base images",
+      "matchDatasources": ["docker"],
+      "groupName": "docker-images",
+      "schedule": ["before 5am on monday"],
+      "automerge": false,
+      "labels": ["docker", "dependencies"]
+    },
+    {
+      "description": "Ansible Galaxy collections",
+      "matchManagers": ["ansible-galaxy"],
+      "matchFiles": ["requirements.yml"],
+      "groupName": "ansible-collections",
+      "schedule": ["before 5am on monday"],
+      "automerge": false,
+      "labels": ["ansible-galaxy", "dependencies"]
+    },
+    {
+      "description": "Security updates - high priority",
+      "matchUpdateTypes": ["patch"],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true,
+      "labels": ["security", "automerge"]
+    },
+    {
+      "description": "Major updates - manual review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["major-update", "review-required"],
+      "schedule": ["before 5am on first day of month"]
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security-vulnerability", "priority-high"],
+    "automerge": false,
+    "schedule": ["at any time"]
+  },
+  "pre-commit": {
+    "enabled": true
+  },
+  "ansible-galaxy": {
+    "fileMatch": ["requirements\\.ya?ml$"]
+  },
+  "pip_requirements": {
+    "fileMatch": ["requirements.*\\.txt$"]
+  }
+}

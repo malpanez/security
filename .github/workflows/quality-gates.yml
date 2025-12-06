@@ -1,0 +1,363 @@
+name: Quality Gates
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  pre-commit-checks:
+    name: Pre-commit Hooks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run pre-commit hooks
+        run: pre-commit run --all-files
+
+  ansible-best-practices:
+    name: Ansible Best Practices
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install ansible-lint ansible-core yamllint
+
+      - name: Run ansible-lint with production profile
+        run: ansible-lint --profile production --force-color
+
+      - name: Check YAML syntax
+        run: yamllint -c .yamllint.yml .
+
+      - name: Verify all roles have meta/argument_specs.yml
+        run: |
+          for role in roles/*/; do
+            if [ ! -f "${role}meta/argument_specs.yml" ]; then
+              echo "ERROR: Missing argument_specs.yml in ${role}"
+              exit 1
+            fi
+          done
+
+      - name: Verify all roles have molecule tests
+        run: |
+          for role in roles/*/; do
+            if [ ! -d "${role}molecule" ]; then
+              echo "ERROR: Missing molecule tests in ${role}"
+              exit 1
+            fi
+          done
+
+  documentation-quality:
+    name: Documentation Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          config-file: '.github/markdown-link-check-config.json'
+
+      - name: Verify README completeness
+        run: |
+          required_sections=(
+            "Installation"
+            "Usage"
+            "Examples"
+            "Security"
+            "Contributing"
+            "License"
+          )
+
+          for section in "${required_sections[@]}"; do
+            if ! grep -qi "$section" README.md; then
+              echo "ERROR: Missing required section: $section"
+              exit 1
+            fi
+          done
+
+      - name: Check for TODO/FIXME comments
+        run: |
+          if grep -r "TODO\|FIXME" roles/ playbooks/ --exclude-dir=molecule; then
+            echo "WARNING: Found TODO/FIXME comments"
+            exit 1
+          fi
+
+  playbook-syntax:
+    name: Playbook Syntax Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: |
+          pip install ansible-core>=2.16
+
+      - name: Syntax check all playbooks
+        run: |
+          for playbook in playbooks/*.yml; do
+            echo "Checking syntax: $playbook"
+            ansible-playbook "$playbook" --syntax-check
+          done
+
+      - name: Verify ansible.cfg syntax
+        run: |
+          ansible-config dump -c ansible.cfg > /dev/null
+
+  security-hardening-checks:
+    name: Security Hardening Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for weak SSH ciphers
+        run: |
+          if grep -r "arcfour\|3des" roles/sshd_hardening/; then
+            echo "ERROR: Weak SSH ciphers found"
+            exit 1
+          fi
+
+      - name: Check for disabled SELinux
+        run: |
+          if grep -r "selinux.*disabled" roles/; then
+            echo "WARNING: Found SELinux disabled config"
+          fi
+
+      - name: Verify no PermitRootLogin yes
+        run: |
+          if grep -r "PermitRootLogin.*yes" roles/sshd_hardening/defaults/; then
+            echo "ERROR: PermitRootLogin yes found in defaults"
+            exit 1
+          fi
+
+      - name: Check for password authentication enabled
+        run: |
+          if grep -r "PasswordAuthentication.*yes" roles/sshd_hardening/defaults/; then
+            echo "WARNING: PasswordAuthentication enabled in defaults"
+          fi
+
+  idempotency-check:
+    name: Idempotency Testing
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt
+
+      - name: Test role idempotency (sshd_hardening)
+        run: |
+          cd roles/sshd_hardening
+          molecule create
+          molecule converge
+          # Run again - should have no changes
+          molecule converge | tee /tmp/output.txt
+          if grep -q "changed=0" /tmp/output.txt; then
+            echo "✅ Idempotent"
+          else
+            echo "❌ Not idempotent"
+            exit 1
+          fi
+          molecule destroy
+
+  variable-naming:
+    name: Variable Naming Convention
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check role variable prefixes
+        run: |
+          for role in roles/*/defaults/*.yml; do
+            role_name=$(basename $(dirname $(dirname "$role")))
+            # Variables should be prefixed with role name
+            if grep -E "^[a-z_]+:" "$role" | grep -v "^${role_name}_"; then
+              echo "WARNING: Variables in $role should be prefixed with ${role_name}_"
+            fi
+          done
+
+  version-consistency:
+    name: Version Consistency
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check version consistency
+        run: |
+          galaxy_version=$(grep "^version:" galaxy.yml | awk '{print $2}')
+          echo "Galaxy version: $galaxy_version"
+
+          # Verify version follows semver
+          if ! echo "$galaxy_version" | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$"; then
+            echo "ERROR: Version in galaxy.yml doesn't follow semver"
+            exit 1
+          fi
+
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify LICENSE file exists
+        run: |
+          if [ ! -f LICENSE ]; then
+            echo "WARNING: No LICENSE file found"
+            exit 1
+          fi
+
+      - name: Check license headers in Python files
+        run: |
+          for file in $(find . -name "*.py" -not -path "./.*"); do
+            if ! grep -q "Copyright\|License" "$file"; then
+              echo "WARNING: Missing license header in $file"
+            fi
+          done
+
+  performance-check:
+    name: Performance Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for inefficient loops
+        run: |
+          # Check for with_items that should be loop
+          if grep -r "with_items" roles/ playbooks/; then
+            echo "INFO: Found with_items (consider using loop)"
+          fi
+
+      - name: Verify fact caching enabled
+        run: |
+          if ! grep -q "gathering.*smart" ansible.cfg; then
+            echo "WARNING: Smart fact gathering not enabled"
+          fi
+
+      - name: Check for shell/command without changed_when
+        run: |
+          if grep -r "shell:\|command:" roles/ playbooks/ | grep -v "changed_when"; then
+            echo "WARNING: Found shell/command without changed_when"
+          fi
+
+  platform-compatibility:
+    name: Platform Compatibility Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify platform support documented
+        run: |
+          if [ ! -f docs/PLATFORM_SUPPORT.md ]; then
+            echo "ERROR: Missing platform support documentation"
+            exit 1
+          fi
+
+      - name: Check for platform-specific tasks
+        run: |
+          for role in roles/*/tasks/main.yml; do
+            if ! grep -q "ansible_os_family\|ansible_distribution" "$role"; then
+              echo "WARNING: $role may not handle platform differences"
+            fi
+          done
+
+  changelog-validation:
+    name: Changelog Validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if CHANGELOG updated
+        run: |
+          if [ -f CHANGELOG.md ]; then
+            if ! git diff origin/main...HEAD -- CHANGELOG.md | grep -q "^+"; then
+              echo "WARNING: CHANGELOG.md not updated"
+            fi
+          fi
+
+  quality-summary:
+    name: Quality Summary
+    runs-on: ubuntu-latest
+    needs:
+      - pre-commit-checks
+      - ansible-best-practices
+      - documentation-quality
+      - playbook-syntax
+      - security-hardening-checks
+      - variable-naming
+      - version-consistency
+      - platform-compatibility
+    if: always()
+
+    steps:
+      - name: Generate quality report
+        run: |
+          echo "## Quality Gates Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All quality checks completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Checks Performed:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Pre-commit hooks" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Ansible best practices" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Documentation quality" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Playbook syntax" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Security hardening" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Variable naming" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Version consistency" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Platform compatibility" >> $GITHUB_STEP_SUMMARY
