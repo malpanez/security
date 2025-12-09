@@ -623,8 +623,14 @@ jobs:
 
 ### FASE 2: SEGURIDAD DE SECRETOS (PRIORIDAD P0 - Crítica)
 
-#### TASK 2.1: Integración con HashiCorp Vault
-**Ubicación**: `roles/vault_integration/`, `plugins/lookup/vault_kv.py`
+#### TASK 2.1: Integración con Secret Manager (Vault o Infisical)
+**Ubicación**: `roles/secrets_integration/`, `plugins/lookup/`
+
+**IMPORTANTE**: Implementar soporte para AMBOS:
+- **Infisical** (recomendado): Open source, $0 cost, MFA nativo
+- **HashiCorp Vault**: Enterprise-grade, más features
+
+Variable de control: `secrets_backend` (valores: `infisical` o `vault`)
 
 **Requerimientos**:
 ```yaml
