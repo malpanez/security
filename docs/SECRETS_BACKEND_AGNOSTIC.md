@@ -12,33 +12,31 @@ Implementar un **sistema unificado** de gestión de secretos que soporte múltip
 
 ## 🏗️ Arquitectura
 
+```mermaid
+flowchart TD
+    A[Ansible Playbooks/Roles] -->|"lookup('secrets', 'path/to/secret')"| B[Unified Secrets Plugin]
+
+    B -->|"if backend == 'infisical'"| C[InfisicalClient]
+    B -->|"if backend == 'vault'"| D[VaultClient]
+    B -->|"if backend == 'aws'"| E[AWSSecretsClient]
+    B -->|"else (fallback)"| F[AnsibleVaultClient]
+
+    C -->|HTTPS REST API| G[Infisical Server]
+    D -->|HTTPS REST API| H[HashiCorp Vault]
+    E -->|AWS SDK boto3| I[AWS Secrets Manager]
+    F -->|File Read| J[group_vars/host_vars encrypted]
+
+    style B fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    style C fill:#2196F3,stroke:#1565C0,stroke-width:2px,color:#fff
+    style D fill:#FF9800,stroke:#E65100,stroke-width:2px,color:#fff
+    style E fill:#9C27B0,stroke:#4A148C,stroke-width:2px,color:#fff
+    style F fill:#607D8B,stroke:#263238,stroke-width:2px,color:#fff
+
+    classDef backendStyle fill:#BBDEFB,stroke:#1976D2,stroke-width:2px
+    class G,H,I,J backendStyle
 ```
-┌─────────────────────────────────────────────┐
-│         Ansible Playbooks/Roles             │
-└────────────────┬────────────────────────────┘
-                 │
-                 │ lookup('secrets', 'path/to/secret')
-                 ▼
-┌─────────────────────────────────────────────┐
-│    Unified Secrets Plugin (Abstraction)     │
-│                                             │
-│  if secrets_backend == 'infisical':         │
-│      → InfisicalClient                      │
-│  elif secrets_backend == 'vault':           │
-│      → VaultClient                          │
-│  elif secrets_backend == 'aws':             │
-│      → AWSSecretsClient                     │
-│  else:                                       │
-│      → AnsibleVaultClient (fallback)        │
-└────────────────┬────────────────────────────┘
-                 │
-        ┌────────┴────────┬────────────┬────────────┐
-        ▼                 ▼            ▼            ▼
-   ┌─────────┐      ┌─────────┐  ┌────────┐  ┌──────────┐
-   │Infisical│      │  Vault  │  │AWS SM  │  │Ansible   │
-   │   API   │      │   API   │  │  API   │  │  Vault   │
-   └─────────┘      └─────────┘  └────────┘  └──────────┘
-```
+
+**Ventaja clave**: Cambiar de backend = cambiar 1 variable (`secrets_backend`)
 
 ---
 
