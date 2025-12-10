@@ -1,0 +1,24 @@
+---
+# Molecule prepare - minimal bootstrap so converge can run cleanly
+- name: Prepare instances for complete stack
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Install Python for Ansible
+      raw: |
+        if command -v apt-get >/dev/null 2>&1; then
+          apt-get update -y && apt-get install -y python3 sudo openssh-server
+        elif command -v dnf >/dev/null 2>&1; then
+          dnf install -y python3 sudo openssh-server
+        elif command -v yum >/dev/null 2>&1; then
+          yum install -y python3 sudo openssh-server
+        fi
+      changed_when: false
+
+    - name: Ensure SSH service is available
+      ansible.builtin.service:
+        name: sshd
+        state: started
+      failed_when: false
