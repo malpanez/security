@@ -96,7 +96,7 @@ jobs:
         run: ansible-galaxy collection build
 
       - name: Upload collection artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ansible-collection
           path: "*.tar.gz"
