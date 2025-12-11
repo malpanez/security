@@ -51,13 +51,15 @@ jobs:
           docker pull almalinux:9
 
       - name: Run Molecule tests
-        env:
-          SCENARIO: ${{ inputs.scenario || 'complete_stack_ci' }}
         run: |
+          SCENARIO="${{ github.event.inputs.scenario }}"
+          if [ -z "$SCENARIO" ]; then
+            SCENARIO="complete_stack_ci"
+          fi
           echo "Running Molecule scenario: $SCENARIO"
           if [ "$SCENARIO" == "complete_stack_ci" ]; then
-            echo "✅ Using CI scenario (3 platforms: Ubuntu 22.04, Debian 12, Rocky 9)"
+            echo "Using CI scenario (3 platforms: Ubuntu 22.04, Debian 12, Rocky 9)"
           else
-            echo "⚠️ Using full scenario (11 platforms - may timeout)"
+            echo "Using full scenario (11 platforms - may timeout)"
           fi
-          molecule test -s $SCENARIO
+          molecule test -s "$SCENARIO"
