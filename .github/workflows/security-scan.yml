@@ -128,7 +128,7 @@ jobs:
           retention-days: 30
 
       - name: Scan SBOM with Grype
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v7
         with:
           sbom: 'sbom.spdx.json'
           severity-cutoff: 'medium'
