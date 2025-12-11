@@ -528,7 +528,7 @@ jobs:
           pip install ansible-core${{ env.ANSIBLE_VERSION }}
 
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: ansible-collection
 
