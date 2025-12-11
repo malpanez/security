@@ -7,11 +7,11 @@
       - name: svc_ci
         shell: /usr/sbin/nologin
         keys:
-          - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdummykeyexample svc_ci"
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdummykeyexample svc_ci
         sftp_only: true
         allow_from:
           - 10.0.0.0/8
-        command: "/usr/lib/openssh/sftp-server"
-        chroot: "/srv/sftp/svc_ci"
+        command: /usr/lib/openssh/sftp-server
+        chroot: /srv/sftp/svc_ci
   roles:
     - role: service_accounts_transfer

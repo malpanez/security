@@ -34,13 +34,13 @@ argument_specs:
         type: dict
         default:
           sshd:
-            - "No PasswordAuthentication"
-            - "PermitRootLogin no"
-            - "MaxAuthTries <=4"
+            - No PasswordAuthentication
+            - PermitRootLogin no
+            - MaxAuthTries <=4
           sudoers:
-            - "require use_pty"
-            - "logfile configured"
-            - "no NOPASSWD:ALL"
+            - require use_pty
+            - logfile configured
+            - no NOPASSWD:ALL
         options:
           sshd:
             description: SSH daemon controls

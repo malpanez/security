@@ -78,26 +78,26 @@ sshd_hardening_kex_algorithms:
 # Sudoers configuration (applied when phase >= 2)
 # IMPORTANT: Default is to preserve main file (production-safe)
 sudoers_baseline_preserve_main: true
-sudoers_baseline_manage_main_file: false  # Don't touch /etc/sudoers
+sudoers_baseline_manage_main_file: false # Don't touch /etc/sudoers
 
 # Sudoers defaults (added to /etc/sudoers.d/)
 sudoers_baseline_defaults:
-  - "use_pty"
-  - "logfile=/var/log/sudo.log"
+  - use_pty
+  - logfile=/var/log/sudo.log
   - "!visiblepw"
-  - "always_set_home"
-  - "env_reset"
+  - always_set_home
+  - env_reset
 
 # Default sudoers groups (customize per environment)
 sudoers_baseline_groups:
   linux_admins:
     require_password: true
     commands:
-      - "/usr/bin/systemctl restart *"
-      - "/usr/bin/systemctl status *"
-      - "/usr/bin/systemctl start *"
-      - "/usr/bin/systemctl stop *"
-      - "/usr/sbin/service *"
+      - /usr/bin/systemctl restart *
+      - /usr/bin/systemctl status *
+      - /usr/bin/systemctl start *
+      - /usr/bin/systemctl stop *
+      - /usr/sbin/service *
 
 # ========================================
 # PHASE 3: MFA (MOST CRITICAL)
@@ -105,8 +105,8 @@ sudoers_baseline_groups:
 
 # PAM MFA configuration (applied when phase >= 3)
 pam_mfa_enabled: "{{ current_security_phase >= 3 }}"
-pam_mfa_yubikey_enabled: auto  # Auto-detect based on capabilities
-pam_mfa_totp_enabled: true     # Always enable TOTP as backup
+pam_mfa_yubikey_enabled: auto # Auto-detect based on capabilities
+pam_mfa_totp_enabled: true # Always enable TOTP as backup
 
 # CRITICAL: Service accounts that bypass MFA
 # Add ALL automation accounts here!
@@ -140,7 +140,7 @@ pam_mfa_pin_verification: false
 selinux_enforcement_enabled: "{{ current_security_phase >= 4 }}"
 
 # Start with permissive for first week, then enforcing
-selinux_enforcement_mode: permissive  # Change to 'enforcing' after validation
+selinux_enforcement_mode: permissive # Change to 'enforcing' after validation
 
 # SELinux packages
 selinux_enforcement_packages:
@@ -156,7 +156,7 @@ selinux_enforcement_restorecon: true
 
 # Audit logging configuration (applied when phase >= 5)
 audit_logging_enabled: "{{ current_security_phase >= 5 }}"
-audit_logging_verbose: false  # Conservative in production
+audit_logging_verbose: false # Conservative in production
 audit_logging_log_commands: true
 
 # ========================================
@@ -171,17 +171,17 @@ compliance_evidence_frameworks:
 
 # CIS Baseline
 cis_baseline_enabled: true
-cis_baseline_mode: "{{ security_mode }}"  # Follows global security_mode
+cis_baseline_mode: "{{ security_mode }}" # Follows global security_mode
 
 # ========================================
 # ROLLOUT CONTROLS
 # ========================================
 
 # Gradual rollout percentage
-rollout_percentage: "10%"  # Process 10% of hosts at a time
+rollout_percentage: 10% # Process 10% of hosts at a time
 
 # Max failure percentage before stopping
-max_fail_percentage: 5
+rollout_max_fail_percentage: 5
 
 # Maintenance window requirement
 security_require_maintenance_window: true

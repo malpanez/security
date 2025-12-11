@@ -10,7 +10,7 @@
   hosts: new_servers
   become: true
   gather_facts: true
-  serial: 5  # Process 5 at a time
+  serial: 5 # Process 5 at a time
 
   vars:
     # Aggressive enforcement for new servers
@@ -25,7 +25,7 @@
 
   pre_tasks:
     - name: Display enforcement warning
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           SECURITY ENFORCEMENT - NEW SERVERS
@@ -45,10 +45,9 @@
           ========================================
 
     - name: Backup current configurations
-      include_tasks: ../tasks/backup-configs.yml
-
+      ansible.builtin.include_tasks: ../tasks/backup-configs.yml
     - name: Detect system capabilities
-      include_role:
+      ansible.builtin.include_role:
         name: security_capabilities
 
   roles:
@@ -80,26 +79,26 @@
         # New servers - use modular approach from start
         sudoers_baseline_preserve_main: false
         sudoers_baseline_defaults:
-          - "use_pty"
-          - "logfile=/var/log/sudo.log"
-          - "log_output"
-          - "log_input"
+          - use_pty
+          - logfile=/var/log/sudo.log
+          - log_output
+          - log_input
           - "!visiblepw"
-          - "always_set_home"
-          - "env_reset"
+          - always_set_home
+          - env_reset
         sudoers_baseline_groups:
           linux_admins:
             require_password: true
             commands:
-              - "/usr/bin/systemctl restart *"
-              - "/usr/bin/systemctl status *"
-              - "/usr/bin/systemctl start *"
-              - "/usr/bin/systemctl stop *"
+              - /usr/bin/systemctl restart *
+              - /usr/bin/systemctl status *
+              - /usr/bin/systemctl start *
+              - /usr/bin/systemctl stop *
           devops:
             require_password: false
             commands:
-              - "/usr/bin/docker *"
-              - "/usr/bin/kubectl *"
+              - /usr/bin/docker *
+              - /usr/bin/kubectl *
 
     # Phase 3: PAM MFA (if capable)
     - role: pam_mfa
@@ -109,7 +108,7 @@
       vars:
         pam_mfa_enabled: true
         pam_mfa_yubikey_enabled: "{{ security_capabilities_yubikey_available | default(false) }}"
-        pam_mfa_totp_enabled: true  # Always enable TOTP as backup
+        pam_mfa_totp_enabled: true # Always enable TOTP as backup
         # Service accounts bypass MFA
         pam_mfa_service_accounts:
           - ansible
@@ -127,7 +126,7 @@
         - ansible_os_family == 'RedHat'
       vars:
         selinux_enforcement_enabled: true
-        selinux_enforcement_mode: enforcing  # Aggressive on new servers
+        selinux_enforcement_mode: enforcing # Aggressive on new servers
 
     # Phase 5: Audit Logging
     - role: audit_logging
@@ -145,10 +144,9 @@
 
   post_tasks:
     - name: Validate services after enforcement
-      include_tasks: ../tasks/validate-services.yml
-
+      ansible.builtin.include_tasks: ../tasks/validate-services.yml
     - name: Display enforcement summary
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           SECURITY ENFORCEMENT COMPLETE
@@ -168,7 +166,7 @@
           ========================================
 
     - name: Final access verification reminder
-      debug:
+      ansible.builtin.debug:
         msg: |
           ⚠️  CRITICAL REMINDER ⚠️
 

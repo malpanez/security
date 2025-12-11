@@ -20,13 +20,13 @@
     # Phase controls - customize based on rollout phase
     security_phase_ssh_hardening: true
     security_phase_sudoers: true
-    security_phase_mfa: false  # Usually disabled in dry-run
+    security_phase_mfa: false # Usually disabled in dry-run
     security_phase_selinux: false
     security_phase_audit: true
 
   pre_tasks:
     - name: Display dry-run warning
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           SECURITY DRY-RUN MODE
@@ -45,13 +45,13 @@
           ========================================
 
     - name: Verify check mode is enabled
-      assert:
+      ansible.builtin.assert:
         that:
           - ansible_check_mode
         fail_msg: |
           ERROR: This playbook must be run with --check flag
           Usage: ansible-playbook playbooks/dry-run.yml --check --diff -i inventory
-        success_msg: "Check mode confirmed - dry-run will proceed safely"
+        success_msg: Check mode confirmed - dry-run will proceed safely
 
   roles:
     # Phase 1: SSH Hardening
@@ -71,15 +71,15 @@
         # Preserve existing /etc/sudoers (hybrid approach)
         sudoers_baseline_preserve_main: true
         sudoers_baseline_defaults:
-          - "use_pty"
-          - "logfile=/var/log/sudo.log"
+          - use_pty
+          - logfile=/var/log/sudo.log
           - "!visiblepw"
         sudoers_baseline_groups:
           linux_admins:
             require_password: true
             commands:
-              - "/usr/bin/systemctl restart *"
-              - "/usr/bin/systemctl status *"
+              - /usr/bin/systemctl restart *
+              - /usr/bin/systemctl status *
 
     # Phase 3: PAM MFA (usually skip in dry-run)
     - role: pam_mfa
@@ -114,7 +114,7 @@
 
   post_tasks:
     - name: Display dry-run summary
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           SECURITY DRY-RUN COMPLETE
@@ -137,7 +137,7 @@
           ========================================
 
     - name: Reminder about actual enforcement
-      debug:
+      ansible.builtin.debug:
         msg: |
           To actually apply these changes:
           1. Test in staging first: playbooks/enforce-staging.yml

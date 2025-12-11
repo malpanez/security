@@ -1,21 +1,21 @@
 ---
 sudoers_baseline_strict: false
 sudoers_baseline_defaults:
-  - "use_pty"
-  - "logfile=/var/log/sudo.log"
-  - "timestamp_timeout=5"
-  - "passwd_tries=3"
-  - "requiretty"
+  - use_pty
+  - logfile=/var/log/sudo.log
+  - timestamp_timeout=5
+  - passwd_tries=3
+  - requiretty
   - "!authenticate"
-sudoers_baseline_secure_path: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+sudoers_baseline_secure_path: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 sudoers_baseline_groups:
   linux_admins:
     require_password: true
     commands:
-      - "/usr/bin/systemctl status *"
+      - /usr/bin/systemctl status *
   svc_automation:
     require_password: false
     commands:
-      - "/usr/bin/systemctl restart myservice"
+      - /usr/bin/systemctl restart myservice
 sudoers_baseline_sudoers_path: /etc/sudoers
 sudoers_baseline_files_path: /etc/sudoers.d

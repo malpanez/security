@@ -9,7 +9,7 @@
 
 - name: Display validation start
   debug:
-    msg: "Starting post-deployment service validation..."
+    msg: Starting post-deployment service validation...
 
 # SSH Service Validation
 - name: Check if sshd is running
@@ -34,7 +34,7 @@
       - sshd_status is success
       - sshd_syntax.rc == 0
     fail_msg: "CRITICAL: SSH service validation failed!"
-    success_msg: "✓ SSH service is functional"
+    success_msg: ✓ SSH service is functional
   when: security_phase_ssh_hardening | default(false)
 
 - name: Test SSH port is listening
@@ -50,7 +50,7 @@
     that:
       - ssh_port_test is success
     fail_msg: "CRITICAL: SSH port 22 is not accessible!"
-    success_msg: "✓ SSH port 22 is accessible"
+    success_msg: ✓ SSH port 22 is accessible
 
 # Sudoers Validation
 - name: Validate /etc/sudoers syntax
@@ -79,7 +79,7 @@
       - sudoers_syntax.rc == 0
       - sudoers_d_syntax.rc == 0
     fail_msg: "CRITICAL: Sudoers configuration has syntax errors!"
-    success_msg: "✓ Sudoers configuration is valid"
+    success_msg: ✓ Sudoers configuration is valid
   when: security_phase_sudoers | default(false)
 
 - name: Test sudo functionality
@@ -91,9 +91,9 @@
 - name: Assert sudo command is functional
   assert:
     that:
-      - sudo_test.rc in [0, 1]  # 0 = success, 1 = password required (both OK)
+      - sudo_test.rc in [0, 1] # 0 = success, 1 = password required (both OK)
     fail_msg: "CRITICAL: Sudo command is not functional!"
-    success_msg: "✓ Sudo command is functional"
+    success_msg: ✓ Sudo command is functional
 
 # PAM Validation (if MFA enabled)
 - name: Check PAM sshd configuration exists
@@ -129,7 +129,7 @@
       - pam_mfa_check.rc == 0
       - pam_bypass_check.rc == 0
     fail_msg: "WARNING: PAM MFA configuration may be incomplete"
-    success_msg: "✓ PAM MFA is configured with service account bypass"
+    success_msg: ✓ PAM MFA is configured with service account bypass
   when:
     - security_phase_mfa | default(false)
     - pam_mfa_enabled | default(false)
@@ -202,7 +202,7 @@
       - auditd_status is success
       - audit_rules.rc == 0
     fail_msg: "WARNING: Audit service may not be fully functional"
-    success_msg: "✓ Audit service is functional"
+    success_msg: ✓ Audit service is functional
   when: security_phase_audit | default(false)
   ignore_errors: true
 
@@ -239,7 +239,7 @@
 # Generate validation report
 - name: Create validation report
   copy:
-    dest: "/tmp/security-validation-{{ ansible_date_time.epoch }}.txt"
+    dest: /tmp/security-validation-{{ ansible_date_time.epoch }}.txt
     content: |
       Security Services Validation Report
       ====================================
@@ -257,7 +257,7 @@
       Sudoers:
       - /etc/sudoers syntax: {{ 'PASS' if sudoers_syntax.rc == 0 else 'FAIL' }}
       - /etc/sudoers.d/ syntax: {{ 'PASS' if sudoers_d_syntax.rc == 0 else 'FAIL' }}
-      - sudo command functional: {{ 'PASS' if sudo_test.rc in [0,1] else 'FAIL' }}
+      - sudo command functional: {{ 'PASS' if sudo_test.rc in [0, 1] else 'FAIL' }}
       {% endif %}
 
       {% if security_phase_mfa | default(false) and pam_mfa_enabled | default(false) %}
@@ -285,13 +285,13 @@
       {% if not (sshd_status is success and ssh_port_test is success) %}
       - CRITICAL: SSH service issues detected - investigate immediately
       {% endif %}
-      {% if security_phase_sudoers | default(false) and sudo_test.rc not in [0,1] %}
+      {% if security_phase_sudoers | default(false) and sudo_test.rc not in [0, 1] %}
       - CRITICAL: Sudo functionality issues - may need rollback
       {% endif %}
       - Monitor logs for 24-48 hours post-deployment
       - Verify application functionality
       - Test service account access
-    mode: '0640'
+    mode: "0640"
 
 - name: Display validation summary
   debug:
@@ -302,7 +302,7 @@
 
       Critical Services:
       - SSH: {{ '✓ PASS' if (sshd_status is success and ssh_port_test is success) else '✗ FAIL' }}
-      - Sudo: {{ '✓ PASS' if sudo_test.rc in [0,1] else '✗ FAIL' }}
+      - Sudo: {{ '✓ PASS' if sudo_test.rc in [0, 1] else '✗ FAIL' }}
       {% if security_phase_mfa | default(false) %}
       - PAM MFA: {{ '✓ Configured' if pam_mfa_check.rc == 0 else '⚠ Check manually' }}
       {% endif %}

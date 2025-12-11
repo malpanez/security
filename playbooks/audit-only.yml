@@ -23,7 +23,7 @@
 
   pre_tasks:
     - name: Display audit mode warning
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           SECURITY AUDIT MODE (NO CHANGES)
@@ -42,10 +42,10 @@
           ========================================
 
     - name: Ensure review output directory exists
-      file:
+      ansible.builtin.file:
         path: "{{ security_review_output }}"
         state: directory
-        mode: '0750'
+        mode: "0750"
 
   roles:
     # Phase 0: Capability Detection
@@ -78,7 +78,7 @@
     - role: pam_mfa
       when: security_capabilities_mfa_capable | default(false)
       vars:
-        pam_mfa_enabled: false  # Don't enable in review
+        pam_mfa_enabled: false # Don't enable in review
         pam_mfa_review_mode: true
         pam_mfa_review_output: "{{ security_review_output }}/pam"
 
@@ -86,7 +86,7 @@
     - role: selinux_enforcement
       when: ansible_os_family == 'RedHat'
       vars:
-        selinux_enforcement_enabled: false  # Don't change in review
+        selinux_enforcement_enabled: false # Don't change in review
         selinux_enforcement_review_mode: true
         selinux_enforcement_review_output: "{{ security_review_output }}/selinux"
 
@@ -100,12 +100,12 @@
     - role: cis_baseline
       vars:
         cis_baseline_enabled: true
-        cis_baseline_mode: review  # Review only
+        cis_baseline_mode: review # Review only
         cis_baseline_output: "{{ security_review_output }}/cis-baseline"
 
   post_tasks:
     - name: Display review summary
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           SECURITY AUDIT COMPLETE
@@ -122,7 +122,7 @@
           ========================================
 
     - name: Generate audit summary report
-      copy:
+      ansible.builtin.copy:
         dest: "{{ security_review_output }}/AUDIT_SUMMARY.txt"
         content: |
           Security Audit Summary
@@ -142,4 +142,4 @@
           Review Output Directory: {{ security_review_output }}
 
           Status: AUDIT COMPLETE (NO CHANGES MADE)
-        mode: '0640'
+        mode: "0640"

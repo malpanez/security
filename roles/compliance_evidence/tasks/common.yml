@@ -1,11 +1,11 @@
 ---
-- name: "common | Ensure evidence directory exists"
+- name: common | Ensure evidence directory exists
   ansible.builtin.file:
     path: "{{ compliance_evidence_output_dir }}"
     state: directory
     mode: "0750"
 
-- name: "common | Stat evidence paths"
+- name: common | Stat evidence paths
   ansible.builtin.stat:
     path: "{{ item.path }}"
   register: compliance_evidence_stats
@@ -13,7 +13,7 @@
   failed_when: false
   tags: [review]
 
-- name: "common | Copy file evidence"
+- name: common | Copy file evidence
   ansible.builtin.copy:
     src: "{{ item.item.path }}"
     dest: "{{ compliance_evidence_output_dir }}/{{ inventory_hostname }}-{{ item.item.name }}"
@@ -26,7 +26,7 @@
   failed_when: false
   tags: [review]
 
-- name: "common | Archive directory evidence"
+- name: common | Archive directory evidence
   community.general.archive:
     path: "{{ item.item.path }}"
     dest: "{{ compliance_evidence_output_dir }}/{{ inventory_hostname }}-{{ item.item.name }}.tar.gz"
@@ -38,7 +38,7 @@
   failed_when: false
   tags: [review]
 
-- name: "common | Collect command output evidence"
+- name: common | Collect command output evidence
   ansible.builtin.shell: "{{ item.command }}"
   args:
     executable: /bin/bash
@@ -48,7 +48,7 @@
   failed_when: false
   tags: [review]
 
-- name: "common | Write command evidence to files"
+- name: common | Write command evidence to files
   ansible.builtin.copy:
     dest: >-
       {{ compliance_evidence_output_dir }}/{{ inventory_hostname }}-{{ item.item.name

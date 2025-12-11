@@ -29,7 +29,7 @@ security_phase_audit: "{{ current_security_phase >= 5 }}"
 sshd_hardening_permit_root_login: false
 sshd_hardening_password_authentication: false
 sshd_hardening_pubkey_authentication: true
-sshd_hardening_max_auth_tries: 4  # Slightly more lenient
+sshd_hardening_max_auth_tries: 4 # Slightly more lenient
 sshd_hardening_log_level: VERBOSE
 sshd_hardening_x11_forwarding: false
 sshd_hardening_use_pam: true
@@ -50,20 +50,20 @@ sshd_hardening_macs:
 
 # CRITICAL: NEVER touch main /etc/sudoers in production
 sudoers_baseline_preserve_main: true
-sudoers_baseline_manage_main_file: false  # Do NOT modify main file
+sudoers_baseline_manage_main_file: false # Do NOT modify main file
 
 # Only add to /etc/sudoers.d/
 sudoers_baseline_defaults:
-  - "use_pty"
-  - "logfile=/var/log/sudo.log"
+  - use_pty
+  - logfile=/var/log/sudo.log
 
 # Conservative groups (expand as needed)
 sudoers_baseline_groups:
   linux_admins:
     require_password: true
     commands:
-      - "/usr/bin/systemctl restart *"
-      - "/usr/bin/systemctl status *"
+      - /usr/bin/systemctl restart *
+      - /usr/bin/systemctl status *
 
 # ========================================
 # PAM MFA (Phase 3 - MOST CRITICAL)
@@ -122,7 +122,7 @@ selinux_enforcement_packages:
 # ========================================
 
 audit_logging_enabled: "{{ current_security_phase >= 5 }}"
-audit_logging_verbose: false  # Conservative logging in production
+audit_logging_verbose: false # Conservative logging in production
 audit_logging_log_commands: true
 
 # ========================================
@@ -142,16 +142,16 @@ cis_baseline_mode: "{{ security_mode }}"
 # ========================================
 
 # GRADUAL rollout - 10% of production at a time
-rollout_percentage: "10%"
+rollout_percentage: 10%
 
 # Stop if more than 5% fail
-max_fail_percentage: 5
+rollout_max_fail_percentage: 5
 
 # REQUIRE maintenance window
 security_require_maintenance_window: true
-security_maintenance_day: Saturday  # Or your preferred maintenance day
-security_maintenance_hour_start: 2  # 2 AM
-security_maintenance_hour_end: 6    # 6 AM
+security_maintenance_day: Saturday # Or your preferred maintenance day
+security_maintenance_hour_start: 2 # 2 AM
+security_maintenance_hour_end: 6 # 6 AM
 
 # Automatic rollback on failure
 security_production_rollback_on_failure: true

@@ -1,10 +1,10 @@
 ---
-- name: "Include common service account tasks"
+- name: Include common service account tasks
   ansible.builtin.include_tasks: common.yml
   when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
-- name: "Include platform-specific service account tasks"
+- name: Include platform-specific service account tasks
   ansible.builtin.set_fact:
     service_accounts_transfer_platform_task: >-
       {{
@@ -16,7 +16,7 @@
       }}
   tags: [enforce]
 
-- name: "Platform-specific service account tasks"
+- name: Platform-specific service account tasks
   ansible.builtin.include_tasks: "{{ service_accounts_transfer_platform_task }}"
   when:
     - service_accounts_transfer_platform_task is not none

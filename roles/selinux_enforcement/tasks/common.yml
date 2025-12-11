@@ -1,17 +1,17 @@
 ---
-- name: "common | Ensure SELinux packages are present"
+- name: common | Ensure SELinux packages are present
   ansible.builtin.package:
     name: "{{ selinux_enforcement_packages }}"
     state: present
   tags: [enforce]
 
-- name: "common | Set SELinux mode"
+- name: common | Set SELinux mode
   ansible.posix.selinux:
     policy: targeted
     state: "{{ selinux_enforcement_mode }}"
   tags: [enforce]
 
-- name: "common | Set SELinux booleans"
+- name: common | Set SELinux booleans
   ansible.posix.seboolean:
     name: "{{ item.name }}"
     state: "{{ item.state | default('yes') }}"
@@ -20,7 +20,7 @@
   when: selinux_enforcement_booleans | length > 0
   tags: [enforce]
 
-- name: "common | Manage SELinux contexts"
+- name: common | Manage SELinux contexts
   community.general.sefcontext:
     target: "{{ item.target }}"
     setype: "{{ item.setype }}"
@@ -29,8 +29,8 @@
   when: selinux_enforcement_contexts | length > 0
   tags: [enforce]
 
-- name: "common | Restorecon managed paths"
-  ansible.builtin.command: "restorecon -Rv {{ item.target }}"
+- name: common | Restorecon managed paths
+  ansible.builtin.command: restorecon -Rv {{ item.target }}
   loop: "{{ selinux_enforcement_contexts }}"
   when: selinux_enforcement_restorecon and selinux_enforcement_contexts | length > 0
   changed_when: false

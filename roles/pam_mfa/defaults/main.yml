@@ -23,7 +23,6 @@ pam_mfa_service_bypass_group: mfa-bypass
 # Authselect/profile names per OS family
 pam_mfa_rhel_authselect_profile: minimal
 pam_mfa_rhel_authselect_features: []
-
 # Controls for backup TOTP
 pam_mfa_totp_enabled: true
 pam_mfa_totp_allowed_group: mfa-breakglass
@@ -31,7 +30,6 @@ pam_mfa_totp_rate_limit: true
 
 # Bypass controls for service accounts
 pam_mfa_service_bypass_allow_from: []
-
 # File locations
 pam_mfa_u2f_keys_path: /etc/Yubico/u2f_keys
 pam_mfa_fido2_authfile: /etc/fido2/authorized_fido2

@@ -21,8 +21,8 @@ sudoers_baseline_preserve_main: true
 sudoers_baseline_manage_main_file: false
 
 # Gradual rollout - 10% at a time
-rollout_percentage: "10%"
-max_fail_percentage: 5
+rollout_percentage: 10%
+rollout_max_fail_percentage: 5
 
 # Maintenance window REQUIRED
 security_require_maintenance_window: true
@@ -112,7 +112,7 @@ audit_logging_log_commands: true
 compliance_evidence_output_path: /var/log/security-compliance
 compliance_evidence_frameworks:
   - soc2
-  - pci-dss  # If applicable
+  - pci-dss # If applicable
 
 # ============================================
 # PRODUCTION-SPECIFIC SUDO GROUPS
@@ -122,20 +122,20 @@ sudoers_baseline_groups:
   linux_admins:
     require_password: true
     commands:
-      - "/usr/bin/systemctl restart *"
-      - "/usr/bin/systemctl status *"
-      - "/usr/bin/journalctl *"
+      - /usr/bin/systemctl restart *
+      - /usr/bin/systemctl status *
+      - /usr/bin/journalctl *
 
   devops:
     require_password: false
     commands:
-      - "/usr/bin/docker ps"
-      - "/usr/bin/docker logs *"
-      - "/usr/bin/kubectl get *"
-      - "/usr/bin/kubectl describe *"
+      - /usr/bin/docker ps
+      - /usr/bin/docker logs *
+      - /usr/bin/kubectl get *
+      - /usr/bin/kubectl describe *
 
   monitoring:
     require_password: false
     commands:
-      - "/usr/bin/systemctl status *"
-      - "/usr/bin/journalctl *"
+      - /usr/bin/systemctl status *
+      - /usr/bin/journalctl *

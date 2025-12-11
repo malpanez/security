@@ -22,11 +22,11 @@
 
   # CRITICAL: Gradual rollout
   serial: "{{ rollout_percentage | default('10%') }}"
-  max_fail_percentage: 5  # Stop if >5% fail
 
   vars:
     # Which phase are we in? (1-6)
     security_phase: "{{ security_phase | default(1) }}"
+    rollout_max_fail_percentage: "{{ rollout_max_fail_percentage | default(5) }}" # Stop if >5% fail
 
     # Conservative enforcement
     security_mode: enforce
@@ -46,7 +46,7 @@
 
   pre_tasks:
     - name: Display production enforcement warning
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           SECURITY ENFORCEMENT - PRODUCTION
@@ -66,14 +66,16 @@
           ========================================
 
     - name: Check if in maintenance window
+      when: security_require_maintenance_window | default(true)
+
       block:
         - name: Get current time
-          set_fact:
+          ansible.builtin.set_fact:
             current_hour: "{{ ansible_date_time.hour | int }}"
             current_day: "{{ ansible_date_time.weekday_name }}"
 
         - name: Verify maintenance window
-          assert:
+          ansible.builtin.assert:
             that:
               - current_day == security_maintenance_day
               - current_hour | int >= security_maintenance_hour_start | int
@@ -84,11 +86,9 @@
               Required: {{ security_maintenance_day }} {{ security_maintenance_hour_start }}:00-{{ security_maintenance_hour_end }}:00
 
               Override with: -e security_require_maintenance_window=false (NOT RECOMMENDED)
-            success_msg: "Maintenance window confirmed"
-      when: security_require_maintenance_window | default(true)
-
+            success_msg: Maintenance window confirmed
     - name: Critical reminder - emergency access
-      debug:
+      ansible.builtin.debug:
         msg: |
           ⚠️  CRITICAL PRODUCTION DEPLOYMENT ⚠️
 
@@ -102,15 +102,14 @@
           This will pause for 60 seconds. Press Ctrl+C to abort.
 
     - name: Final confirmation pause
-      pause:
+      ansible.builtin.pause:
         seconds: 60
-        prompt: "PRODUCTION ENFORCEMENT - Starting in 60 seconds. Ctrl+C to abort."
+        prompt: PRODUCTION ENFORCEMENT - Starting in 60 seconds. Ctrl+C to abort.
 
     - name: Backup configurations
-      include_tasks: ../tasks/backup-configs.yml
-
+      ansible.builtin.include_tasks: ../tasks/backup-configs.yml
     - name: Detect capabilities
-      include_role:
+      ansible.builtin.include_role:
         name: security_capabilities
 
   roles:
@@ -122,7 +121,7 @@
         sshd_hardening_password_authentication: false
         sshd_hardening_permit_root_login: false
         sshd_hardening_pubkey_authentication: true
-        sshd_hardening_max_auth_tries: 4  # Slightly more lenient
+        sshd_hardening_max_auth_tries: 4 # Slightly more lenient
 
     # Phase 2: Sudoers (ALWAYS preserve main in production)
     - role: sudoers_baseline
@@ -130,16 +129,16 @@
       vars:
         # CRITICAL: Preserve existing /etc/sudoers in production
         sudoers_baseline_preserve_main: true
-        sudoers_baseline_manage_main_file: false  # Don't touch it
+        sudoers_baseline_manage_main_file: false # Don't touch it
         # Only manage sudoers.d/
         sudoers_baseline_defaults:
-          - "use_pty"
-          - "logfile=/var/log/sudo.log"
+          - use_pty
+          - logfile=/var/log/sudo.log
         sudoers_baseline_groups:
           linux_admins:
             require_password: true
             commands:
-              - "/usr/bin/systemctl restart *"
+              - /usr/bin/systemctl restart *
 
     # Phase 3: MFA (MOST CRITICAL - Extra validation)
     - role: pam_mfa
@@ -174,14 +173,15 @@
       vars:
         selinux_enforcement_enabled: true
         # Conservative: permissive for first week
-        selinux_enforcement_mode: "{{ 'enforcing' if selinux_enforcement_production_ready | default(false) else 'permissive' }}"
+        selinux_enforcement_mode: "{{ 'enforcing' if selinux_enforcement_production_ready | default(false) else 'permissive'
+          }}"
 
     # Phase 5: Audit Logging
     - role: audit_logging
       when: security_phase_audit
       vars:
         audit_logging_enabled: true
-        audit_logging_verbose: false  # Conservative in prod
+        audit_logging_verbose: false # Conservative in prod
 
     # CIS Baseline (always in enforce)
     - role: cis_baseline
@@ -191,10 +191,9 @@
 
   post_tasks:
     - name: Validate services
-      include_tasks: ../tasks/validate-services.yml
-
+      ansible.builtin.include_tasks: ../tasks/validate-services.yml
     - name: Critical validation - SSH
-      wait_for:
+      ansible.builtin.wait_for:
         host: "{{ inventory_hostname }}"
         port: 22
         timeout: 30
@@ -204,7 +203,7 @@
       register: ssh_validation
 
     - name: Critical validation - Sudo
-      command: sudo -n true
+      ansible.builtin.command: sudo -n true
       register: sudo_validation
       failed_when: false
       changed_when: false
@@ -212,23 +211,22 @@
     - name: Rollback on validation failure
       block:
         - name: Check validation results
-          assert:
+          ansible.builtin.assert:
             that:
               - ssh_validation is success
               - sudo_validation.rc in [0, 1]
-            fail_msg: "Validation failed - initiating rollback"
+            fail_msg: Validation failed - initiating rollback
 
       rescue:
         - name: Execute emergency rollback
-          include_tasks: ../tasks/rollback.yml
-
+          ansible.builtin.include_tasks: ../tasks/rollback.yml
         - name: Fail playbook after rollback
-          fail:
-            msg: "Validation failed on {{ inventory_hostname }} - changes rolled back"
+          ansible.builtin.fail:
+            msg: Validation failed on {{ inventory_hostname }} - changes rolled back
 
     - name: Generate production enforcement report
-      copy:
-        dest: "/var/log/security-enforcement-{{ ansible_date_time.epoch }}.log"
+      ansible.builtin.copy:
+        dest: /var/log/security-enforcement-{{ ansible_date_time.epoch }}.log
         content: |
           Production Security Enforcement Report
           =======================================
@@ -252,10 +250,10 @@
 
           Status: SUCCESS
           Engineer: {{ lookup('env', 'USER') }}
-        mode: '0640'
+        mode: "0640"
 
     - name: Display production summary
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           PRODUCTION ENFORCEMENT - BATCH COMPLETE
@@ -279,11 +277,11 @@
           ========================================
 
     - name: Batch completion pause
-      pause:
+      ansible.builtin.pause:
         seconds: 300
         prompt: |
           Batch complete. Monitoring for 5 minutes before next batch.
           - Check logs
           - Verify applications
           - Press Ctrl+C to stop rollout if issues detected
-      when: ansible_play_batch != ansible_play_hosts  # Not last batch
+      when: ansible_play_batch != ansible_play_hosts # Not last batch

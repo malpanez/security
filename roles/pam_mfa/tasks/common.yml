@@ -1,5 +1,5 @@
 ---
-- name: "common | Ensure MFA groups exist"
+- name: common | Ensure MFA groups exist
   ansible.builtin.group:
     name: "{{ item }}"
     state: present
@@ -9,7 +9,7 @@
   when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
-- name: "common | Ensure U2F authfile directory exists"
+- name: common | Ensure U2F authfile directory exists
   ansible.builtin.file:
     path: "{{ pam_mfa_u2f_keys_path | dirname }}"
     state: directory
@@ -19,7 +19,7 @@
   when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
-- name: "common | Ensure TOTP directory exists"
+- name: common | Ensure TOTP directory exists
   ansible.builtin.file:
     path: "{{ pam_mfa_totp_dir }}"
     state: directory

@@ -1,0 +1,141 @@
+name: CI with UV
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  UV_VERSION: "0.5.0"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Create virtualenv
+        run: uv venv
+
+      - name: Install dependencies (pinned via requirements-dev.txt)
+        run: |
+          uv pip install -r requirements-dev.txt
+
+      - name: Install Ansible Galaxy collections
+        run: |
+          source .venv/bin/activate
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: Run ansible-lint
+        run: |
+          source .venv/bin/activate
+          ansible-lint --profile production
+
+      - name: Run yamllint
+        run: |
+          source .venv/bin/activate
+          yamllint -c .yamllint.yml .
+
+      - name: Run ruff check
+        run: |
+          source .venv/bin/activate
+          ruff check .
+
+  test-roles:
+    name: Test ${{ matrix.role }}
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        role:
+          - security_capabilities
+          - sshd_hardening
+          - pam_mfa
+          - sudoers_baseline
+          - selinux_enforcement
+          - service_accounts_transfer
+          - audit_logging
+          - compliance_evidence
+          - cis_baseline
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Create virtualenv
+        run: uv venv
+
+      - name: Install dependencies (pinned via requirements-dev.txt)
+        run: |
+          uv pip install -r requirements-dev.txt
+
+      - name: Install Ansible Galaxy collections
+        run: |
+          source .venv/bin/activate
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: Run Molecule test
+        run: |
+          source .venv/bin/activate
+          cd roles/${{ matrix.role }}
+          molecule test
+
+  build:
+    name: Build Collection
+    runs-on: ubuntu-latest
+    needs: test-roles
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Create virtualenv
+        run: uv venv
+
+      - name: Install Ansible
+        run: uv pip install -r requirements-dev.txt
+
+      - name: Build collection
+        run: |
+          source .venv/bin/activate
+          ansible-galaxy collection build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: collection
+          path: "*.tar.gz"

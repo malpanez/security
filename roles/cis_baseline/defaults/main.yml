@@ -1,15 +1,15 @@
 ---
 cis_baseline_enabled: false
-cis_baseline_mode: enforce  # enforce|review
+cis_baseline_mode: enforce # enforce|review
 cis_baseline_controls:
   sshd:
-    - "No PasswordAuthentication"
-    - "PermitRootLogin no"
-    - "MaxAuthTries <=4"
+    - No PasswordAuthentication
+    - PermitRootLogin no
+    - MaxAuthTries <=4
   sudoers:
-    - "require use_pty"
-    - "logfile configured"
-    - "no NOPASSWD:ALL"
+    - require use_pty
+    - logfile configured
+    - no NOPASSWD:ALL
 cis_baseline_sshd_config_path: /etc/ssh/sshd_config
 cis_baseline_sudoers_path: /etc/sudoers
 cis_baseline_sudoers_dir: /etc/sudoers.d

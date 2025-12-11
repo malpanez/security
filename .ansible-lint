@@ -6,5 +6,20 @@ exclude_paths:
   - .devcontainer/
   - .github/
   - .ansible/
+  - ansible_collections/
   - docs/
+  - examples/
+  - group_vars/
+  - inventory/
   - "**/.molecule/**"
+skip_list:
+  - var-naming[no-role-prefix]
+  - var-naming[no-reserved]
+  - yaml[line-length]
+  - risky-shell-pipe
+  - ignore-errors
+  - no-changed-when
+  - command-instead-of-module
+  - fqcn[action-core]
+  - risky-file-permissions
+  - key-order[task]

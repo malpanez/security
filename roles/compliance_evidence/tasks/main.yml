@@ -1,14 +1,14 @@
 ---
-- name: "Load OS-specific variables"
+- name: Load OS-specific variables
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
 
-- name: "Collect compliance evidence when enabled"
+- name: Collect compliance evidence when enabled
   when: compliance_evidence_enabled | bool
   block:
-    - name: "Include common evidence tasks"
+    - name: Include common evidence tasks
       ansible.builtin.include_tasks: common.yml
 
-    - name: "Include platform-specific evidence tasks"
+    - name: Include platform-specific evidence tasks
       vars:
         compliance_evidence_platform_task: >-
           {{
@@ -23,7 +23,7 @@
         - compliance_evidence_platform_task is not none
         - compliance_evidence_platform_task | length > 0
 
-    - name: "Include capabilities evidence when available"
+    - name: Include capabilities evidence when available
       ansible.builtin.template:
         src: capabilities.json.j2
         dest: "{{ compliance_evidence_output_dir }}/capabilities.json"
@@ -31,7 +31,7 @@
       when: security_capabilities is defined
       tags: [review]
 
-    - name: "Include capabilities markdown when available"
+    - name: Include capabilities markdown when available
       ansible.builtin.template:
         src: capabilities.md.j2
         dest: "{{ compliance_evidence_output_dir }}/capabilities.md"
@@ -39,8 +39,8 @@
       when: security_capabilities is defined
       tags: [review]
 
-    - name: "Include sshd policy evidence"
+    - name: Include sshd policy evidence
       ansible.builtin.include_tasks: sshd_policy.yml
 
-    - name: "Include selinux status evidence"
+    - name: Include selinux status evidence
       ansible.builtin.include_tasks: selinux_status.yml

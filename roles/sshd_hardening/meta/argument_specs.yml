@@ -1,3 +1,4 @@
+---
 argument_specs:
   main:
     short_description: Harden OpenSSH server configuration safely.
@@ -8,7 +9,7 @@ argument_specs:
         description: Enable password-based authentication if true, otherwise require key-based auth.
       sshd_hardening_permit_root_login:
         type: str
-        choices: ["yes", "no", "prohibit-password"]
+        choices: ["yes", "no", prohibit-password]
         default: "no"
         description: Control whether root is allowed to log in via SSH.
       sshd_hardening_permit_empty_passwords:
@@ -49,7 +50,7 @@ argument_specs:
         description: Maximum open sessions permitted.
       sshd_hardening_max_startups:
         type: str
-        default: "10:30:60"
+        default: 10:30:60
         description: Limits unauthenticated connections (start:rate:full).
       sshd_hardening_print_motd:
         type: bool
@@ -176,11 +177,11 @@ argument_specs:
         description: "List of Match blocks for service accounts (keys: group/match, options)."
       sshd_hardening_service_name:
         type: str
-        default: "sshd"
+        default: sshd
         description: Service name to manage for the SSH daemon.
       sshd_hardening_package_name:
         type: str
-        default: "openssh-server"
+        default: openssh-server
         description: Package providing the SSH daemon.
       sshd_hardening_hostkey_algorithms:
         type: list

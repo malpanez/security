@@ -1,9 +1,9 @@
 ---
-- name: "Cis Enforce | Ensure PasswordAuthentication no"
+- name: Cis Enforce | Ensure PasswordAuthentication no
   ansible.builtin.lineinfile:
     path: "{{ cis_baseline_sshd_config_path }}"
-    regexp: '^PasswordAuthentication'
-    line: 'PasswordAuthentication no'
+    regexp: ^PasswordAuthentication
+    line: PasswordAuthentication no
     create: true
     mode: "0600"
     owner: root
@@ -11,11 +11,11 @@
   notify: Restart sshd
   tags: [cis_enforce]
 
-- name: "Cis Enforce | Ensure PermitRootLogin no"
+- name: Cis Enforce | Ensure PermitRootLogin no
   ansible.builtin.lineinfile:
     path: "{{ cis_baseline_sshd_config_path }}"
-    regexp: '^PermitRootLogin'
-    line: 'PermitRootLogin no'
+    regexp: ^PermitRootLogin
+    line: PermitRootLogin no
     create: true
     mode: "0600"
     owner: root
@@ -23,14 +23,14 @@
   notify: Restart sshd
   tags: [cis_enforce]
 
-- name: "Cis Enforce | Ensure sudoers use_pty"
+- name: Cis Enforce | Ensure sudoers use_pty
   ansible.builtin.lineinfile:
     path: "{{ cis_baseline_sudoers_path }}"
-    regexp: '^Defaults.*use_pty'
-    line: 'Defaults    use_pty'
+    regexp: ^Defaults.*use_pty
+    line: Defaults    use_pty
     state: present
     mode: "0440"
     owner: root
     group: root
-    validate: "visudo -cf %s"
+    validate: visudo -cf %s
   tags: [cis_enforce]

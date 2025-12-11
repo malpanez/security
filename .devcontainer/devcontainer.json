@@ -1,14 +1,17 @@
 {
   "name": "Ansible Collection Development",
   "image": "ghcr.io/malpanez/devcontainer-ansible:latest",
-
-  "containerEnv": {
-    "PRE_COMMIT_HOME": "/home/vscode/.cache/pre-commit"
+  "remoteEnv": {
+    "UV_CACHE_DIR": "/home/vscode/.cache/uv",
+    "ANSIBLE_LOCAL_TEMP": "/workspace/.cache/ansible/tmp",
+    "PRE_COMMIT_HOME": "/workspace/.cache/pre-commit",
+    "GOCACHE": "/workspace/.cache/go-build",
+    "GOPATH": "/workspace/.cache/go"
   },
-
   "customizations": {
     "vscode": {
       "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
         "ansible.python.interpreterPath": "/usr/local/bin/python",
         "ansible.validation.enabled": true,
         "ansible.validation.lint.enabled": true,
@@ -25,15 +28,22 @@
           "*.yaml": "ansible"
         },
         "[yaml]": {
-          "editor.insertSpaces": true,
+          "editor.defaultFormatter": "redhat.vscode-yaml",
+          "editor.formatOnSave": true,
           "editor.tabSize": 2,
+          "editor.insertSpaces": true,
           "editor.quickSuggestions": {
             "other": true,
             "comments": false,
             "strings": true
           },
           "editor.autoIndent": "advanced"
-        }
+        },
+        "editor.rulers": [
+          120
+        ],
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true
       },
       "extensions": [
         "redhat.ansible",
@@ -41,26 +51,26 @@
         "samuelcolvin.jinjahtml",
         "eamodio.gitlens",
         "ms-python.python",
-        "charliermarsh.ruff"
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "editorconfig.editorconfig"
+      ],
+      "openFiles": [
+        "README.md"
       ]
     }
   },
-
   "mounts": [
-    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly",
+    "source=uv-cache,target=/home/vscode/.cache/uv,type=volume"
   ],
-
-  "updateContentCommand": [
-    "bash",
-    "-c",
-    "mkdir -p /home/vscode/.cache/pre-commit && chown -R vscode:vscode /home/vscode/.cache"
-  ],
-
   "postCreateCommand": [
     "bash",
-    "-c",
-    "pre-commit install --install-hooks || true; [ -f requirements.yml ] && ansible-galaxy collection install -r requirements.yml || true"
+    "-lc",
+    "set -euo pipefail; echo '🚀 Setting up Ansible Collection DevContainer...'; sudo mkdir -p /home/vscode/.cache/pre-commit /workspace/.cache; sudo chown -R vscode:vscode /home/vscode/.cache /workspace/.cache; uvx pre-commit install --install-hooks || true; [ -f requirements.yml ] && ansible-galaxy collection install -r requirements.yml || true; echo '✅ DevContainer ready! All tools pre-installed in image.'"
   ],
-
-  "remoteUser": "vscode"
+  "postStartCommand": "echo '💡 DevContainer started. Tools: ansible, ansible-lint, molecule, yamllint, uv, pre-commit'",
+  "remoteUser": "vscode",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind"
 }

@@ -7,22 +7,22 @@ driver:
   name: docker
 platforms:
   - name: rockylinux9
-    image: "geerlingguy/docker-rockylinux9-ansible:latest"
+    image: geerlingguy/docker-rockylinux9-ansible:latest
     platform: linux/amd64
     privileged: true
-    command: "/lib/systemd/systemd"
+    command: /lib/systemd/systemd
     pre_build_image: true
   - name: almalinux9
-    image: "geerlingguy/docker-almalinux9-ansible:latest"
+    image: geerlingguy/docker-almalinux9-ansible:latest
     platform: linux/amd64
     privileged: true
-    command: "/lib/systemd/systemd"
+    command: /lib/systemd/systemd
     pre_build_image: true
   - name: oraclelinux8
-    image: "geerlingguy/docker-oraclelinux8-ansible:latest"
+    image: geerlingguy/docker-oraclelinux8-ansible:latest
     platform: linux/amd64
     privileged: true
-    command: "/lib/systemd/systemd"
+    command: /lib/systemd/systemd
     pre_build_image: true
 verifier:
   name: testinfra

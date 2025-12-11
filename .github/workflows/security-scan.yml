@@ -74,7 +74,7 @@ jobs:
 
       - name: Run yamllint
         run: |
-          yamllint .
+          yamllint -c .yamllint.yml .
 
   secret-scanning:
     name: Secret Scanning (Gitleaks)

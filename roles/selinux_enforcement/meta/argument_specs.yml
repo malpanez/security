@@ -37,7 +37,6 @@ argument_specs:
         type: list
         elements: str
         default: []
-
       selinux_enforcement_contexts:
         description:
           - List of file contexts to apply
@@ -45,7 +44,6 @@ argument_specs:
         type: list
         elements: dict
         default: []
-
       selinux_enforcement_packages:
         description:
           - SELinux management packages to install
