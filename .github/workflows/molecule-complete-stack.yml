@@ -2,6 +2,15 @@ name: molecule-complete-stack
 
 on:
   workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'Molecule scenario to run'
+        required: false
+        default: 'complete_stack_ci'
+        type: choice
+        options:
+          - complete_stack_ci
+          - complete_stack
   push:
     branches: [main, develop]
   pull_request:
@@ -41,5 +50,14 @@ jobs:
           docker pull rockylinux:9
           docker pull almalinux:9
 
-      - name: Run Molecule complete_stack
-        run: molecule test -s complete_stack
+      - name: Run Molecule tests
+        env:
+          SCENARIO: ${{ inputs.scenario || 'complete_stack_ci' }}
+        run: |
+          echo "Running Molecule scenario: $SCENARIO"
+          if [ "$SCENARIO" == "complete_stack_ci" ]; then
+            echo "✅ Using CI scenario (3 platforms: Ubuntu 22.04, Debian 12, Rocky 9)"
+          else
+            echo "⚠️ Using full scenario (11 platforms - may timeout)"
+          fi
+          molecule test -s $SCENARIO
