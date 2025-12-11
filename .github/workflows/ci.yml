@@ -118,7 +118,7 @@ jobs:
           pip install ansible-core>=2.16
 
       - name: Download collection artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: ansible-collection
 
