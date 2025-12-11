@@ -1,0 +1,191 @@
+---
+# Molecule converge playbook - Applies complete security baseline
+# This tests the FULL stack of security hardening
+
+- name: Converge - Apply Complete Security Baseline
+  hosts: all
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Display test information
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          COMPLETE STACK TEST - CONVERGE
+          ========================================
+          Host: {{ inventory_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Phase: {{ security_phase | default(6) }}
+          Mode: {{ security_mode | default('enforce') }}
+          ========================================
+
+    - name: Update apt cache (Debian/Ubuntu)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == 'Debian'
+      changed_when: false
+
+    - name: Install required packages (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name:
+          - openssh-server
+          - sudo
+          - python3
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Install required packages (RedHat)
+      ansible.builtin.dnf:
+        name:
+          - openssh-server
+          - sudo
+          - python3
+        state: present
+      when: ansible_os_family == 'RedHat'
+
+    - name: Ensure SSH service is enabled
+      ansible.builtin.service:
+        name: sshd
+        enabled: true
+        state: started
+
+    - name: Create test service account
+      ansible.builtin.user:
+        name: test_service_account
+        groups: test_service_accounts
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    - name: Ensure MFA bypass group exists
+      ansible.builtin.group:
+        name: "{{ pam_mfa_service_bypass_group }}"
+        state: present
+
+    - name: Ensure admin group exists for sudoers defaults
+      ansible.builtin.group:
+        name: linux_admins
+        state: present
+
+    - name: Create test admin user
+      ansible.builtin.user:
+        name: test_admin
+        groups:
+          - test_human_users
+          - linux_admins
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    - name: Create test human user
+      ansible.builtin.user:
+        name: test_human
+        groups: test_human_users
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    - name: Generate SSH key for test service account
+      ansible.builtin.command:
+        cmd: ssh-keygen -t ed25519 -f /home/test_service_account/.ssh/id_ed25519 -N ''
+        creates: /home/test_service_account/.ssh/id_ed25519
+      become: true
+      become_user: test_service_account
+
+    - name: Generate SSH key for test human
+      ansible.builtin.command:
+        cmd: ssh-keygen -t ed25519 -f /home/test_human/.ssh/id_ed25519 -N ''
+        creates: /home/test_human/.ssh/id_ed25519
+      become: true
+      become_user: test_human
+
+    - name: Add public keys to authorized_keys
+      ansible.posix.authorized_key:
+        user: "{{ item.user }}"
+        key: "{{ lookup('file', item.key) }}"
+      loop:
+        - { user: test_service_account, key: /home/test_service_account/.ssh/id_ed25519.pub }
+        - { user: test_human, key: /home/test_human/.ssh/id_ed25519.pub }
+        - { user: test_admin, key: /home/test_service_account/.ssh/id_ed25519.pub }
+
+    - name: Add service account to MFA bypass group
+      ansible.builtin.user:
+        name: test_service_account
+        groups: "{{ pam_mfa_service_bypass_group }}"
+        append: true
+
+  roles:
+    # PHASE 1: Detect system capabilities
+    - role: security_capabilities
+      tags: [always, capabilities]
+
+    # PHASE 2: Service accounts setup (before SSH hardening)
+    - role: service_accounts_transfer
+      tags: [service_accounts]
+      when: security_phase | int >= 2
+
+    # PHASE 3: SSH Hardening
+    - role: sshd_hardening
+      tags: [ssh, hardening]
+      when: security_phase | int >= 1
+
+    # PHASE 4: PAM MFA (optional, requires hardware keys)
+    - role: pam_mfa
+      tags: [pam, mfa]
+      when:
+        - security_phase | int >= 3
+        - pam_mfa_enabled | default(false)
+
+    # PHASE 5: Sudoers baseline
+    - role: sudoers_baseline
+      tags: [sudo, sudoers]
+      when: security_phase | int >= 2
+
+    # PHASE 6: SELinux enforcement (RHEL only)
+    - role: selinux_enforcement
+      tags: [selinux]
+      when:
+        - security_phase | int >= 4
+        - ansible_os_family == 'RedHat'
+        - selinux_enforcement_enabled | default(false)
+
+    # PHASE 7: Audit logging
+    - role: audit_logging
+      tags: [audit, logging]
+      when: security_phase | int >= 5
+
+    # PHASE 8: Compliance evidence collection
+    - role: compliance_evidence
+      tags: [compliance, evidence]
+      when: security_phase | int >= 6
+
+    # PHASE 9: CIS Baseline
+    - role: cis_baseline
+      tags: [cis, baseline]
+      when: security_phase | int >= 6
+
+  post_tasks:
+    - name: Display convergence summary
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          CONVERGENCE COMPLETE
+          ========================================
+          Host: {{ inventory_hostname }}
+          Status: ✅ SUCCESS
+
+          Applied Roles:
+          - security_capabilities: ✅
+          - service_accounts_transfer: {{ '✅' if security_phase | int >= 2 else '⏭️ Skipped' }}
+          - sshd_hardening: {{ '✅' if security_phase | int >= 1 else '⏭️ Skipped' }}
+          - pam_mfa: {{ '✅' if (security_phase | int >= 3 and pam_mfa_enabled) else '⏭️ Skipped' }}
+          - sudoers_baseline: {{ '✅' if security_phase | int >= 2 else '⏭️ Skipped' }}
+          - selinux_enforcement: {{ '✅' if (security_phase | int >= 4 and ansible_os_family == 'RedHat') else '⏭️ Skipped' }}
+          - audit_logging: {{ '✅' if security_phase | int >= 5 else '⏭️ Skipped' }}
+          - compliance_evidence: {{ '✅' if security_phase | int >= 6 else '⏭️ Skipped' }}
+          - cis_baseline: {{ '✅' if security_phase | int >= 6 else '⏭️ Skipped' }}
+
+          Next: Running verification tests...
+          ========================================

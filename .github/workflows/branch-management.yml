@@ -36,16 +36,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Wait for CI checks
-        uses: lewagon/wait-on-check-action@v1.4.1
-        with:
-          ref: ${{ github.sha }}
-          check-regexp: '(ci|Docker Platform Testing|Security Scanning|Quality Gates)'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 30
-          allowed-conclusions: success
-
-      - name: Create PR to develop
+      - name: Create PR to develop (no auto-merge; requires review)
         id: create-pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -82,16 +73,6 @@ jobs:
             echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
           fi
 
-      - name: Enable auto-merge for PR
-        if: steps.create-pr.outputs.pr_number
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr merge ${{ steps.create-pr.outputs.pr_number }} \
-            --auto \
-            --squash \
-            --delete-branch
-
   # ============================================
   # STAGE 2: Develop → Main
   # ============================================
@@ -114,16 +95,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Wait for all CI checks
-        uses: lewagon/wait-on-check-action@v1.4.1
-        with:
-          ref: ${{ github.sha }}
-          check-regexp: '.*'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 30
-          allowed-conclusions: success,skipped
-
-      - name: Create PR to main
+      - name: Create PR to main (no auto-merge; requires review)
         id: create-pr-main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -168,16 +140,6 @@ jobs:
             echo "PR already exists: #$EXISTING_PR"
             echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
           fi
-
-      - name: Enable auto-merge for PR
-        if: steps.create-pr-main.outputs.pr_number
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr merge ${{ steps.create-pr-main.outputs.pr_number }} \
-            --auto \
-            --merge \
-            --delete-branch=false
 
   # ============================================
   # STAGE 3: Sync Main → Develop (backmerge)

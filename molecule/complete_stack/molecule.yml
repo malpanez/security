@@ -1,0 +1,259 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: ../../requirements.yml
+
+driver:
+  name: docker # GH Actions ubuntu-latest has docker preinstalled
+
+platforms:
+  # Ubuntu platforms (4 versions)
+  - name: ubuntu-1804-complete
+    image: ubuntu:18.04
+    privileged: true
+    command: /sbin/init
+    systemd: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    networks:
+      - name: molecule-network
+
+  - name: ubuntu-2204-complete
+    image: ubuntu:22.04
+    privileged: true
+    command: /sbin/init
+    systemd: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    networks:
+      - name: molecule-network
+
+  - name: ubuntu-2004-complete
+    image: ubuntu:20.04
+    privileged: true
+    command: /sbin/init
+    systemd: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    networks:
+      - name: molecule-network
+
+  - name: ubuntu-2404-complete
+    image: ubuntu:24.04
+    privileged: true
+    command: /sbin/init
+    systemd: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    networks:
+      - name: molecule-network
+
+  # Debian platforms (3 versions)
+  - name: debian-12-complete
+    image: debian:12
+    privileged: true
+    command: /sbin/init
+    systemd: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    networks:
+      - name: molecule-network
+
+  - name: debian-11-complete
+    image: debian:11
+    privileged: true
+    command: /sbin/init
+    systemd: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    networks:
+      - name: molecule-network
+
+  - name: debian-10-complete
+    image: debian:10
+    privileged: true
+    command: /sbin/init
+    systemd: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    networks:
+      - name: molecule-network
+
+  # Rocky Linux platforms (2 versions)
+  - name: rocky-9-complete
+    image: rockylinux:9
+    privileged: true
+    command: /sbin/init
+    systemd: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    networks:
+      - name: molecule-network
+
+  - name: rocky-8-complete
+    image: rockylinux:8
+    privileged: true
+    command: /sbin/init
+    systemd: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    networks:
+      - name: molecule-network
+
+  # AlmaLinux platforms (2 versions)
+  - name: alma-9-complete
+    image: almalinux:9
+    privileged: true
+    command: /sbin/init
+    systemd: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    networks:
+      - name: molecule-network
+
+  - name: alma-8-complete
+    image: almalinux:8
+    privileged: true
+    command: /sbin/init
+    systemd: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    networks:
+      - name: molecule-network
+
+provisioner:
+  name: ansible
+  log: true
+  config_options:
+    defaults:
+      stdout_callback: default
+      callbacks_enabled: profile_tasks,timer
+      verbosity: 1
+      forks: 10
+      roles_path: ../../roles
+      collections_paths: ../..
+    ssh_connection:
+      pipelining: true
+      control_path: /tmp/ansible-ssh-%%h-%%p-%%r
+  env:
+    ANSIBLE_CONFIG: /workspace/ansible.cfg
+    ANSIBLE_STDOUT_CALLBACK: default
+    ANSIBLE_RESULT_FORMAT: yaml
+    ANSIBLE_CALLBACKS_ENABLED: profile_tasks,timer
+  inventory:
+    group_vars:
+      all:
+        # Security enforcement mode
+        security_mode: enforce
+        security_phase: 6 # Full enforcement (all phases)
+
+        # SSH Hardening
+        sshd_hardening_password_authentication: false
+        sshd_hardening_permit_root_login: prohibit-password
+        sshd_hardening_pubkey_authentication: true
+        sshd_hardening_max_auth_tries: 4
+        sshd_hardening_use_pam: true
+
+        # PAM MFA (enabled per prompt)
+        pam_mfa_enabled: true
+
+        # Sudoers
+        sudoers_baseline_strict: true
+        sudoers_baseline_preserve_main: true
+
+        # SELinux (only for RHEL-based)
+        selinux_enforcement_enabled: true
+        selinux_enforcement_mode: permissive # Start permissive for testing
+
+        # Audit logging
+        audit_logging_enabled: true
+        audit_logging_verbose: false
+
+        # Compliance evidence
+        compliance_evidence_enabled: true
+
+        # Service accounts for testing
+        security_capabilities_service_groups:
+          - test_service_accounts
+
+        # Human groups for testing
+        security_capabilities_human_groups:
+          - test_human_users
+
+verifier:
+  name: ansible
+
+scenario:
+  name: complete_stack
+  test_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy
+
+  create_sequence:
+    - dependency
+    - create
+    - prepare
+
+  converge_sequence:
+    - dependency
+    - create
+    - prepare
+    - converge
+
+  destroy_sequence:
+    - cleanup
+    - destroy
+
+  check_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - create
+    - prepare
+    - converge
+    - check
+    - destroy
