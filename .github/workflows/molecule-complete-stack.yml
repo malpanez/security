@@ -50,6 +50,15 @@ jobs:
           docker pull rockylinux:9
           docker pull almalinux:9
 
+      - name: Debug - List molecule scenarios
+        run: |
+          echo "=== Molecule version ==="
+          molecule --version
+          echo "=== Available scenarios ==="
+          ls -la molecule/
+          echo "=== Checking scenario files ==="
+          ls -la molecule/complete_stack_ci/ || echo "CI scenario missing"
+
       - name: Run Molecule tests
         run: |
           SCENARIO="${{ github.event.inputs.scenario }}"
