@@ -1,0 +1,16 @@
+---
+scenario:
+  name: default
+
+driver:
+  name: podman
+
+platforms:
+  - name: placeholder
+    image: docker.io/library/alpine:3.18
+    command: /bin/sh -c "while true; do sleep 1000; done"
+    privileged: true
+    pre_build_image: true
+
+provisioner:
+  name: ansible

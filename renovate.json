@@ -1,0 +1,111 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate configuration for security Ansible collection with GitFlow",
+  "extends": [
+    "config:recommended",
+    ":semanticCommitTypeAll(chore)",
+    ":automergePr",
+    ":automergeRequireAllStatusChecks"
+  ],
+  "baseBranches": ["develop"],
+  "schedule": ["at any time"],
+  "timezone": "Europe/Madrid",
+  "prConcurrentLimit": 3,
+  "prCreation": "not-pending",
+  "platformAutomerge": true,
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "🔄 Dependency Updates Dashboard",
+  "labels": ["dependencies", "renovate"],
+  "commitMessagePrefix": "chore(deps): ",
+  "rebaseWhen": "behind-base-branch",
+  "semanticCommits": "enabled",
+  "separateMajorMinor": true,
+  "separateMinorPatch": false,
+  "packageRules": [
+    {
+      "description": "Auto-merge minor and patch updates for stable packages",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Manual approval for major updates",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "Group all GitHub Actions updates",
+      "groupName": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "schedule": ["every weekend"]
+    },
+    {
+      "description": "Group Ansible-related updates",
+      "groupName": "Ansible",
+      "matchPackagePatterns": ["^ansible", "^molecule", "^ansible-lint"],
+      "automerge": true,
+      "schedule": ["every weekend"]
+    },
+    {
+      "description": "Group Python testing dependencies",
+      "groupName": "Python Testing",
+      "matchPackagePatterns": ["^pytest", "^testinfra"],
+      "automerge": true
+    },
+    {
+      "description": "Pin GitHub Actions digests for security",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    },
+    {
+      "description": "Disable automerge for pre-release versions",
+      "matchCurrentVersion": "/^0/",
+      "automerge": false
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security", "vulnerability"],
+    "automerge": false,
+    "schedule": ["at any time"]
+  },
+  "regexManagers": [
+    {
+      "description": "Update ansible-core version in requirements-dev.txt",
+      "fileMatch": ["^requirements-dev\\.txt$"],
+      "matchStrings": ["ansible-core>=(?<currentValue>.*?)\\n"],
+      "depNameTemplate": "ansible-core",
+      "datasourceTemplate": "pypi"
+    }
+  ],
+  "pip_requirements": {
+    "fileMatch": ["(^|/)requirements(-dev)?\\.txt$"]
+  },
+  "postUpdateOptions": ["npmDedupe", "yarnDedupeHighest"],
+  "lockFileMaintenance": {
+    "enabled": false
+  },
+  "stabilityDays": 3,
+  "prBodyColumns": [
+    "Package",
+    "Update",
+    "Type",
+    "New value",
+    "References"
+  ],
+  "prBodyDefinitions": {
+    "OpenSSF": "[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/{{sourceRepo}}/badge)](https://securityscorecards.dev/viewer/?uri=github.com/{{sourceRepo}})"
+  },
+  "prBodyNotes": [
+    "This PR was created automatically by Renovate Bot.",
+    "✅ Auto-merge is enabled for minor and patch updates.",
+    "⚠️ Major updates require manual approval.",
+    "📊 Check the [Dependency Dashboard](https://github.com/malpanez/security/issues) for all pending updates."
+  ]
+}

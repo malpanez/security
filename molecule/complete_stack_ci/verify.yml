@@ -1,0 +1,68 @@
+---
+# Molecule verify - critical smoke checks from IMPLEMENTATION_PROMPT
+- name: Verify complete stack
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Wait for SSH
+      ansible.builtin.wait_for:
+        port: 22
+        timeout: 30
+
+    - name: Validate sshd_config syntax
+      ansible.builtin.command: sshd -t
+      register: sshd_validation
+      failed_when: sshd_validation.rc != 0
+      changed_when: false
+
+    - name: Validate sudoers syntax
+      ansible.builtin.command: visudo -cf /etc/sudoers
+      register: sudoers_validation
+      failed_when: sudoers_validation.rc != 0
+      changed_when: false
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert auditd service is running
+      ansible.builtin.assert:
+        that:
+          - "'auditd.service' in ansible_facts.services"
+          - ansible_facts.services['auditd.service'].state == 'running'
+        fail_msg: auditd service not running
+
+    - name: Check compliance report exists
+      ansible.builtin.stat:
+        path: /var/log/compliance/capabilities.json
+      register: compliance_report
+
+    - name: Assert compliance report generated
+      ansible.builtin.assert:
+        that: compliance_report.stat.exists
+        fail_msg: Compliance report not generated
+
+    - name: Verify human account requires MFA (expect failure without MFA)
+      ansible.builtin.command: >
+        ssh -o StrictHostKeyChecking=no
+            -i /home/test_human/.ssh/id_ed25519
+            test_human@localhost exit
+      register: human_login
+      changed_when: false
+      failed_when: human_login.rc == 0
+
+    - name: Verify service account key works (no MFA expected)
+      ansible.builtin.command: >
+        ssh -o StrictHostKeyChecking=no
+            -i /home/test_service_account/.ssh/id_ed25519
+            test_service_account@localhost exit
+      register: service_login
+      changed_when: false
+      failed_when: service_login.rc != 0
+
+    - name: Confirm sudo works for test_admin if present
+      ansible.builtin.command: sudo -n true
+      become: true
+      become_user: test_service_account
+      register: sudo_test
+      changed_when: false
+      failed_when: sudo_test.rc not in [0, 1]

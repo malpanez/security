@@ -3,7 +3,10 @@
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
 
 - name: Apply sudoers baseline when strict mode enabled
-  when: sudoers_baseline_strict | bool
+  when:
+    - sudoers_baseline_strict | bool
+    - security_mode | default('enforce') == 'enforce'
+  tags: [enforce]
   block:
     - name: Include common sudoers tasks
       ansible.builtin.include_tasks: common.yml

@@ -12,5 +12,7 @@
 
     - name: Include CIS enforce tasks
       ansible.builtin.include_tasks: enforce.yml
-      when: cis_baseline_mode == 'enforce'
-      tags: [cis_enforce]
+      when:
+        - cis_baseline_mode == 'enforce'
+        - security_mode | default('enforce') == 'enforce'
+      tags: [cis_enforce, enforce]
