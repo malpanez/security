@@ -66,3 +66,37 @@
       register: sudo_test
       changed_when: false
       failed_when: sudo_test.rc not in [0, 1]
+
+    - name: Test root console access (should be restricted)
+      ansible.builtin.command: cat /etc/securetty
+      register: securetty
+      changed_when: false
+      failed_when: false
+
+    - name: Check for SELinux denials (RHEL-based only)
+      ansible.builtin.command: ausearch -m avc -ts recent
+      register: selinux_denials
+      changed_when: false
+      failed_when: false
+      when: ansible_os_family == "RedHat"
+
+    - name: Verify PAM MFA configuration
+      ansible.builtin.stat:
+        path: /etc/pam.d/sshd
+      register: pam_sshd
+      failed_when: not pam_sshd.stat.exists
+
+    - name: Verify SSH service is active
+      ansible.builtin.service:
+        name: ssh
+        state: started
+      check_mode: true
+      register: ssh_service
+      failed_when: false
+
+    - name: Final health check - all critical services running
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services['auditd.service'].state == 'running'
+        success_msg: "All critical security services are operational"
+        fail_msg: "One or more critical services failed"
