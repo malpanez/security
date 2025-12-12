@@ -41,14 +41,20 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Install Ansible Galaxy collections
-        run: ansible-galaxy collection install -r requirements.yml
+        run: |
+          ansible-galaxy collection install -r requirements.yml
+          ansible-galaxy collection list
+
+      - name: Wait for Docker daemon
+        run: |
+          timeout 30 bash -c 'until docker info; do sleep 1; done'
+          docker info
 
       - name: Pre-pull common images to speed up Molecule
         run: |
           docker pull ubuntu:22.04
           docker pull debian:12
           docker pull rockylinux:9
-          docker pull almalinux:9
 
       - name: Debug - List molecule scenarios
         run: |
@@ -61,14 +67,8 @@ jobs:
 
       - name: Run Molecule tests
         run: |
-          SCENARIO="${{ github.event.inputs.scenario }}"
-          if [ -z "$SCENARIO" ]; then
-            SCENARIO="complete_stack_ci"
-          fi
+          SCENARIO="${{ github.event.inputs.scenario || 'complete_stack_ci' }}"
           echo "Running Molecule scenario: $SCENARIO"
-          if [ "$SCENARIO" == "complete_stack_ci" ]; then
-            echo "Using CI scenario (3 platforms: Ubuntu 22.04, Debian 12, Rocky 9)"
-          else
-            echo "Using full scenario (11 platforms - may timeout)"
-          fi
+          molecule --version
+          molecule list -s "$SCENARIO"
           molecule test -s "$SCENARIO"
