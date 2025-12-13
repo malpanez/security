@@ -1,0 +1,29 @@
+name: molecule-test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install molecule
+        run: |
+          pip install molecule>=6.0.0 molecule-docker>=2.1.0 ansible-core
+
+      - name: Install collections
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: List scenarios
+        run: molecule list -s complete_stack_ci
+
+      - name: Check YAML syntax
+        run: python -c "import yaml; yaml.safe_load(open('molecule/complete_stack_ci/molecule.yml'))"
