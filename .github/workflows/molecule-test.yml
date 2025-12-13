@@ -17,7 +17,7 @@ jobs:
 
       - name: Install molecule
         run: |
-          pip install molecule>=6.0.0 molecule-docker>=2.1.0 ansible-core
+          pip install molecule==3.5.2 molecule-docker==1.1.0 ansible-core
 
       - name: Install collections
         run: ansible-galaxy collection install -r requirements.yml
