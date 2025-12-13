@@ -179,17 +179,12 @@ verifier:
 scenario:
   name: complete_stack
   test_sequence:
-  - dependency
-  - cleanup
-  - destroy
   - syntax
   - create
   - prepare
   - converge
   - idempotence
-  - side_effect
   - verify
-  - cleanup
   - destroy
   create_sequence:
   - dependency

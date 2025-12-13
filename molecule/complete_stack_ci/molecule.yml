@@ -83,16 +83,12 @@ verifier:
 scenario:
   name: complete_stack_ci
   test_sequence:
-  - dependency
-  - cleanup
-  - destroy
   - syntax
   - create
   - prepare
   - converge
   - idempotence
   - verify
-  - cleanup
   - destroy
   create_sequence:
   - dependency
