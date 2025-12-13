@@ -22,8 +22,9 @@ jobs:
       - name: Install collections
         run: ansible-galaxy collection install -r requirements.yml
 
-      - name: List scenarios
-        run: molecule list -s complete_stack_ci
-
-      - name: Check YAML syntax
-        run: python -c "import yaml; yaml.safe_load(open('molecule/complete_stack_ci/molecule.yml'))"
+      - name: Test molecule commands separately
+        run: |
+          molecule create -s complete_stack_ci
+          molecule converge -s complete_stack_ci
+          molecule verify -s complete_stack_ci
+          molecule destroy -s complete_stack_ci
