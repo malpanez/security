@@ -2,10 +2,6 @@
 # CI-friendly configuration with reduced platforms for faster testing
 # For full platform coverage, use molecule.yml locally or with workflow_dispatch
 
-dependency:
-  name: galaxy
-  options:
-    requirements-file: requirements.yml
 
 driver:
   name: docker
