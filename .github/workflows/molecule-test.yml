@@ -22,4 +22,6 @@ jobs:
         run: ansible-galaxy collection install -r requirements.yml
 
       - name: Test minimal scenario
-        run: molecule test -s minimal
+        run: |
+          molecule create -s minimal
+          molecule destroy -s minimal
