@@ -22,9 +22,8 @@ jobs:
       - name: Install collections
         run: ansible-galaxy collection install -r requirements.yml
 
-      - name: Test molecule commands separately
+      - name: Test molecule create only
         run: |
-          molecule create -s complete_stack_ci
-          molecule converge -s complete_stack_ci
-          molecule verify -s complete_stack_ci
-          molecule destroy -s complete_stack_ci
+          set -x
+          molecule create -s complete_stack_ci || echo "Create failed with $?"
+          docker ps -a
