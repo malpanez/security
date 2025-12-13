@@ -1,0 +1,16 @@
+---
+driver:
+  name: docker
+
+platforms:
+  - name: test-ubuntu
+    image: ubuntu:22.04
+
+provisioner:
+  name: ansible
+
+scenario:
+  name: minimal
+  test_sequence:
+    - create
+    - destroy

@@ -15,15 +15,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install molecule
-        run: |
-          pip install molecule==3.5.2 molecule-docker==1.1.0 ansible-core
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
 
       - name: Install collections
         run: ansible-galaxy collection install -r requirements.yml
 
-      - name: Test molecule create only
-        run: |
-          set -x
-          molecule create -s complete_stack_ci || echo "Create failed with $?"
-          docker ps -a
+      - name: Test minimal scenario
+        run: molecule test -s minimal
