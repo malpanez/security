@@ -17,7 +17,7 @@ jobs:
   # ============================================
   auto-merge-to-develop:
     name: Auto-merge to Develop
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: |
       github.event_name == 'push' &&
       (startsWith(github.ref, 'refs/heads/feature/') ||
@@ -78,7 +78,7 @@ jobs:
   # ============================================
   auto-promote-to-main:
     name: Auto-promote to Main
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: |
       github.event_name == 'push' &&
       github.ref == 'refs/heads/develop'
@@ -146,7 +146,7 @@ jobs:
   # ============================================
   backmerge-main-to-develop:
     name: Sync Main → Develop
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: |
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main'
