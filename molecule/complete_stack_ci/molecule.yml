@@ -50,8 +50,8 @@ provisioner:
       callbacks_enabled: profile_tasks,timer
       verbosity: 1
       forks: 3  # Reduced for CI
-      roles_path: ../../roles
-      collections_paths: ../..
+      roles_path: ${MOLECULE_PROJECT_DIRECTORY}/roles
+      collections_paths: ${MOLECULE_PROJECT_DIRECTORY}
     ssh_connection:
       pipelining: true
       control_path: /tmp/ansible-ssh-%%h-%%p-%%r
