@@ -5,6 +5,8 @@ driver:
 platforms:
   - name: test-ubuntu
     image: ubuntu:22.04
+    command: ""
+    pre_build_image: true
 
 provisioner:
   name: ansible
