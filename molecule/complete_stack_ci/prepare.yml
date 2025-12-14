@@ -17,8 +17,21 @@
         fi
       changed_when: false
 
+    - name: Gather facts for group creation
+      ansible.builtin.setup:
+
     - name: Ensure SSH service is available
       ansible.builtin.service:
         name: sshd
         state: started
       failed_when: false
+
+    - name: Ensure test groups exist
+      ansible.builtin.group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - test_service_accounts
+        - test_human_users
+        - mfa-bypass
+        - linux_admins

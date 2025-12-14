@@ -76,6 +76,7 @@ provisioner:
 
         # PAM MFA
         pam_mfa_enabled: true
+        pam_mfa_service_bypass_group: mfa-bypass
 
         # Sudoers
         sudoers_baseline_strict: true
