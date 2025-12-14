@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest  # Cannot use ubuntu-slim: Docker driver required
     steps:
       - uses: actions/checkout@v6
 
