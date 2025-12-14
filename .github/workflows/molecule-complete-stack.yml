@@ -24,7 +24,6 @@ jobs:
       PY_COLORS: "1"
       ANSIBLE_FORCE_COLOR: "1"
       ANSIBLE_CONFIG: ${{ github.workspace }}/ansible.cfg
-      ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "True"
       DOCKER_BUILDKIT: "1"
       DOCKER_DEFAULT_PLATFORM: linux/amd64
     steps:

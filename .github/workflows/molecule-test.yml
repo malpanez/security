@@ -22,8 +22,6 @@ jobs:
         run: ansible-galaxy collection install -r requirements.yml
 
       - name: Test minimal scenario
-        env:
-          ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "True"
         run: |
           molecule create -s minimal
           molecule destroy -s minimal
