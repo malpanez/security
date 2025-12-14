@@ -1,9 +1,9 @@
 ---
 galaxy_info:
   author: Miguel Alpañez
-  description: Harden OpenSSH server configuration with sane defaults.
+  description: Enterprise-grade security hardening collection with SSH, PAM MFA, SELinux, audit logging, and compliance verification.
   license: GPL-2.0-or-later
-  min_ansible_version: "2.16"
+  min_ansible_version: "2.19"
   platforms:
     - name: Debian
       versions:
