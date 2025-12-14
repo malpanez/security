@@ -7,43 +7,37 @@ driver:
   name: docker
 
 platforms:
-  # One representative from each family
+  # One representative from each family - using systemd-enabled images
   - name: ubuntu-2204-ci
-    image: ubuntu:22.04
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
     privileged: true
-    command: /sbin/init
+    command: /lib/systemd/systemd
     systemd: true
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    tmpfs:
-      - /run
-      - /tmp
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
     networks:
       - name: molecule-network
 
   - name: debian-12-ci
-    image: debian:12
+    image: geerlingguy/docker-debian12-ansible:latest
     privileged: true
-    command: /sbin/init
+    command: /lib/systemd/systemd
     systemd: true
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    tmpfs:
-      - /run
-      - /tmp
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
     networks:
       - name: molecule-network
 
   - name: rocky-9-ci
-    image: rockylinux:9
+    image: geerlingguy/docker-rockylinux9-ansible:latest
     privileged: true
-    command: /sbin/init
+    command: /usr/sbin/init
     systemd: true
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    tmpfs:
-      - /run
-      - /tmp
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
     networks:
       - name: molecule-network
 
