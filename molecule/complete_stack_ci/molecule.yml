@@ -31,7 +31,7 @@ platforms:
       - name: molecule-network
 
   - name: rocky-9-ci
-    image: geerlingguy/docker-rockylinux9-ansible:latest
+    image: eniocarboni/docker-rockylinux-systemd:9
     privileged: true
     command: /usr/sbin/init
     systemd: true
