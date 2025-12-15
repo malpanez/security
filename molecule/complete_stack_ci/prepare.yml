@@ -1,11 +1,27 @@
 ---
 # Molecule prepare - minimal bootstrap so converge can run cleanly
-# NOTE: geerlingguy images already have python3, sudo, openssh-server installed
 - name: Prepare instances for complete stack
   hosts: all
   gather_facts: true
 
   tasks:
+    - name: Install openssh-client for ssh-keygen (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name: openssh-client
+        state: present
+        update_cache: false
+      become: true
+      when: ansible_os_family == 'Debian'
+      failed_when: false
+
+    - name: Install openssh-clients for ssh-keygen (RedHat)
+      ansible.builtin.package:
+        name: openssh-clients
+        state: present
+      become: true
+      when: ansible_os_family == 'RedHat'
+      failed_when: false
+
     - name: Ensure test groups exist
       ansible.builtin.group:
         name: "{{ item }}"
