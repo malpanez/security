@@ -5,22 +5,23 @@
   gather_facts: true
 
   tasks:
-    - name: Install openssh-client for ssh-keygen (Debian/Ubuntu)
-      ansible.builtin.apt:
-        name: openssh-client
-        state: present
-        update_cache: false
+    - name: Ensure openssh-client is installed (Debian/Ubuntu)
+      ansible.builtin.raw: |
+        if ! command -v ssh-keygen >/dev/null 2>&1; then
+          apt-get update -qq && apt-get install -y -qq openssh-client
+        fi
       become: true
       when: ansible_os_family == 'Debian'
-      failed_when: false
+      changed_when: false
 
-    - name: Install openssh-clients for ssh-keygen (RedHat)
-      ansible.builtin.package:
-        name: openssh-clients
-        state: present
+    - name: Ensure openssh-clients is installed (RedHat)
+      ansible.builtin.raw: |
+        if ! command -v ssh-keygen >/dev/null 2>&1; then
+          dnf install -y -q openssh-clients || yum install -y -q openssh-clients
+        fi
       become: true
       when: ansible_os_family == 'RedHat'
-      failed_when: false
+      changed_when: false
 
     - name: Ensure test groups exist
       ansible.builtin.group:
