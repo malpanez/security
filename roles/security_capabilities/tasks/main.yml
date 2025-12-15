@@ -78,7 +78,9 @@
               )
           )
       }}
-    # Backward-compatible alias, will be removed in future.
+
+- name: Capabilities | Set backward-compatible alias
+  ansible.builtin.set_fact:
     security_selected_auth_mode: "{{ security_capabilities_selected_auth_mode }}"
 
 - name: Capabilities | Summary
