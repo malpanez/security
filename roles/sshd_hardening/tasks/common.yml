@@ -64,6 +64,22 @@
   when: security_mode | default('enforce') == 'enforce' and sshd_hardening_trusted_ca_key | length > 0
   tags: [enforce]
 
+- name: common | Ensure privilege separation directory exists
+  ansible.builtin.file:
+    path: /run/sshd
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]
+
+- name: common | Generate SSH host keys if missing
+  ansible.builtin.command: ssh-keygen -A
+  when: security_mode | default('enforce') == 'enforce'
+  failed_when: false
+  changed_when: false
+
 - name: common | Configure sshd_config
   ansible.builtin.template:
     src: sshd_config.j2
