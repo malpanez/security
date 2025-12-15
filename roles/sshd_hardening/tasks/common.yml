@@ -25,13 +25,10 @@
   ansible.builtin.set_fact:
     sshd_hardening_version: >-
       {{
-        (
-          (sshd_hardening_version_raw.stderr | default(''))
-          | regex_search('OpenSSH_([0-9]+\\.[0-9]+)', '\\1')
-        )
-        or []
-        | first
-        | default(omit)
+        (sshd_hardening_version_raw.stderr | default('') | regex_search('OpenSSH_([0-9]+\\.[0-9]+)'))
+        | default('', true)
+        | regex_replace('^OpenSSH_', '')
+        | regex_replace('([0-9]+\\.[0-9]+).*', '\\1')
       }}
 
 - name: common | Select algorithm profile
