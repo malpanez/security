@@ -20,37 +20,6 @@
           Mode: {{ security_mode | default('enforce') }}
           ========================================
 
-    - name: Update apt cache (Debian/Ubuntu)
-      ansible.builtin.apt:
-        update_cache: true
-        cache_valid_time: 3600
-      when: ansible_os_family == 'Debian'
-      changed_when: false
-
-    - name: Install required packages (Debian/Ubuntu)
-      ansible.builtin.apt:
-        name:
-          - openssh-server
-          - sudo
-          - python3
-        state: present
-      when: ansible_os_family == 'Debian'
-
-    - name: Install required packages (RedHat)
-      ansible.builtin.dnf:
-        name:
-          - openssh-server
-          - sudo
-          - python3
-        state: present
-      when: ansible_os_family == 'RedHat'
-
-    - name: Ensure SSH service is enabled
-      ansible.builtin.service:
-        name: sshd
-        enabled: true
-        state: started
-
     - name: Create test service account
       ansible.builtin.user:
         name: test_service_account
