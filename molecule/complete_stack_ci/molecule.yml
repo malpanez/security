@@ -54,8 +54,6 @@ provisioner:
       pipelining: true
       control_path: /tmp/ansible-ssh-%%h-%%p-%%r
   env:
-    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/../../roles"
-    ANSIBLE_COLLECTIONS_PATH: "${MOLECULE_PROJECT_DIRECTORY}/../.."
     ANSIBLE_STDOUT_CALLBACK: default
     ANSIBLE_RESULT_FORMAT: yaml
     ANSIBLE_CALLBACKS_ENABLED: profile_tasks,timer
