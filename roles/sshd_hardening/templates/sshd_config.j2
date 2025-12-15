@@ -54,8 +54,8 @@ Match Group {{ sshd_hardening_service_groups | join(',') }}
   AllowTcpForwarding no
 {% endif -%}
 {% for block in sshd_hardening_service_match_blocks %}
-Match {{ block.match | default('Group ' ~ block['group']) }}
-{% for opt in block.options -%}
+Match {{ block['match'] | default('Group ' ~ block['group']) }}
+{% for opt in block['options'] -%}
   {{ opt }}
 {% endfor -%}
 {% endfor -%}
