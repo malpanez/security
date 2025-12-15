@@ -4,7 +4,6 @@
 
 - name: Converge - Apply Complete Security Baseline
   hosts: all
-  become: true
   gather_facts: true
 
   pre_tasks:
@@ -27,16 +26,19 @@
         shell: /bin/bash
         create_home: true
         state: present
+      become: true
 
     - name: Ensure MFA bypass group exists
       ansible.builtin.group:
         name: "{{ pam_mfa_service_bypass_group }}"
         state: present
+      become: true
 
     - name: Ensure admin group exists for sudoers defaults
       ansible.builtin.group:
         name: linux_admins
         state: present
+      become: true
 
     - name: Create test admin user
       ansible.builtin.user:
@@ -47,6 +49,7 @@
         shell: /bin/bash
         create_home: true
         state: present
+      become: true
 
     - name: Create test human user
       ansible.builtin.user:
@@ -55,6 +58,7 @@
         shell: /bin/bash
         create_home: true
         state: present
+      become: true
 
     - name: Generate SSH key for test service account
       ansible.builtin.command:
@@ -74,6 +78,7 @@
       ansible.posix.authorized_key:
         user: "{{ item.user }}"
         key: "{{ lookup('file', item.key) }}"
+      become: true
       loop:
         - { user: test_service_account, key: /home/test_service_account/.ssh/id_ed25519.pub }
         - { user: test_human, key: /home/test_human/.ssh/id_ed25519.pub }
@@ -84,6 +89,7 @@
         name: test_service_account
         groups: "{{ pam_mfa_service_bypass_group }}"
         append: true
+      become: true
 
   roles:
     # PHASE 1: Detect system capabilities
