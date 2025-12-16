@@ -16,9 +16,17 @@
   notify: Restart auditd
   tags: [enforce]
 
+- name: common | Check if audit subsystem is available
+  ansible.builtin.command: auditctl -l
+  register: auditctl_check
+  failed_when: false
+  changed_when: false
+  tags: [enforce]
+
 - name: common | Ensure auditd service running
   ansible.builtin.service:
     name: "{{ audit_logging_service }}"
     state: started
     enabled: true
+  when: auditctl_check.rc == 0
   tags: [enforce]
