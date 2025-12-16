@@ -5,10 +5,18 @@
     state: present
   tags: [enforce]
 
+- name: common | Check if SELinux is available
+  ansible.builtin.command: getenforce
+  register: selinux_status
+  failed_when: false
+  changed_when: false
+  tags: [enforce]
+
 - name: common | Set SELinux mode
   ansible.posix.selinux:
     policy: targeted
     state: "{{ selinux_enforcement_mode }}"
+  when: selinux_status.rc == 0
   tags: [enforce]
 
 - name: common | Set SELinux booleans
@@ -17,7 +25,9 @@
     state: "{{ item.state | default('yes') }}"
     persistent: true
   loop: "{{ selinux_enforcement_booleans }}"
-  when: selinux_enforcement_booleans | length > 0
+  when:
+    - selinux_status.rc == 0
+    - selinux_enforcement_booleans | length > 0
   tags: [enforce]
 
 - name: common | Manage SELinux contexts
@@ -26,12 +36,17 @@
     setype: "{{ item.setype }}"
     state: present
   loop: "{{ selinux_enforcement_contexts }}"
-  when: selinux_enforcement_contexts | length > 0
+  when:
+    - selinux_status.rc == 0
+    - selinux_enforcement_contexts | length > 0
   tags: [enforce]
 
 - name: common | Restorecon managed paths
   ansible.builtin.command: restorecon -Rv {{ item.target }}
   loop: "{{ selinux_enforcement_contexts }}"
-  when: selinux_enforcement_restorecon and selinux_enforcement_contexts | length > 0
+  when:
+    - selinux_status.rc == 0
+    - selinux_enforcement_restorecon
+    - selinux_enforcement_contexts | length > 0
   changed_when: false
   tags: [enforce]
