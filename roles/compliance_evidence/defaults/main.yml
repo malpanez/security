@@ -1,6 +1,6 @@
 ---
 compliance_evidence_enabled: true
-compliance_evidence_output_dir: reports
+compliance_evidence_output_dir: /var/log/compliance
 compliance_evidence_items:
   - name: sshd_config
     path: /etc/ssh/sshd_config
