@@ -1,4 +1,5 @@
 ---
+audit_logging_package: audit
 audit_logging_rules:
   - -w /etc/sudoers -p wa -k scope
   - -w /etc/sudoers.d/ -p wa -k scope

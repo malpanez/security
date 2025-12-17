@@ -1,7 +1,7 @@
 ---
 - name: common | Ensure auditd package present
   ansible.builtin.package:
-    name: auditd
+    name: "{{ audit_logging_package }}"
     state: present
   tags: [enforce]
 
