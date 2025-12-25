@@ -13,6 +13,11 @@ provisioner:
     defaults:
       roles_path: ../../..
       remote_tmp: /tmp/ansible-tmp
+  inventory:
+    group_vars:
+      all:
+        ansible_user: root
+        ansible_remote_tmp: /tmp/ansible-tmp
 platforms:
   - name: instance
     image: geerlingguy/docker-ubuntu2204-ansible:latest
