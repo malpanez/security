@@ -46,13 +46,14 @@
 
 - name: common | Compute effective algorithm lists
   ansible.builtin.set_fact:
-    sshd_hardening_effective_ciphers: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].ciphers
-      }}"
-    sshd_hardening_effective_macs: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].macs }}"
-    sshd_hardening_effective_kex: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].kex_algorithms
-      }}"
-    sshd_hardening_effective_hostkeys: "{{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].hostkey_algorithms
-      }}"
+    sshd_hardening_effective_ciphers: >-
+      {{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].ciphers }}
+    sshd_hardening_effective_macs: >-
+      {{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].macs }}
+    sshd_hardening_effective_kex: >-
+      {{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].kex_algorithms }}
+    sshd_hardening_effective_hostkeys: >-
+      {{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].hostkey_algorithms }}
 
 - name: common | Write trusted CA public key for SSH certificates
   ansible.builtin.copy:
@@ -70,7 +71,7 @@
     state: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
   when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 

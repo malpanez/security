@@ -11,10 +11,8 @@ on:
         options:
           - complete_stack_ci
           - complete_stack
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+  schedule:
+    - cron: "0 2 * * *"
 
 jobs:
   complete-stack:
@@ -28,17 +26,20 @@ jobs:
       ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}
       DOCKER_BUILDKIT: "1"
       DOCKER_DEFAULT_PLATFORM: linux/amd64
+      SCENARIO: ${{ github.event.inputs.scenario || 'complete_stack_ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
         with:
           python-version: "3.12"
 
-      - name: Install uv
-        run: pip install uv
+      - name: Install uv (with cache)
+        uses: astral-sh/setup-uv@afb3baf78d56a259980b76d3fc18fe1e99d867c2 # v7
+        with:
+          enable-cache: true
 
       - name: Install dependencies
         run: uv pip install --system -e ".[dev]"
@@ -50,14 +51,17 @@ jobs:
 
       - name: Wait for Docker daemon
         run: |
+          set -euo pipefail
           timeout 30 bash -c 'until docker info; do sleep 1; done'
           docker info
 
       - name: Pre-pull common images to speed up Molecule
         run: |
-          docker pull ubuntu:22.04
-          docker pull debian:12
-          docker pull rockylinux:9
+          set -euo pipefail
+          for img in ubuntu:22.04 debian:12 rockylinux:9; do
+            echo "Pulling ${img}"
+            docker pull "${img}"
+          done
 
       - name: Debug - List molecule scenarios
         run: |
@@ -70,8 +74,7 @@ jobs:
 
       - name: Run Molecule tests
         run: |
-          SCENARIO="${{ github.event.inputs.scenario || 'complete_stack_ci' }}"
-          echo "Running Molecule scenario: $SCENARIO"
+          echo "Running Molecule scenario: ${SCENARIO}"
           molecule --version
-          molecule list -s "$SCENARIO"
-          molecule test -s "$SCENARIO"
+          molecule list -s "${SCENARIO}"
+          molecule test -s "${SCENARIO}"

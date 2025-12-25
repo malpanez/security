@@ -44,7 +44,6 @@ def test_sudoers_syntax_valid(host):
     # Test all files in sudoers.d
     sudoers_d = host.file("/etc/sudoers.d")
     if sudoers_d.exists and sudoers_d.is_directory:
-        cmd = host.run("find /etc/sudoers.d -type f -name '*' | xargs -I {} visudo -cf {}")
         # Some distros might not allow this, so we test individually
         for f in ["99-security"]:
             file_path = f"/etc/sudoers.d/{f}"

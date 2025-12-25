@@ -2,10 +2,15 @@ name: Docker Platform Testing
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop]
   pull_request:
-    branches: [main]
+    branches: [develop]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
 
 jobs:
   test-platforms:
@@ -15,30 +20,30 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - name: "RHEL 9"
-            image: "redhat/ubi9:latest"
-            init: "/usr/sbin/init"
-          - name: "RHEL 8"
-            image: "redhat/ubi8:latest"
-            init: "/usr/sbin/init"
-          - name: "Rocky Linux 9"
-            image: "rockylinux:9"
-            init: "/usr/sbin/init"
-          - name: "Rocky Linux 8"
-            image: "rockylinux:8"
-            init: "/usr/sbin/init"
           - name: "Ubuntu 22.04"
-            image: "ubuntu:22.04"
+            image: "geerlingguy/docker-ubuntu2204-ansible:latest"
             init: "/lib/systemd/systemd"
           - name: "Ubuntu 20.04"
-            image: "ubuntu:20.04"
+            image: "geerlingguy/docker-ubuntu2004-ansible:latest"
+            init: "/lib/systemd/systemd"
+          - name: "Debian 13"
+            image: "geerlingguy/docker-debian13-ansible:latest"
             init: "/lib/systemd/systemd"
           - name: "Debian 12"
-            image: "debian:12"
+            image: "geerlingguy/docker-debian12-ansible:latest"
             init: "/lib/systemd/systemd"
           - name: "Debian 11"
-            image: "debian:11"
+            image: "geerlingguy/docker-debian11-ansible:latest"
             init: "/lib/systemd/systemd"
+          - name: "Rocky Linux 9"
+            image: "geerlingguy/docker-rockylinux9-ansible:latest"
+            init: "/lib/systemd/systemd"
+          - name: "Rocky Linux 8"
+            image: "geerlingguy/docker-rockylinux8-ansible:latest"
+            init: "/lib/systemd/systemd"
+          - name: "CentOS 7"
+            image: "geerlingguy/docker-centos7-ansible:latest"
+            init: "/usr/lib/systemd/systemd"
 
     env:
       DOCKER_DEFAULT_PLATFORM: linux/amd64
@@ -48,10 +53,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -92,7 +97,7 @@ jobs:
         run: |
           if [[ "${{ matrix.platform.image }}" =~ "ubuntu" ]] || [[ "${{ matrix.platform.image }}" =~ "debian" ]]; then
             docker exec test-container apt-get update
-            docker exec test-container apt-get install -y python3 sudo openssh-server systemd
+            docker exec test-container apt-get install -y python3 sudo openssh-server
           else
             docker exec test-container dnf install -y python3 sudo openssh-server
           fi
@@ -141,10 +146,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -174,7 +179,7 @@ jobs:
 
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: compliance-test-output
           path: /tmp/compliance-reports/
@@ -187,10 +192,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -198,7 +203,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@c37a8b7cd97e31de3fcbd9d84c401870edeb8d34 # v3
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'

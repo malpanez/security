@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=ghcr.io/malpanez/devcontainer-ansible:latest
+ARG BASE_IMAGE=ghcr.io/malpanez/devcontainer-ansible@sha256:b75bb9bf5fb8f6ad9e472e571f4dcc9dff522b1a7da04a2d960664a295534057
 ARG UV_VERSION=0.4.20
 ARG UV_CHECKSUM=sha256:UNSET
 ARG SYFT_VERSION=v1.7.0
@@ -37,6 +37,9 @@ RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | 
 # Install gitleaks for secret scanning
 RUN curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz \
   | tar -xz -C /usr/local/bin gitleaks
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD sh -c "ansible --version >/dev/null 2>&1"
 
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 COPY scripts/*.sh /usr/local/bin/

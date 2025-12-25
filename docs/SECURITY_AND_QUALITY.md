@@ -248,6 +248,7 @@ This document outlines all security and quality improvements implemented to ensu
 ./scripts/test-all-platforms.sh  # All platforms
 ./scripts/test-quick.sh           # Single platform (Ubuntu 22.04)
 ./scripts/test-quick.sh rockylinux:9  # Specific platform
+uv run molecule test -s chaos     # Chaos rollback safety scenario
 ```
 
 ---
@@ -624,11 +625,12 @@ ansible-playbook playbooks/*.yml --syntax-check
 
 ### Planned
 
+- [x] Property-based testing (template invariants)
 - [ ] Mutation testing (more robust tests)
-- [ ] Chaos engineering (resilience testing)
+- [x] Chaos engineering (resilience testing)
 - [ ] Performance benchmarking (baseline metrics)
 - [ ] Automated rollback (on failure detection)
-- [ ] Security scorecard (OpenSSF)
+- [x] Security scorecard (OpenSSF)
 - [ ] CII Best Practices badge
 
 ### Under Consideration

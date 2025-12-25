@@ -1,0 +1,34 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: ../../requirements.yml
+
+driver:
+  name: docker
+
+platforms:
+  - name: debian13
+    image: geerlingguy/docker-debian13-ansible:latest
+    platform: linux/amd64
+    privileged: true
+    command: /lib/systemd/systemd
+    pre_build_image: true
+
+provisioner:
+  name: ansible
+
+verifier:
+  name: testinfra
+
+scenario:
+  name: chaos
+  test_sequence:
+    - create
+    - converge
+    - verify
+    - destroy
+
+ansible:
+  playbooks:
+    converge: converge.yml

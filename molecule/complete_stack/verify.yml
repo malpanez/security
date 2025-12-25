@@ -98,5 +98,5 @@
       ansible.builtin.assert:
         that:
           - ansible_facts.services['auditd.service'].state == 'running'
-        success_msg: "All critical security services are operational"
-        fail_msg: "One or more critical services failed"
+        success_msg: All critical security services are operational
+        fail_msg: One or more critical services failed

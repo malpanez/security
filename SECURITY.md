@@ -6,7 +6,10 @@
 
 ### Preferred Method
 
-Please report security vulnerabilities by email to: **security@[DOMAIN]** (replace with actual contact)
+Please report security vulnerabilities by email to: **alpanez.alcalde@gmail.com**
+
+You can also use GitHub Security Advisories:
+https://github.com/malpanez/security/security/advisories
 
 Include as much information as possible:
 

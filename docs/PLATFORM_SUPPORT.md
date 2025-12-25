@@ -27,6 +27,7 @@ The `malpanez.security` collection officially supports the following platforms:
 | **Debian** | 10 | Buster | ✅ Production | LTS until 2024 |
 | **Debian** | 11 | Bullseye | ✅ Production | LTS until 2026 |
 | **Debian** | 12 | Bookworm | ✅ Production | Current stable, LTS until 2028 |
+| **Debian** | 13 | Trixie | ✅ Production | Next stable, recommended for new servers |
 
 ### Ubuntu
 
@@ -90,14 +91,14 @@ platforms:
 
   # Debian
   - debian12 (geerlingguy/docker-debian12-ansible)
+  - debian13 (geerlingguy/docker-debian13-ansible)
   - debian11 (geerlingguy/docker-debian11-ansible) # To add
   - debian10 (geerlingguy/docker-debian10-ansible) # To add
 
   # RHEL-based
   - centos7 (geerlingguy/docker-centos7-ansible)
-  - oraclelinux8 (geerlingguy/docker-oraclelinux8-ansible)
   - rockylinux9 (geerlingguy/docker-rockylinux9-ansible)
-  - almalinux9 (geerlingguy/docker-almalinux9-ansible)
+  - rockylinux8 (geerlingguy/docker-rockylinux8-ansible)
 ```
 
 ### CI/CD Platform Matrix

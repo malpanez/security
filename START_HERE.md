@@ -425,12 +425,12 @@ journalctl -xe
 
 ### Recursos
 - **Documentación Ansible**: https://docs.ansible.com
-- **Molecule Docs**: https://molecule.readthedocs.io
+- **Molecule Docs**: https://docs.ansible.com/projects/molecule/
 - **CIS Benchmarks**: https://www.cisecurity.org/cis-benchmarks
 - **SLSA Framework**: https://slsa.dev
 
 ### Community
-- Ansible Security Community: https://github.com/ansible/ansible-security
+- Ansible Security Community: https://github.com/ansible-security
 - Reddit r/ansible
 - Ansible Meetups
 
@@ -441,7 +441,7 @@ journalctl -xe
 Si eres nuevo en alguna tecnología:
 
 **Ansible Testing** (2-3 días):
-1. Tutorial Molecule: https://molecule.readthedocs.io/en/latest/getting-started.html
+1. Tutorial Molecule: https://docs.ansible.com/projects/molecule/
 2. Práctica: Crea un rol simple + test
 
 **Property-Based Testing** (1 día):

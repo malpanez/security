@@ -1,6 +1,23 @@
 # Ansible Collection - malpanez.security
 
+[![CI (Legacy)](https://github.com/malpanez/security/actions/workflows/ci.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/ci.yml)
+[![CI with UV](https://github.com/malpanez/security/actions/workflows/ci-uv.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/ci-uv.yml)
+[![Quality Gates](https://github.com/malpanez/security/actions/workflows/quality-gates.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/quality-gates.yml)
+[![Security Scan](https://github.com/malpanez/security/actions/workflows/security-scan.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/security-scan.yml)
+[![Docker Test](https://github.com/malpanez/security/actions/workflows/docker-test.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/docker-test.yml)
+[![Molecule Test](https://github.com/malpanez/security/actions/workflows/molecule-test.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/molecule-test.yml)
+[![Molecule Complete Stack](https://github.com/malpanez/security/actions/workflows/molecule-complete-stack.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/molecule-complete-stack.yml)
+[![Molecule Chaos](https://github.com/malpanez/security/actions/workflows/molecule-chaos.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/molecule-chaos.yml)
+[![Enterprise CI/CD](https://github.com/malpanez/security/actions/workflows/ci-cd-enterprise.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/ci-cd-enterprise.yml)
+[![Scorecard](https://github.com/malpanez/security/actions/workflows/scorecard.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/scorecard.yml)
+[![Branch Management](https://github.com/malpanez/security/actions/workflows/branch-management.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/branch-management.yml)
+[![CodeQL](https://github.com/malpanez/security/actions/workflows/codeql.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/codeql.yml)
+
 Colección orientada a endurecer la configuración de SSH.
+
+## Workflow Map
+
+Consulta `docs/WORKFLOWS.md` para el diagrama Mermaid de activaciones y dependencias.
 
 ## Roles (qué hace cada uno)
 

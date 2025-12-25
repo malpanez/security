@@ -172,7 +172,7 @@ Ajusta en `renovate.json`:
 
 - [Renovate Docs](https://docs.renovatebot.com/)
 - [Configuration Options](https://docs.renovatebot.com/configuration-options/)
-- [Presets](https://docs.renovatebot.com/presets/)
+- [Presets](https://docs.renovatebot.com/config-presets/)
 - [GitHub App](https://github.com/apps/renovate)
 
 ## Migración desde Dependabot

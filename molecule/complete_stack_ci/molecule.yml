@@ -1,8 +1,6 @@
 ---
 # CI-friendly configuration with reduced platforms for faster testing
 # For full platform coverage, use molecule.yml locally or with workflow_dispatch
-
-
 driver:
   name: docker
 
@@ -49,7 +47,7 @@ provisioner:
       stdout_callback: default
       callbacks_enabled: profile_tasks,timer
       verbosity: 1
-      forks: 3  # Reduced for CI
+      forks: 3 # Reduced for CI
     ssh_connection:
       pipelining: true
       control_path: /tmp/ansible-ssh-%%h-%%p-%%r

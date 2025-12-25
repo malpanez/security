@@ -1,0 +1,25 @@
+name: molecule-chaos
+
+on:
+  workflow_dispatch:
+
+jobs:
+  chaos:
+    runs-on: ubuntu-latest  # Docker driver required
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv (with cache)
+        uses: astral-sh/setup-uv@afb3baf78d56a259980b76d3fc18fe1e99d867c2 # v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv pip install --system -e ".[dev]"
+
+      - name: Run chaos scenario
+        run: uv run molecule test -s chaos
