@@ -47,7 +47,9 @@ jobs:
       PYTHONUNBUFFERED: "1"
       PY_COLORS: "1"
       ANSIBLE_FORCE_COLOR: "1"
-      ANSIBLE_STDOUT_CALLBACK: ansible.builtin.yaml
+      ANSIBLE_CONFIG: ansible.cfg
+      ANSIBLE_STDOUT_CALLBACK: default
+      ANSIBLE_RESULT_FORMAT: yaml
 
     steps:
       - name: Checkout repository
