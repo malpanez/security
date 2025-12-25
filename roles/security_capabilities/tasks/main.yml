@@ -39,7 +39,7 @@
       {{
         (security_capabilities_detected_version
           | string
-          | regex_search('([0-9]+\\.[0-9]+)', '\\1'))
+          | regex_replace('^.*?([0-9]+\\.[0-9]+).*$', '\\1'))
           | default('0.0', true)
       }}
 
