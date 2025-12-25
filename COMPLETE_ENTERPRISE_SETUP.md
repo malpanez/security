@@ -263,7 +263,7 @@ gh pr merge <pr-number> --squash
 ### Configuration
 
 - [.github/renovate.json](.github/renovate.json) - Renovate Bot
-- [.github/dependabot.yml](.github/dependabot.yml) - Dependabot
+- Dependabot disabled (Renovate handles dependency updates)
 - [.github/markdown-link-check-config.json](.github/markdown-link-check-config.json)
 - [ansible.cfg](ansible.cfg) - Production-optimized
 - [.ansible-lint](.ansible-lint) - Linting rules

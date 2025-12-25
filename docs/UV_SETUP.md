@@ -151,7 +151,7 @@ Lockfile (auto-generated, committed to git):
 ### Old Way (pip)
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -e ".[dev]"
 ansible-playbook playbooks/site.yml
 ```
 

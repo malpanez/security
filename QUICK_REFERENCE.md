@@ -377,7 +377,7 @@ EOF
 - Property-Based Testing: https://www.youtube.com/watch?v=zi0rHwfiX1Q
 
 ### Interactive Labs
-- Ansible Playgrounds: https://www.katacoda.com/ansible
+- Ansible Playgrounds: https://killercoda.com/ansible
 - Vault Playground: https://play.instruqt.com/hashicorp/tracks/vault-basics
 
 ---

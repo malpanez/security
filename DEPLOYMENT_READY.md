@@ -319,7 +319,7 @@ gh run view <run-id> --log
 ```
 
 Common issues:
-- Molecule dependency issues → Check requirements-dev.txt
+- Molecule dependency issues → Reinstall dev extras with `pip install -e ".[dev]"`
 - Docker platform issues → May need platform-specific fixes
 - Linting issues → Run `ansible-lint` locally first
 

@@ -75,15 +75,6 @@
     "automerge": false,
     "schedule": ["at any time"]
   },
-  "regexManagers": [
-    {
-      "description": "Update ansible-core version in requirements-dev.txt",
-      "fileMatch": ["^requirements-dev\\.txt$"],
-      "matchStrings": ["ansible-core>=(?<currentValue>.*?)\\n"],
-      "depNameTemplate": "ansible-core",
-      "datasourceTemplate": "pypi"
-    }
-  ],
   "pip_requirements": {
     "fileMatch": ["(^|/)requirements(-dev)?\\.txt$"]
   },

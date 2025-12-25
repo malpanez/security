@@ -38,21 +38,10 @@ This document outlines all security and quality improvements implemented to ensu
 - Docker base images
 - Pre-commit hooks
 
-### Dependabot Configuration
+### Dependabot Status
 
-**File:** `.github/dependabot.yml`
-
-**Features:**
-- GitHub-native dependency scanning
-- Weekly update checks (Mondays 4 AM)
-- Grouped Ansible-related updates
-- Automatic PR creation
-- Security-first updates
-
-**What it monitors:**
-- GitHub Actions
-- Python dependencies
-- Docker containers
+Dependabot is currently disabled in this repository to avoid overlapping automation.
+Renovate provides the dependency update workflow.
 
 ---
 
