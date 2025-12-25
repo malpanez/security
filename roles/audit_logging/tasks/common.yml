@@ -43,5 +43,7 @@
     name: "{{ audit_logging_service }}"
     state: started
     enabled: true
-  when: auditctl_check.rc == 0
+  when:
+    - auditctl_check.rc == 0
+    - not ansible_check_mode
   tags: [enforce]
