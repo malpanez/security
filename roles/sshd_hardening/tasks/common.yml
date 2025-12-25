@@ -1,9 +1,29 @@
 ---
-- name: common | Ensure OpenSSH server package is installed
+- name: common | Update apt cache for OpenSSH
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - ansible_facts["os_family"] == "Debian"
+  tags: [enforce]
+
+- name: common | Ensure OpenSSH server package is installed (Debian)
+  ansible.builtin.apt:
+    name: "{{ sshd_hardening_package_name }}"
+    state: present
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - ansible_facts["os_family"] == "Debian"
+  tags: [enforce]
+
+- name: common | Ensure OpenSSH server package is installed (non-Debian)
   ansible.builtin.package:
     name: "{{ sshd_hardening_package_name }}"
     state: present
-  when: security_mode | default('enforce') == 'enforce'
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - ansible_facts["os_family"] != "Debian"
   tags: [enforce]
 
 - name: common | Detect SSH service name
