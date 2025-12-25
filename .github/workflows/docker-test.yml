@@ -110,7 +110,13 @@ jobs:
       - name: Install required packages in container
         run: |
           if [[ "${{ matrix.platform.image }}" =~ "ubuntu" ]] || [[ "${{ matrix.platform.image }}" =~ "debian" ]]; then
-            docker exec test-container apt-get update
+            if [[ "${{ matrix.platform.image }}" =~ "debian11" ]]; then
+              docker exec test-container bash -lc 'apt-get update -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true'
+              docker exec test-container bash -lc 'apt-get install -y --no-install-recommends debian-archive-keyring gnupg ca-certificates'
+              docker exec test-container bash -lc 'apt-get update'
+            else
+              docker exec test-container apt-get update
+            fi
             docker exec test-container apt-get install -y python3 sudo openssh-server
           else
             docker exec test-container dnf install -y python3 sudo openssh-server
