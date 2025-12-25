@@ -6,7 +6,7 @@ on:
   schedule:
     - cron: '30 1 * * 1'  # Weekly on Monday at 1:30 AM
   push:
-    branches: [develop]
+    branches: [main]
   workflow_dispatch:
 
 permissions: read-all
@@ -14,6 +14,7 @@ permissions: read-all
 jobs:
   analysis:
     name: Scorecard analysis
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       security-events: write
