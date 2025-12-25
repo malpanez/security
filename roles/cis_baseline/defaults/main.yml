@@ -1,6 +1,7 @@
 ---
 cis_baseline_enabled: false
 cis_baseline_mode: enforce # enforce|review
+cis_baseline_review_fail_on_violation: false
 cis_baseline_controls:
   sshd:
     - No PasswordAuthentication
