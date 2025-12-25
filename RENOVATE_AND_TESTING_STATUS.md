@@ -89,8 +89,8 @@ Roles aplicados:
 
 **Test sequence**:
 ```
-dependency → cleanup → destroy → syntax → 
-create → prepare → converge → idempotence → 
+dependency → cleanup → destroy → syntax →
+create → prepare → converge → idempotence →
 side_effect → verify → cleanup → destroy
 ```
 
@@ -235,7 +235,7 @@ a5e7dc0 fix: update all workflows to use GitHub Actions v5/v6
 
 ---
 
-**Fecha**: 2025-12-11  
-**Rama**: `develop`  
-**Último commit**: `c87c684`  
+**Fecha**: 2025-12-11
+**Rama**: `develop`
+**Último commit**: `c87c684`
 **Próximo paso**: Instalar Renovate App (manual)

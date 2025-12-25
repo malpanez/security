@@ -19,6 +19,32 @@ Colección orientada a endurecer la configuración de SSH.
 
 Consulta `docs/WORKFLOWS.md` para el diagrama Mermaid de activaciones y dependencias.
 
+## Installation
+
+```bash
+ansible-galaxy collection install malpanez.security
+```
+
+## Usage
+
+Include the roles you need in your playbook or use the provided playbooks in `playbooks/`.
+
+## Examples
+
+See `examples/` and `playbooks/` for end-to-end scenarios.
+
+## Security
+
+Use `security_mode=review` for audit-only runs and `security_mode=enforce` to apply changes.
+
+## Contributing
+
+Contributions are welcome. See `CONTRIBUTING.md`.
+
+## License
+
+MIT. See `LICENSE`.
+
 ## Roles (qué hace cada uno)
 
 - `malpanez.security.security_capabilities`: detecta versión de OpenSSH/capacidades (SK keys, PAM, SELinux) y selecciona modo de autenticación.

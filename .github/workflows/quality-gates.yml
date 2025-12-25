@@ -30,7 +30,7 @@ jobs:
 
       - name: Run pre-commit hooks
         env:
-          ANSIBLE_COLLECTIONS_PATHS: ${{ github.workspace }}/.ansible/collections
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
         run: pre-commit run --all-files
 
   ansible-best-practices:

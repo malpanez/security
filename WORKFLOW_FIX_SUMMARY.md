@@ -136,7 +136,7 @@ a06835d chore(deps): bump lewagon/wait-on-check-action (#1)
 
 ---
 
-**Fecha**: 2025-12-11  
-**Rama actual**: `develop`  
-**Último commit**: `f901954`  
+**Fecha**: 2025-12-11
+**Rama actual**: `develop`
+**Último commit**: `f901954`
 **Estado**: ✅ Configuración completada y operativa

@@ -5,6 +5,11 @@ dependency:
     requirements-file: ../../../../requirements.yml
 driver:
   name: docker
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      roles_path: ../../..
 platforms:
   - name: rockylinux9
     image: geerlingguy/docker-rockylinux9-ansible:latest

@@ -5,6 +5,11 @@ dependency:
     requirements-file: ../../../../requirements.yml
 driver:
   name: docker
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      roles_path: ../../..
 platforms:
   - name: instance
     image: geerlingguy/docker-ubuntu2204-ansible:latest
