@@ -236,6 +236,17 @@
     - security_phase_mfa | default(false)
     - pam_mfa_enabled | default(false)
 
+- name: Compute validation status summary
+  ansible.builtin.set_fact:
+    validation_ssh_ok: "{{ sshd_status is success and ssh_port_test is success }}"
+    validation_sudo_ok: "{{ sudo_test.rc in [0, 1] }}"
+    validation_overall_status: >-
+      {{
+        'PASS'
+          if (sshd_status is success and ssh_port_test is success)
+          else 'FAIL - CRITICAL ISSUES'
+      }}
+
 # Generate validation report
 - name: Create validation report
   copy:
@@ -279,10 +290,10 @@
       - Audit rules loaded: {{ 'PASS' if audit_rules.rc == 0 else 'FAIL' }}
       {% endif %}
 
-      Overall Status: {{ 'PASS' if (sshd_status is success and ssh_port_test is success) else 'FAIL - CRITICAL ISSUES' }}
+      Overall Status: {{ validation_overall_status }}
 
       Recommendations:
-      {% if not (sshd_status is success and ssh_port_test is success) %}
+      {% if not validation_ssh_ok %}
       - CRITICAL: SSH service issues detected - investigate immediately
       {% endif %}
       {% if security_phase_sudoers | default(false) and sudo_test.rc not in [0, 1] %}
@@ -301,8 +312,8 @@
       ========================================
 
       Critical Services:
-      - SSH: {{ '✓ PASS' if (sshd_status is success and ssh_port_test is success) else '✗ FAIL' }}
-      - Sudo: {{ '✓ PASS' if sudo_test.rc in [0, 1] else '✗ FAIL' }}
+      - SSH: {{ '✓ PASS' if validation_ssh_ok else '✗ FAIL' }}
+      - Sudo: {{ '✓ PASS' if validation_sudo_ok else '✗ FAIL' }}
       {% if security_phase_mfa | default(false) %}
       - PAM MFA: {{ '✓ Configured' if pam_mfa_check.rc == 0 else '⚠ Check manually' }}
       {% endif %}

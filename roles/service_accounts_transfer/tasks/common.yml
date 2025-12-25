@@ -58,8 +58,11 @@
 
 - name: common | Configure sshd Match blocks for service accounts
   ansible.builtin.set_fact:
-    sshd_hardening_service_match_blocks: "{{ (sshd_hardening_service_match_blocks | default([])) + [ { 'match': 'User ' ~
-      item.name, 'options': match_opts } ] }}"
+    sshd_hardening_service_match_blocks: >-
+      {{
+        (sshd_hardening_service_match_blocks | default([]))
+        + [{'match': 'User ' ~ item.name, 'options': match_opts}]
+      }}
   vars:
     match_opts: >-
       {{

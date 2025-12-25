@@ -138,7 +138,8 @@
       changed_when: false
 
     - name: Get firewall status
-      ansible.builtin.command: "{{ 'firewall-cmd --list-all' if ansible_os_family == 'RedHat' else 'ufw status verbose' }}"
+      ansible.builtin.command: >-
+        {{ 'firewall-cmd --list-all' if ansible_os_family == 'RedHat' else 'ufw status verbose' }}
       register: firewall_status
       changed_when: false
       failed_when: false
@@ -153,7 +154,11 @@
     - name: Extract security packages
       ansible.builtin.set_fact:
         security_packages:
-          openssh: "{{ packages['openssh-server'] | default(packages['openssh'] | default({'version': 'not installed'})) }}"
+          openssh: >-
+            {{
+              packages['openssh-server']
+                | default(packages['openssh'] | default({'version': 'not installed'}))
+            }}
           sudo: "{{ packages['sudo'] | default({'version': 'not installed'}) }}"
           auditd: "{{ packages['audit'] | default(packages['auditd'] | default({'version': 'not installed'})) }}"
           selinux: "{{ packages['selinux-policy'] | default({'version': 'N/A'}) }}"
@@ -162,6 +167,34 @@
     # ============================================
     # Generate JSON Report
     # ============================================
+    - name: Compute compliance report flags
+      ansible.builtin.set_fact:
+        compliance_password_auth_enabled: >-
+          {{ 'PasswordAuthentication yes' in (sshd_config_content['content'] | b64decode) }}
+        compliance_root_login_enabled: >-
+          {{ 'PermitRootLogin yes' in (sshd_config_content['content'] | b64decode) }}
+        compliance_pubkey_auth_enabled: >-
+          {{
+            'PubkeyAuthentication yes' in (sshd_config_content['content'] | b64decode)
+            or 'PubkeyAuthentication' not in (sshd_config_content['content'] | b64decode)
+          }}
+        compliance_mfa_enabled: >-
+          {{ 'pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout }}
+        compliance_password_auth_status: >-
+          {{ '⚠️  Enabled' if compliance_password_auth_enabled else '✗ Disabled' }}
+        compliance_root_login_status: >-
+          {{ '⚠️  Enabled' if compliance_root_login_enabled else '✗ Disabled' }}
+        compliance_pubkey_auth_status: >-
+          {{ '✓ Enabled' if compliance_pubkey_auth_enabled else '✗ Disabled' }}
+        compliance_password_auth_disabled: "{{ not compliance_password_auth_enabled }}"
+        compliance_root_login_disabled: "{{ not compliance_root_login_enabled }}"
+        compliance_selinux_available: "{{ ansible_os_family == 'RedHat' }}"
+        compliance_selinux_denials_count: >-
+          {{ selinux_denials.stdout_lines | length if ansible_os_family == 'RedHat' else 0 }}
+        compliance_audit_enabled: "{{ audit_rules.rc == 0 }}"
+        compliance_audit_rules_count: >-
+          {{ audit_rules.stdout_lines | length if audit_rules.rc == 0 else 0 }}
+
     - name: Generate JSON compliance report
       ansible.builtin.copy:
         dest: "{{ compliance_output_dir }}/{{ inventory_hostname }}-{{ compliance_timestamp }}.json"
@@ -184,9 +217,9 @@
             "ssh": {
               "version": "{{ ssh_version.stdout | default('unknown') }}",
               "config_valid": {{ sshd_test_config.rc == 0 }},
-              "password_auth": {{ 'PasswordAuthentication yes' in sshd_config_content['content'] | b64decode }},
-              "root_login": {{ 'PermitRootLogin yes' in sshd_config_content['content'] | b64decode }},
-              "pubkey_auth": {{ 'PubkeyAuthentication yes' in sshd_config_content['content'] | b64decode | default(true) }}
+              "password_auth": {{ compliance_password_auth_enabled }},
+              "root_login": {{ compliance_root_login_enabled }},
+              "pubkey_auth": {{ compliance_pubkey_auth_enabled }}
             },
             "sudo": {
               "config_valid": {{ sudoers_validation.rc == 0 }},
@@ -195,17 +228,17 @@
               "sudo_users": {{ sudo_users.stdout_lines | to_json }}
             },
             "mfa": {
-              "enabled": {{ 'pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout }},
+              "enabled": {{ compliance_mfa_enabled }},
               "methods": "{{ pam_mfa_check.stdout }}"
             },
             "selinux": {
-              "available": {{ ansible_os_family == 'RedHat' }},
+              "available": {{ compliance_selinux_available }},
               "status": "{{ selinux_status.stdout | default('N/A') }}",
-              "recent_denials": {{ selinux_denials.stdout_lines | length if ansible_os_family == 'RedHat' else 0 }}
+              "recent_denials": {{ compliance_selinux_denials_count }}
             },
             "audit": {
-              "enabled": {{ audit_rules.rc == 0 }},
-              "rules_count": {{ audit_rules.stdout_lines | length if audit_rules.rc == 0 else 0 }}
+              "enabled": {{ compliance_audit_enabled }},
+              "rules_count": {{ compliance_audit_rules_count }}
             },
             "users": {
               "human_users": {{ user_list.stdout_lines | length }},
@@ -248,9 +281,9 @@
           |---------|--------|---------|
           | SSH Version | {{ ssh_version.stdout | default('unknown') }} | - |
           | Config Valid | {{ '✓ Pass' if sshd_test_config.rc == 0 else '✗ Fail' }} | - |
-          | Password Auth | {{ '✗ Disabled' if 'PasswordAuthentication no' in sshd_config_content['content'] | b64decode else '⚠️  Enabled' }} | PCI-DSS 8.2.1 |
-          | Root Login | {{ '✗ Disabled' if 'PermitRootLogin no' in sshd_config_content['content'] | b64decode else '⚠️  Enabled' }} | CIS 5.2.10 |
-          | Pubkey Auth | {{ '✓ Enabled' if 'PubkeyAuthentication yes' in sshd_config_content['content'] | b64decode or 'PubkeyAuthentication' not in sshd_config_content['content'] | b64decode else '✗ Disabled' }} | PCI-DSS 8.3 |
+          | Password Auth | {{ compliance_password_auth_status }} | PCI-DSS 8.2.1 |
+          | Root Login | {{ compliance_root_login_status }} | CIS 5.2.10 |
+          | Pubkey Auth | {{ compliance_pubkey_auth_status }} | PCI-DSS 8.3 |
 
           ## Sudo Configuration
 
@@ -264,7 +297,7 @@
 
           | Control | Status | Details |
           |---------|--------|---------|
-          | MFA Enabled | {{ '✓ Yes' if ('pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout) else '○ No' }} | PCI-DSS 8.3, SOC2 CC6.1 |
+          | MFA Enabled | {{ '✓ Yes' if compliance_mfa_enabled else '○ No' }} | PCI-DSS 8.3, SOC2 CC6.1 |
           | Methods | {{ pam_mfa_check.stdout if pam_mfa_check.stdout != 'none' else 'None configured' }} | - |
 
           {% if ansible_os_family == 'RedHat' %}
@@ -280,8 +313,8 @@
 
           | Control | Status | Details |
           |---------|--------|---------|
-          | Auditd Enabled | {{ '✓ Yes' if audit_rules.rc == 0 else '○ No' }} | PCI-DSS 10.2, SOC2 CC7.2 |
-          | Active Rules | {{ audit_rules.stdout_lines | length if audit_rules.rc == 0 else 0 }} | - |
+          | Auditd Enabled | {{ '✓ Yes' if compliance_audit_enabled else '○ No' }} | PCI-DSS 10.2, SOC2 CC7.2 |
+          | Active Rules | {{ compliance_audit_rules_count }} | - |
 
           ## User Management
 
@@ -307,20 +340,20 @@
 
           ### SOC 2 Type II
 
-          - **CC6.1** (Logical Access) - MFA: {{ '✓' if ('pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout) else '✗' }}
-          - **CC6.2** (Access Removal) - Audit: {{ '✓' if audit_rules.rc == 0 else '✗' }}
-          - **CC7.2** (Logging) - Auditd: {{ '✓' if audit_rules.rc == 0 else '✗' }}
+          - **CC6.1** (Logical Access) - MFA: {{ '✓' if compliance_mfa_enabled else '✗' }}
+          - **CC6.2** (Access Removal) - Audit: {{ '✓' if compliance_audit_enabled else '✗' }}
+          - **CC7.2** (Logging) - Auditd: {{ '✓' if compliance_audit_enabled else '✗' }}
 
           ### PCI-DSS v4.0
 
-          - **8.2.1** (MFA for admin) - MFA: {{ '✓' if ('pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout) else '✗' }}
-          - **8.3** (Strong cryptography) - SSH keys: {{ '✓' if 'PasswordAuthentication no' in sshd_config_content['content'] | b64decode else '✗' }}
-          - **10.2** (Audit trails) - Auditd: {{ '✓' if audit_rules.rc == 0 else '✗' }}
+          - **8.2.1** (MFA for admin) - MFA: {{ '✓' if compliance_mfa_enabled else '✗' }}
+          - **8.3** (Strong cryptography) - SSH keys: {{ '✓' if not compliance_password_auth_enabled else '✗' }}
+          - **10.2** (Audit trails) - Auditd: {{ '✓' if compliance_audit_enabled else '✗' }}
 
           ### CIS Benchmark
 
-          - **5.2.10** (Disable root login) - {{ '✓' if 'PermitRootLogin no' in sshd_config_content['content'] | b64decode else '✗' }}
-          - **5.2.4** (Disable password auth) - {{ '✓' if 'PasswordAuthentication no' in sshd_config_content['content'] | b64decode else '✗' }}
+          - **5.2.10** (Disable root login) - {{ '✓' if compliance_root_login_disabled else '✗' }}
+          - **5.2.4** (Disable password auth) - {{ '✓' if compliance_password_auth_disabled else '✗' }}
 
           ---
 
