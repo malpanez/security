@@ -1,5 +1,9 @@
 ---
+- name: Collect service facts
+  ansible.builtin.service_facts:
+
 - name: Restart sshd
   ansible.builtin.service:
-    name: sshd
+    name: "{{ cis_baseline_sshd_service_name }}"
     state: restarted
+  when: cis_baseline_sshd_service_name in ansible_facts.services
