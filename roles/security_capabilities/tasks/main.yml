@@ -34,7 +34,7 @@
         | regex_replace('^\\d+:','')
         | regex_replace('p\\d+.*','')
         | regex_search('^(\\d+\\.\\d+)')
-        | default('0.0')
+        | default('0.0', true)
       }}
 
 - name: Capabilities | Compute capability flags
@@ -43,17 +43,8 @@
       openssh_version_detected: "{{ security_capabilities_detected_version }}"
       openssh_version_major_minor: "{{ security_capabilities_version_major_minor }}"
       openssh_supports_sk_keys: >-
-        {{
-          (
-            security_capabilities_force_openssh_version | length > 0
-            and (security_capabilities_force_openssh_version is regex('^8\\.[2-9]|^9\\.|^1[0-9]'))
-          )
-          or (
-            security_capabilities_force_openssh_version | length == 0
-            and (security_capabilities_version_major_minor | float >= 8.2)
-          )
-        }}
-      supports_sshd_include_d: "{{ security_capabilities_version_major_minor | float >= 8.2 }}"
+        {{ security_capabilities_version_major_minor is version('8.2', '>=') }}
+      supports_sshd_include_d: "{{ security_capabilities_version_major_minor is version('8.2', '>=') }}"
       pam_u2f_available: "{{ ('libpam-u2f' in ansible_facts.packages) or ('pam_u2f' in ansible_facts.packages) }}"
       pam_fido2_available: "{{ ('libpam-fido2' in ansible_facts.packages) or ('pam_fido2' in ansible_facts.packages) }}"
       selinux_available: "{{ ansible_os_family == 'RedHat' }}"
