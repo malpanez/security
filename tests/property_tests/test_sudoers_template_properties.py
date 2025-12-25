@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 from hypothesis import given, strategies as st
-from jinja2 import BaseLoader, Environment
+from jinja2 import BaseLoader, Environment, select_autoescape
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -18,7 +18,11 @@ def _load_defaults():
 def _render(template_path, **overrides):
     context = _load_defaults()
     context.update(overrides)
-    env = Environment(loader=BaseLoader(), autoescape=False, keep_trailing_newline=True)
+    env = Environment(
+        loader=BaseLoader(),
+        autoescape=select_autoescape(default_for_string=False, default=False),
+        keep_trailing_newline=True,
+    )
     template = env.from_string(template_path.read_text())
     return template.render(**context)
 

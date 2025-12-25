@@ -26,7 +26,7 @@ jobs:
         run: uv pip install --system -e ".[dev]"
 
       - name: Run property tests (templates)
-        run: uv run pytest tests/property_tests -q
+        run: pytest tests/property_tests -q
 
       - name: Install collections
         run: ansible-galaxy collection install -r requirements.yml
