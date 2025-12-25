@@ -8,10 +8,10 @@ The `malpanez.security` collection officially supports the following platforms:
 
 | Platform | Version | Support Level | Notes |
 |----------|---------|---------------|-------|
-| **RHEL** | 7.x | ✅ Production | Legacy, EOL June 2024, widely deployed |
+| **RHEL** | 7.x | ⚠️ Limited | Legacy, EOL June 2024, best-effort only |
 | **RHEL** | 8.x | ✅ Production | Current LTS, EOL May 2029 |
 | **RHEL** | 9.x | ✅ Production | Latest, EOL May 2032 |
-| **CentOS** | 7.x | ✅ Production | Legacy, EOL June 2024 |
+| **CentOS** | 7.x | ⚠️ Limited | Legacy, EOL June 2024, best-effort only |
 | **Rocky Linux** | 8.x | ✅ Production | RHEL 8 rebuild |
 | **Rocky Linux** | 9.x | ✅ Production | RHEL 9 rebuild |
 | **AlmaLinux** | 8.x | ✅ Production | RHEL 8 rebuild |
@@ -96,7 +96,6 @@ platforms:
   - debian10 (geerlingguy/docker-debian10-ansible) # To add
 
   # RHEL-based
-  - centos7 (geerlingguy/docker-centos7-ansible)
   - rockylinux9 (geerlingguy/docker-rockylinux9-ansible)
   - rockylinux8 (geerlingguy/docker-rockylinux8-ansible)
 ```
@@ -112,6 +111,8 @@ GitHub Actions tests against:
 ## Compatibility Notes
 
 ### RHEL 7 / CentOS 7 Specific
+
+Note: CI does not run Docker-based Molecule tests on CentOS 7 due to Python 3 availability.
 
 **Differences from RHEL 8+:**
 - ❌ No `authselect` (uses traditional PAM)
