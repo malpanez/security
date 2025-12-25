@@ -11,5 +11,6 @@
       ansible.builtin.setup:
   vars:
     compliance_evidence_enabled: true
+    security_capabilities_selected_auth_mode: legacy
   roles:
     - role: compliance_evidence

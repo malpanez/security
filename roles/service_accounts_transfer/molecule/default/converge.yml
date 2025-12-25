@@ -12,6 +12,7 @@
   vars:
     service_accounts_transfer_accounts:
       - name: svc_ci
+        home: /srv/sftp/svc_ci
         shell: /usr/sbin/nologin
         keys:
           - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdummykeyexample svc_ci
