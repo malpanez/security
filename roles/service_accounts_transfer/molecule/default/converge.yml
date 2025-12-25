@@ -2,6 +2,13 @@
 - name: Converge
   hosts: all
   become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Ensure remote tmp directory
+      ansible.builtin.raw: mkdir -p /tmp/ansible-tmp
+      changed_when: false
+    - name: Gather facts
+      ansible.builtin.setup:
   vars:
     service_accounts_transfer_accounts:
       - name: svc_ci
