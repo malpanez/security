@@ -1,6 +1,7 @@
 ---
 pam_mfa_package_u2f: libpam-u2f
 pam_mfa_package_totp: libpam-google-authenticator
+pam_mfa_package_fido2: libpam-fido2
 pam_mfa_pam_module_u2f: /lib/security/pam_u2f.so
 pam_mfa_pam_module_google_authenticator: /lib/security/pam_google_authenticator.so
 pam_mfa_u2f_keys_path: /etc/Yubico/u2f_keys

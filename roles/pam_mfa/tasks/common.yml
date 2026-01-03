@@ -28,3 +28,45 @@
     mode: "0700"
   when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]
+
+- name: common | Detect available PAM MFA modules
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ pam_mfa_pam_module_fido2 }}"
+    - "{{ pam_mfa_pam_module_u2f }}"
+  register: pam_mfa_module_stats
+  changed_when: false
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]
+
+- name: common | Resolve primary PAM module
+  ansible.builtin.set_fact:
+    pam_mfa_primary_module_resolved: >-
+      {{
+        'fido2'
+          if pam_mfa_primary_module == 'fido2'
+          else (
+            'u2f'
+              if pam_mfa_primary_module == 'u2f'
+              else (
+                'fido2'
+                  if (pam_mfa_module_stats.results[0].stat.exists | default(false))
+                  else 'u2f'
+              )
+          )
+      }}
+    pam_mfa_primary_module_path: >-
+      {{
+        pam_mfa_pam_module_fido2
+          if pam_mfa_primary_module_resolved == 'fido2'
+          else pam_mfa_pam_module_u2f
+      }}
+    pam_mfa_primary_authfile: >-
+      {{
+        pam_mfa_fido2_authfile
+          if pam_mfa_primary_module_resolved == 'fido2'
+          else pam_mfa_u2f_keys_path
+      }}
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]

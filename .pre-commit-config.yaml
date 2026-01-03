@@ -32,3 +32,12 @@ repos:
     rev: v8.30.0
     hooks:
       - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: validate-no-log
+        name: Validate no_log on sensitive tasks
+        entry: python3 scripts/validate-no-log.py
+        language: system
+        pass_filenames: false
+        always_run: true

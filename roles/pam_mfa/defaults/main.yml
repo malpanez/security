@@ -13,6 +13,7 @@ pam_mfa_service_accounts:
 # MFA methods
 pam_mfa_method_primary: yubikey
 pam_mfa_method_backup: totp
+pam_mfa_primary_module: auto
 
 # PAM module paths (override per OS if needed)
 pam_mfa_pam_module_u2f: /lib/security/pam_u2f.so
@@ -27,9 +28,16 @@ pam_mfa_rhel_authselect_features: []
 pam_mfa_totp_enabled: true
 pam_mfa_totp_allowed_group: mfa-breakglass
 pam_mfa_totp_rate_limit: true
+pam_mfa_totp_rate_limit_count: 3
 
 # Bypass controls for service accounts
 pam_mfa_service_bypass_allow_from: []
+
+# Lockout prevention controls (CRITICAL)
+pam_mfa_enable_deadman_switch: true
+pam_mfa_validation_timeout: 300  # seconds to wait for manual validation
+pam_mfa_skip_module_validation: false  # Set true only for testing
+
 # File locations
 pam_mfa_u2f_keys_path: /etc/Yubico/u2f_keys
 pam_mfa_fido2_authfile: /etc/fido2/authorized_fido2

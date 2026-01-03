@@ -61,6 +61,16 @@ argument_specs:
         default: totp
         choices:
           - totp
+      pam_mfa_primary_module:
+        description:
+          - Primary PAM module selection
+          - C(auto) prefers pam_fido2 if present, otherwise pam_u2f
+        type: str
+        default: auto
+        choices:
+          - auto
+          - u2f
+          - fido2
 
       pam_mfa_pam_module_u2f:
         description:
@@ -122,6 +132,11 @@ argument_specs:
           - Enable rate limiting for TOTP attempts
         type: bool
         default: true
+      pam_mfa_totp_rate_limit_count:
+        description:
+          - Maximum TOTP attempts per rate limit window
+        type: int
+        default: 3
 
       pam_mfa_service_bypass_allow_from:
         description:

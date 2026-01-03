@@ -20,9 +20,17 @@
         name: openssh-server
         state: present
       when: ansible_facts['os_family'] == 'RedHat'
+    - name: Create fake pam_fido2 module for auto selection
+      ansible.builtin.file:
+        path: /tmp/pam_fido2.so
+        state: touch
+        mode: "0644"
   vars:
     pam_mfa_enabled: true
     pam_mfa_totp_enabled: true
     pam_mfa_breakglass_group: mfa-breakglass
+    pam_mfa_primary_module: auto
+    pam_mfa_pam_module_fido2: /tmp/pam_fido2.so
+    pam_mfa_fido2_authfile: /tmp/fido2_auth
   roles:
     - role: pam_mfa
