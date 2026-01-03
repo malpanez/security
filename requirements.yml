@@ -1,6 +1,13 @@
 ---
+# Pinned collection versions for reproducible builds
+# Use: ansible-galaxy collection install -r requirements.yml
+# Update with: dependabot or manual review of Galaxy releases
 collections:
   - name: ansible.posix
+    version: ">=1.5.4,<2.0.0"  # Stable 1.x series
   - name: community.general
+    version: ">=8.3.0,<9.0.0"  # Stable 8.x series
   - name: community.crypto
+    version: ">=2.17.1,<3.0.0"  # Stable 2.x series
   - name: community.docker
+    version: ">=3.7.0,<4.0.0"  # Stable 3.x series
