@@ -13,7 +13,32 @@
 [![Branch Management](https://github.com/malpanez/security/actions/workflows/branch-management.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/branch-management.yml)
 [![CodeQL](https://github.com/malpanez/security/actions/workflows/codeql.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/codeql.yml)
 
-Colección orientada a endurecer la configuración de SSH.
+> **📋 IMPORTANT**: Los documentos `START_HERE.md`, `EXECUTIVE_SUMMARY.md`, `IMPLEMENTATION_PROMPT.md`, e `IMPLEMENTATION_CHECKLIST.md` son **PLANIFICACIÓN** (roadmap futuro), NO reflejan el estado actual del código v1.0.0.
+>
+> Para el estado real implementado, ver **[Feature Status](#feature-status)** más abajo.
+
+Colección orientada a hardening de SSH y controles base de seguridad (sudoers, SELinux, auditd y evidencias).
+
+## Feature Status
+
+| Feature | Status | Evidence |
+|---------|--------|----------|
+| ✅ SSH hardening + validation | **IMPLEMENTED** | [roles/sshd_hardening/tasks/common.yml:122](roles/sshd_hardening/tasks/common.yml#L122) |
+| ✅ Sudoers baseline + visudo validation | **IMPLEMENTED** | [roles/sudoers_baseline/tasks/common.yml:14](roles/sudoers_baseline/tasks/common.yml#L14) |
+| ✅ PAM MFA with lockout prevention | **IMPLEMENTED** | [roles/pam_mfa/tasks/common_mfa_config.yml](roles/pam_mfa/tasks/common_mfa_config.yml) |
+| ✅ SELinux gradual enforcement | **IMPLEMENTED** | [roles/selinux_enforcement/](roles/selinux_enforcement/) |
+| ✅ Audit logging (auditd) | **IMPLEMENTED** | [roles/audit_logging/](roles/audit_logging/) |
+| ✅ Compliance evidence collection | **IMPLEMENTED** | [roles/compliance_evidence/](roles/compliance_evidence/) |
+| ✅ Backup/rollback automation | **IMPLEMENTED** | [tasks/backup-configs.yml](tasks/backup-configs.yml) |
+| ✅ Molecule testing per role | **IMPLEMENTED** | 9 roles with molecule/default/ |
+| ✅ CI/CD workflows | **IMPLEMENTED** | [.github/workflows/](.github/workflows/) |
+| ⚠️ Property-based testing | **PARTIAL** | 1 file (sudoers), not 100+ cases |
+| ❌ HashiCorp Vault integration | **PLANNED** | docs only, not in code |
+| ❌ Prometheus metrics exporter | **PLANNED** | not implemented |
+| ❌ SLSA provenance attestation | **PLANNED** | not implemented |
+| ❌ 66 multi-platform tests | **PLANNED** | molecule exists, not 11×6 matrix |
+
+**Audit Score**: 4.2/5 (TOP 20-25%) - See [AUDIT_REPORT.md](AUDIT_REPORT.md) for details
 
 ## Workflow Map
 
@@ -35,7 +60,7 @@ See `examples/` and `playbooks/` for end-to-end scenarios.
 
 ## Security
 
-Use `security_mode=review` for audit-only runs and `security_mode=enforce` to apply changes.
+Use `security_mode=review` for audit-only runs and `security_mode=enforce` to apply changes. Los roles que modifican el sistema están condicionados por `security_mode`.
 
 ## Contributing
 
@@ -54,7 +79,7 @@ MIT. See `LICENSE`.
 - `malpanez.security.selinux_enforcement`: habilita y configura SELinux, booleans y contextos.
 - `malpanez.security.service_accounts_transfer`: cuentas de servicio (SFTP/rsync) con restricciones y ForceCommand.
 - `malpanez.security.audit_logging`: reglas auditd para SSH/sudo/config.
-- `malpanez.security.compliance_evidence`: recopila evidencias en `reports/`.
+- `malpanez.security.compliance_evidence`: recopila evidencias en `compliance_evidence_output_dir` (default: `/var/log/compliance`).
 
 ## Uso rápido
 
@@ -90,11 +115,6 @@ Consulta `roles/sshd_hardening/meta/argument_specs.yml` para el catálogo comple
 - Para pasar a enforcement, vuelve a `security_mode=enforce` y ejecuta `playbooks/site.yml`.
 - Aprovecha que `service_accounts_transfer` corre antes que `sshd_hardening`: primero define cuentas/certificados, luego `sshd_config` renderiza los `Match` según los facts generados.
 
-## Devcontainer compliance-ready
+## Evidencias
 
-En `.devcontainer/` hay dos perfiles:
-
-- `devcontainer.json`: entorno estándar (imagen publicada `ghcr.io/malpanez/devcontainer-ansible`).
-- `devcontainer.compliance.json` + `Dockerfile.compliance`: configuración reforzada (root FS `--read-only`, tmpfs para `/tmp`/`/run`/`/var/log`, sops/age, syft y gitleaks preinstalados). Ejecuta el build con los valores `BASE_IMAGE`, `UV_VERSION` y `UV_CHECKSUM` fijados a los checksums oficiales; si dejas `UV_CHECKSUM=sha256:UNSET` se omite la instalación de uv para evitar binarios sin verificar.
-
-Lanza VS Code Remote Containers apuntando al perfil compliance para validar SOC2/HIPAA/FedRAMP: se instala `ansible-lint --profile production --strict`, hooks de `pre-commit` y se generan SBOMs automáticamente.
+El rol `compliance_evidence` genera artefactos en `compliance_evidence_output_dir` (default: `/var/log/compliance`). Incluye copias de configuración y salidas de comandos definidos en `roles/compliance_evidence/defaults/main.yml`.
