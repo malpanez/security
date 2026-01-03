@@ -23,43 +23,46 @@ classifiers = [
     "Topic :: System :: Systems Administration",
 ]
 
+# PINNED DEPENDENCIES (for reproducible builds)
+# Use: pip install -e ".[dev]" to install with pinned versions
+# Update with: pip-compile or dependabot
 dependencies = [
-    "ansible-core>=2.19,<2.21",
+    "ansible-core==2.19.3",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "ansible-lint>=24.5.0",
-    "yamllint>=1.35.1",
-    "molecule>=25.1.0",
-    "molecule-plugins[docker]>=25.8.12",
-    "pytest>=8.0.0",
-    "pytest-testinfra>=10.0.0",
-    "pytest-cov>=4.1.0",
-    "hypothesis>=6.100.0",
-    "pre-commit>=4.0.0",
-    "ruff>=0.1.0",
+    "ansible-lint==24.12.2",
+    "yamllint==1.37.1",
+    "molecule==25.1.0",
+    "molecule-plugins[docker]==25.8.12",
+    "pytest==8.3.4",
+    "pytest-testinfra==10.1.1",
+    "pytest-cov==6.0.0",
+    "hypothesis==6.125.0",
+    "pre-commit==4.0.1",
+    "ruff==0.9.1",
 ]
 
 test = [
-    "pytest>=8.0.0",
-    "pytest-testinfra>=10.0.0",
-    "pytest-cov>=4.1.0",
-    "pytest-xdist>=3.5.0",
-    "hypothesis>=6.100.0",
+    "pytest==8.3.4",
+    "pytest-testinfra==10.1.1",
+    "pytest-cov==6.0.0",
+    "pytest-xdist==3.6.1",
+    "hypothesis==6.125.0",
 ]
 
 lint = [
-    "ansible-lint>=24.5.0",
-    "yamllint>=1.35.1",
-    "ruff>=0.1.0",
-    "mypy>=1.7.0",
+    "ansible-lint==24.12.2",
+    "yamllint==1.37.1",
+    "ruff==0.9.1",
+    "mypy==1.14.1",
 ]
 
 docs = [
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.5.0",
-    "mkdocstrings[python]>=0.24.0",
+    "mkdocs==1.6.1",
+    "mkdocs-material==9.5.51",
+    "mkdocstrings[python]==0.27.2",
 ]
 
 all = [
