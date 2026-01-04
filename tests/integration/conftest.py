@@ -2,9 +2,11 @@
 Pytest configuration for integration tests.
 
 Sets up test fixtures for PAM+SSH+sudo integration testing.
+
+NOTE: testinfra is imported lazily to avoid breaking pytest collection
+for other test suites (property_tests) that don't need testinfra.
 """
 import pytest
-import testinfra
 
 
 @pytest.fixture(scope="module")
@@ -14,10 +16,11 @@ def test_host(request):
 
     Uses docker:// backend for molecule containers.
     """
-    # Get container name from environment or use default
+    # Lazy import to avoid breaking pytest collection
+    import testinfra
     import os
-    container_name = os.environ.get('MOLECULE_INSTANCE_NAME', 'instance')
 
+    container_name = os.environ.get('MOLECULE_INSTANCE_NAME', 'instance')
     return testinfra.get_host(f"docker://{container_name}")
 
 
