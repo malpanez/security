@@ -104,6 +104,7 @@
 
 - name: Validate PAM sshd has required entries
   shell: |
+    set -o pipefail
     grep -q "pam_u2f\|pam_google_authenticator" /etc/pam.d/sshd
   register: pam_mfa_check
   failed_when: false
@@ -133,7 +134,7 @@
   when:
     - security_phase_mfa | default(false)
     - pam_mfa_enabled | default(false)
-  ignore_errors: true
+  failed_when: false
 
 # SELinux Validation (RHEL-based only)
 - name: Check SELinux status
@@ -154,10 +155,11 @@
   when:
     - security_phase_selinux | default(false)
     - ansible_os_family == 'RedHat'
-  ignore_errors: true
+  failed_when: false
 
 - name: Check for SELinux denials (last 100 entries)
   shell: |
+    set -o pipefail
     ausearch -m avc -ts recent 2>/dev/null | tail -100 || echo "No recent denials"
   register: selinux_denials
   failed_when: false
@@ -204,7 +206,7 @@
     fail_msg: "WARNING: Audit service may not be fully functional"
     success_msg: ✓ Audit service is functional
   when: security_phase_audit | default(false)
-  ignore_errors: true
+  failed_when: false
 
 # Service Account Validation (if MFA enabled)
 - name: Test service account SSH access (if configured)

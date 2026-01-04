@@ -65,11 +65,13 @@
         fi
       args:
         executable: /bin/bash
+      changed_when: true
 
     - name: Validate restored sshd configuration
       ansible.builtin.command: sshd -t
       register: sshd_validation
       failed_when: sshd_validation.rc != 0
+      changed_when: false
 
     - name: Restart sshd service
       ansible.builtin.service:
@@ -107,11 +109,13 @@
         fi
       args:
         executable: /bin/bash
+      changed_when: true
 
     - name: Validate restored sudoers
       ansible.builtin.command: visudo -cf /etc/sudoers
       register: sudoers_validation
       failed_when: sudoers_validation.rc != 0
+      changed_when: false
 
     - name: Confirm sudoers rollback
       ansible.builtin.debug:
@@ -222,6 +226,7 @@
       ansible.builtin.shell: service auditd restart
       args:
         executable: /bin/bash
+      changed_when: true
 
     - name: Confirm audit rollback
       ansible.builtin.debug:

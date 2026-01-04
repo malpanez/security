@@ -78,13 +78,25 @@
 - name: common | Override effective algorithms when explicitly set
   ansible.builtin.set_fact:
     sshd_hardening_effective_ciphers: >-
-      {{ sshd_hardening_ciphers if sshd_hardening_ciphers | length > 0 else sshd_hardening_effective_ciphers }}
+      {{
+        sshd_hardening_ciphers if sshd_hardening_ciphers | length > 0
+        else sshd_hardening_effective_ciphers
+      }}
     sshd_hardening_effective_macs: >-
-      {{ sshd_hardening_macs if sshd_hardening_macs | length > 0 else sshd_hardening_effective_macs }}
+      {{
+        sshd_hardening_macs if sshd_hardening_macs | length > 0
+        else sshd_hardening_effective_macs
+      }}
     sshd_hardening_effective_kex: >-
-      {{ sshd_hardening_kex_algorithms if sshd_hardening_kex_algorithms | length > 0 else sshd_hardening_effective_kex }}
+      {{
+        sshd_hardening_kex_algorithms if sshd_hardening_kex_algorithms | length > 0
+        else sshd_hardening_effective_kex
+      }}
     sshd_hardening_effective_hostkeys: >-
-      {{ sshd_hardening_hostkey_algorithms if sshd_hardening_hostkey_algorithms | length > 0 else sshd_hardening_effective_hostkeys }}
+      {{
+        sshd_hardening_hostkey_algorithms if sshd_hardening_hostkey_algorithms | length > 0
+        else sshd_hardening_effective_hostkeys
+      }}
 
 - name: common | Write trusted CA public key for SSH certificates
   ansible.builtin.copy:
