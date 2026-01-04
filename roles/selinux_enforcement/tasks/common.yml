@@ -104,7 +104,10 @@
   when:
     - selinux_config_file.stat.exists
     - selinux_status.rc == 0
-    - selinux_enforcement_mode != 'enforcing' or selinux_enforcement_force_enforcing or (selinux_denials_check.stdout | default('') | length == 0)
+    - >-
+      selinux_enforcement_mode != 'enforcing'
+      or selinux_enforcement_force_enforcing
+      or (selinux_denials_check.stdout | default('') | length == 0)
   tags: [enforce]
 
 - name: common | Set SELinux booleans
