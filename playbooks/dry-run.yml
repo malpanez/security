@@ -60,7 +60,6 @@
       vars:
         sshd_hardening_permit_root_login: false
         sshd_hardening_password_authentication: false
-        sshd_hardening_pubkey_authentication: true
         sshd_hardening_max_auth_tries: 3
         sshd_hardening_log_level: VERBOSE
 
@@ -68,8 +67,8 @@
     - role: sudoers_baseline
       when: security_phase_sudoers | default(false)
       vars:
-        # Preserve existing /etc/sudoers (hybrid approach)
-        sudoers_baseline_preserve_main: true
+        # WARNING: role manages /etc/sudoers when strict is true
+        sudoers_baseline_strict: true
         sudoers_baseline_defaults:
           - use_pty
           - logfile=/var/log/sudo.log
@@ -88,7 +87,6 @@
         - security_capabilities_mfa_capable | default(false)
       vars:
         pam_mfa_enabled: true
-        pam_mfa_yubikey_enabled: true
         pam_mfa_totp_enabled: true
         pam_mfa_service_accounts:
           - ansible
@@ -110,7 +108,6 @@
       when: security_phase_audit | default(false)
       vars:
         audit_logging_enabled: true
-        audit_logging_verbose: false
 
   post_tasks:
     - name: Display dry-run summary

@@ -32,7 +32,7 @@
     remote_src: true
     mode: "0600"
   when: security_phase_ssh_hardening | default(false)
-  ignore_errors: true
+  failed_when: false
 
 - name: Backup sshd_config.d directory
   command: cp -r /etc/ssh/sshd_config.d "{{ security_backup_dir }}/sshd_config.d"
@@ -51,7 +51,7 @@
     remote_src: true
     mode: "0600"
   when: security_phase_sudoers | default(false)
-  ignore_errors: true
+  failed_when: false
 
 - name: Backup /etc/sudoers.d directory
   command: cp -r /etc/sudoers.d "{{ security_backup_dir }}/sudoers.d"
@@ -69,7 +69,7 @@
     remote_src: true
     mode: "0600"
   when: security_phase_mfa | default(false)
-  ignore_errors: true
+  failed_when: false
 
 - name: Backup PAM common-auth (Debian/Ubuntu)
   copy:
@@ -80,7 +80,7 @@
   when:
     - security_phase_mfa | default(false)
     - ansible_os_family == 'Debian'
-  ignore_errors: true
+  failed_when: false
 
 - name: Backup PAM system-auth (RHEL/CentOS)
   copy:
@@ -91,7 +91,7 @@
   when:
     - security_phase_mfa | default(false)
     - ansible_os_family == 'RedHat'
-  ignore_errors: true
+  failed_when: false
 
 - name: Backup PAM password-auth (RHEL/CentOS)
   copy:
@@ -102,7 +102,7 @@
   when:
     - security_phase_mfa | default(false)
     - ansible_os_family == 'RedHat'
-  ignore_errors: true
+  failed_when: false
 
 # SELinux Configuration Backup
 - name: Backup SELinux config
@@ -114,7 +114,7 @@
   when:
     - security_phase_selinux | default(false)
     - ansible_os_family == 'RedHat'
-  ignore_errors: true
+  failed_when: false
 
 # Audit Configuration Backup
 - name: Backup auditd.conf
@@ -124,7 +124,7 @@
     remote_src: true
     mode: "0600"
   when: security_phase_audit | default(false)
-  ignore_errors: true
+  failed_when: false
 
 - name: Backup audit.rules
   copy:
@@ -133,7 +133,7 @@
     remote_src: true
     mode: "0600"
   when: security_phase_audit | default(false)
-  ignore_errors: true
+  failed_when: false
 
 # Generate backup manifest
 - name: Create backup manifest

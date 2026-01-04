@@ -167,6 +167,13 @@
       when: security_phase | int >= 6
 
   post_tasks:
+    - name: Compute convergence status flags
+      ansible.builtin.set_fact:
+        converge_selinux_status: >-
+          {{ '✅'
+             if (security_phase | int >= 4 and ansible_os_family == 'RedHat')
+             else '⏭️ Skipped' }}
+
     - name: Display convergence summary
       ansible.builtin.debug:
         msg: |
@@ -182,7 +189,7 @@
           - sshd_hardening: {{ '✅' if security_phase | int >= 1 else '⏭️ Skipped' }}
           - pam_mfa: {{ '✅' if (security_phase | int >= 3 and pam_mfa_enabled) else '⏭️ Skipped' }}
           - sudoers_baseline: {{ '✅' if security_phase | int >= 2 else '⏭️ Skipped' }}
-          - selinux_enforcement: {{ '✅' if (security_phase | int >= 4 and ansible_os_family == 'RedHat') else '⏭️ Skipped' }}
+          - selinux_enforcement: {{ converge_selinux_status }}
           - audit_logging: {{ '✅' if security_phase | int >= 5 else '⏭️ Skipped' }}
           - compliance_evidence: {{ '✅' if security_phase | int >= 6 else '⏭️ Skipped' }}
           - cis_baseline: {{ '✅' if security_phase | int >= 6 else '⏭️ Skipped' }}

@@ -1,5 +1,7 @@
 # 📊 EXECUTIVE SUMMARY - Plan de Mejora malpanez.security
 
+**Estado**: documento de planificación. No refleja necesariamente lo implementado hoy en el código.
+
 ## 🎯 OBJETIVO
 
 Elevar la colección Ansible `malpanez.security` del **TOP 10-15%** al **TOP 0.01%** en calidad de código.

@@ -1,5 +1,7 @@
 # Next Level Roadmap - TOP 0.01%
 
+**Estado**: roadmap. Algunas secciones ya están parcialmente implementadas (tests/molecule), pero no hay CI ni observabilidad.
+
 **Current Status:** TOP 0.1% ✅
 **Target:** TOP 0.01% 🎯
 **Timeline:** 3-6 months

@@ -1,7 +1,7 @@
 ---
-# Pinned collection versions for reproducible builds
+# Version ranges for controlled updates (not fully pinned)
 # Use: ansible-galaxy collection install -r requirements.yml
-# Update with: dependabot or manual review of Galaxy releases
+# Update with: Renovate or manual review of Galaxy releases
 collections:
   - name: ansible.posix
     version: ">=1.5.4,<2.0.0"  # Stable 1.x series

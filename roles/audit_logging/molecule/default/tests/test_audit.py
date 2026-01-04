@@ -21,5 +21,18 @@ def test_audit_rules_file(host):
     assert rules.size > 0
 
     content = rules.content_string
-    assert "-w /etc/ssh/sshd_config -p wa -k sshd-config" in content
+    assert "-w /etc/ssh/sshd_config -p wa -k sshd_config" in content
     assert "-w /etc/sudoers -p wa -k sudoers" in content
+    assert "-w /etc/pam.d/sshd -p wa -k pam_sshd" in content
+    assert "-w /etc/pam.d/sudo -p wa -k pam_sudo" in content
+
+
+def test_audit_rules_loaded(host):
+    """Ensure audit rules are loaded by the kernel."""
+    cmd = host.run("auditctl -l")
+    assert cmd.rc == 0
+    output = cmd.stdout
+    assert "-w /etc/ssh/sshd_config -p wa -k sshd_config" in output
+    assert "-w /etc/sudoers -p wa -k sudoers" in output
+    assert "-w /etc/pam.d/sshd -p wa -k pam_sshd" in output
+    assert "-w /etc/pam.d/sudo -p wa -k pam_sudo" in output

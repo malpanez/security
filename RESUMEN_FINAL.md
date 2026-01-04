@@ -1,5 +1,7 @@
 # 🎉 RESUMEN FINAL - Plan de Implementación Completado
 
+**Estado**: resumen de planificación. No implica que las mejoras estén implementadas.
+
 ## ✅ LO QUE HEMOS LOGRADO
 
 Has recibido un **plan completo y ejecutable** para elevar tu colección Ansible `malpanez.security` del **TOP 10-15%** al **TOP 0.01%** en calidad de código.

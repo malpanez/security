@@ -12,5 +12,6 @@
   vars:
     compliance_evidence_enabled: true
     security_capabilities_selected_auth_mode: legacy
+    compliance_evidence_output_dir: /var/log/compliance
   roles:
     - role: compliance_evidence

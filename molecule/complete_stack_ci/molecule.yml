@@ -65,7 +65,6 @@ provisioner:
         # SSH Hardening
         sshd_hardening_password_authentication: false
         sshd_hardening_permit_root_login: prohibit-password
-        sshd_hardening_pubkey_authentication: true
         sshd_hardening_max_auth_tries: 4
         sshd_hardening_use_pam: true
 
@@ -75,7 +74,6 @@ provisioner:
 
         # Sudoers
         sudoers_baseline_strict: true
-        sudoers_baseline_preserve_main: true
 
         # SELinux (RHEL-based only)
         selinux_enforcement_enabled: true
@@ -83,7 +81,6 @@ provisioner:
 
         # Audit logging
         audit_logging_enabled: true
-        audit_logging_verbose: false
 
         # Compliance evidence
         compliance_evidence_enabled: true

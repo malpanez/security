@@ -1,5 +1,7 @@
 # 🚀 CÓMO USAR ESTE PLAN DE IMPLEMENTACIÓN
 
+**Estado**: documento de planificación. No refleja necesariamente lo implementado hoy en el código.
+
 ## 📚 DOCUMENTOS DISPONIBLES
 
 Has recibido un plan completo para elevar `malpanez.security` del **TOP 10-15%** al **TOP 0.01%**:

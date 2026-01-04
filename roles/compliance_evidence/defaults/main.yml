@@ -10,6 +10,8 @@ compliance_evidence_items:
     command: sestatus
   - name: audit_rules
     path: /etc/audit/rules.d
+  - name: audit_rules_loaded
+    command: auditctl -l || true
   - name: pam_chain
     command: grep -E 'pam_(u2f|fido2|google_authenticator)' /etc/pam.d/sshd || true
   - name: sudoers_summary

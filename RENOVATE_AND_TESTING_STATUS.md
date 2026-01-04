@@ -1,5 +1,7 @@
 # 🎉 Estado Final: Renovate + Testing
 
+**Estado**: snapshot histórico. Verifica el estado real antes de actuar.
+
 ## ✅ Renovate Bot - CONFIGURADO
 
 ### Qué se hizo

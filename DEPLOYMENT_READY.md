@@ -1,5 +1,7 @@
 # Deployment Ready - Private GitHub Testing
 
+**Estado**: snapshot histórico. Puede no reflejar el estado actual del repo.
+
 **Collection:** malpanez.security v1.0.0
 **Status:** ✅ Pushed to Private GitHub Repository
 **CI/CD:** Running automated tests
@@ -169,7 +171,7 @@ cd /home/malpanez/repos/malpanez/security
 ansible-playbook -i inventory playbooks/generate-compliance-report.yml
 ```
 
-Reports saved to: `/tmp/compliance-reports/`
+Reports saved to: `compliance-reports/` (relative to repo root)
 
 ---
 

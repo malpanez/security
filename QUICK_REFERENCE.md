@@ -1,5 +1,7 @@
 # ⚡ QUICK REFERENCE - malpanez.security TOP 0.01%
 
+**Estado**: referencia rápida del plan. No refleja necesariamente lo implementado hoy en el código.
+
 ## 📁 Archivos del Plan
 
 ```

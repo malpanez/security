@@ -6,7 +6,8 @@
     "args": {
       "BASE_IMAGE": "ghcr.io/malpanez/devcontainer-ansible:latest",
       "UV_VERSION": "0.4.20",
-      "UV_CHECKSUM": "sha256:UNSET"
+      "UV_CHECKSUM": "sha256:UNSET",
+      "GITLEAKS_CHECKSUM": "sha256:UNSET"
     }
   },
 

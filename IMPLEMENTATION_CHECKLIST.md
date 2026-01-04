@@ -1,5 +1,7 @@
 # ✅ IMPLEMENTATION CHECKLIST - malpanez.security TOP 0.01%
 
+**Estado**: plan de trabajo. El código actual no implementa todas estas fases.
+
 Este checklist ejecutable debe ser seguido en orden estricto. Marca cada item al completarlo.
 
 ## 🎯 TRACKING

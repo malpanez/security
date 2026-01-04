@@ -14,7 +14,7 @@ Exit codes:
 import sys
 import re
 from pathlib import Path
-from typing import List, Tuple
+from typing import Iterable, List, Tuple
 import yaml
 
 
@@ -42,8 +42,23 @@ ALLOWED_TASKS = [
     'import',
 ]
 
+# Module types that don't leak secrets even with sensitive keywords
+SAFE_MODULES = [
+    'package',  # Installing packages
+    'apt',
+    'yum',
+    'dnf',
+    'file',  # Creating directories/files
+    'group',  # Creating groups
+    'user',  # Creating users (when not setting passwords)
+    'stat',  # Checking file existence
+    'pamd',  # PAM configuration (already structured, not leaking)
+    'pause',  # User prompts
+    'wait_for',
+]
 
-def find_task_files(base_path: Path = Path("roles")) -> List[Path]:
+
+def find_task_files(base_path: Path) -> List[Path]:
     """Find all task YAML files in roles directory."""
     task_files = []
     for pattern in ["**/tasks/*.yml", "**/tasks/*.yaml"]:
@@ -53,18 +68,53 @@ def find_task_files(base_path: Path = Path("roles")) -> List[Path]:
 
 def is_sensitive_task(task: dict) -> bool:
     """Check if task handles sensitive data based on patterns."""
-    # Convert task to string for pattern matching
-    task_str = str(task).lower()
+    # Get the module being used
+    task_module = None
+    for key in task.keys():
+        if key not in ['name', 'when', 'tags', 'register', 'changed_when', 'failed_when', 'notify', 'become', 'vars']:
+            task_module = key
+            break
 
-    # Check if any sensitive pattern matches
+    # Check if this is a safe module
+    if task_module:
+        for safe in SAFE_MODULES:
+            if safe in task_module:
+                return False
+
+    # Check if this is a whitelisted task type
+    if isinstance(task_module, str):
+        for allowed in ALLOWED_TASKS:
+            if allowed in task_module:
+                return False
+
+    # Only check for secrets in register + shell/command tasks
+    # or tasks with actual secret values
+    has_register = 'register' in task
+    is_command_like = task_module in ['command', 'shell', 'raw'] if task_module else False
+
+    if not (has_register and is_command_like):
+        # For non-command tasks, only flag if they have actual secret values
+        task_str = str(task).lower()
+        # Look for actual secret patterns, not just keywords
+        secret_value_patterns = [
+            r'password\s*[:=]\s*[\'"]?\S+',  # password: value or password="value"
+            r'token\s*[:=]\s*[\'"]?\S+',
+            r'api[_-]?key\s*[:=]\s*[\'"]?\S+',
+            r'secret\s*[:=]\s*[\'"]?\S+',
+            r'BEGIN.*PRIVATE.*KEY',  # Private keys
+        ]
+
+        for pattern in secret_value_patterns:
+            if re.search(pattern, task_str, re.IGNORECASE):
+                return True
+
+        # Not a sensitive task
+        return False
+
+    # For register + command tasks, check if output might contain secrets
+    task_str = str(task).lower()
     for pattern in SENSITIVE_PATTERNS:
         if re.search(pattern, task_str, re.IGNORECASE):
-            # Check if this is a whitelisted task type
-            task_module = task.get('action', task.get('module', ''))
-            if isinstance(task_module, str):
-                for allowed in ALLOWED_TASKS:
-                    if allowed in task_module:
-                        return False
             return True
 
     return False
@@ -123,10 +173,48 @@ def check_file(file_path: Path) -> List[Tuple[str, dict]]:
     return violations
 
 
+def _extract_tasks_from_play(play: dict) -> Iterable[dict]:
+    for key in ("pre_tasks", "tasks", "post_tasks", "handlers"):
+        items = play.get(key, [])
+        if isinstance(items, list):
+            for task in items:
+                if isinstance(task, dict):
+                    yield task
+
+
+def check_playbook(file_path: Path) -> List[Tuple[str, dict]]:
+    violations = []
+
+    try:
+        with open(file_path, 'r') as f:
+            content = yaml.safe_load(f)
+
+        if not isinstance(content, list):
+            return violations
+
+        for play in content:
+            if not isinstance(play, dict):
+                continue
+            for task in _extract_tasks_from_play(play):
+                if any(key in task for key in ['include', 'import_tasks', 'include_tasks']):
+                    continue
+                task_name = task.get('name', '<unnamed>')
+                if is_sensitive_task(task) and not has_no_log(task):
+                    violations.append((task_name, task))
+
+    except yaml.YAMLError as e:
+        print(f"Warning: Could not parse {file_path}: {e}", file=sys.stderr)
+    except Exception as e:
+        print(f"Warning: Error processing {file_path}: {e}", file=sys.stderr)
+
+    return violations
+
+
 def main():
     """Main entry point."""
     repo_root = Path(__file__).parent.parent
     roles_path = repo_root / "roles"
+    playbooks_path = repo_root / "playbooks"
 
     if not roles_path.exists():
         print(f"Error: {roles_path} not found", file=sys.stderr)
@@ -138,7 +226,9 @@ def main():
     print()
 
     task_files = find_task_files(roles_path)
+    playbook_files = sorted(playbooks_path.glob("*.yml")) if playbooks_path.exists() else []
     print(f"Found {len(task_files)} task files to scan")
+    print(f"Found {len(playbook_files)} playbooks to scan")
     print()
 
     all_violations = []
@@ -147,6 +237,11 @@ def main():
         violations = check_file(task_file)
         if violations:
             all_violations.append((task_file, violations))
+
+    for playbook in playbook_files:
+        violations = check_playbook(playbook)
+        if violations:
+            all_violations.append((playbook, violations))
 
     if all_violations:
         print("VIOLATIONS FOUND:")

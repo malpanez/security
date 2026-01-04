@@ -9,6 +9,37 @@
   when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
+- name: common | Check service accounts exist
+  ansible.builtin.command: id -u {{ item }}
+  register: pam_mfa_service_account_checks
+  changed_when: false
+  failed_when: false
+  loop: "{{ pam_mfa_service_accounts }}"
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - pam_mfa_service_accounts | length > 0
+  tags: [enforce]
+
+- name: common | Add existing service accounts to MFA bypass group
+  ansible.builtin.user:
+    name: "{{ item.item }}"
+    groups: "{{ pam_mfa_service_bypass_group }}"
+    append: true
+  loop: "{{ pam_mfa_service_account_checks.results | default([]) }}"
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - item.rc == 0
+  tags: [enforce]
+
+- name: common | Warn about missing service accounts
+  ansible.builtin.debug:
+    msg: "WARNING: Service account {{ item.item }} not found; cannot add to {{ pam_mfa_service_bypass_group }}"
+  loop: "{{ pam_mfa_service_account_checks.results | default([]) }}"
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - item.rc != 0
+  tags: [enforce]
+
 - name: common | Ensure U2F authfile directory exists
   ansible.builtin.file:
     path: "{{ pam_mfa_u2f_keys_path | dirname }}"

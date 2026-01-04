@@ -1,5 +1,7 @@
 # Mejores Prácticas y Roadmap - Colección malpanez.security
 
+**Estado**: guía conceptual. Algunas variables mostradas en ejemplos no están implementadas en los roles actuales. Usa `meta/argument_specs.yml` y `defaults/main.yml` como fuente de verdad.
+
 ## Filosofía: Nunca Romper Producción
 
 ### Principios Fundamentales

@@ -25,6 +25,14 @@
         path: /tmp/pam_fido2.so
         state: touch
         mode: "0644"
+    - name: Create service accounts for MFA bypass testing
+      ansible.builtin.user:
+        name: "{{ item }}"
+        state: present
+        shell: /usr/sbin/nologin
+      loop:
+        - ansible
+        - ci
   vars:
     pam_mfa_enabled: true
     pam_mfa_totp_enabled: true
@@ -32,5 +40,8 @@
     pam_mfa_primary_module: auto
     pam_mfa_pam_module_fido2: /tmp/pam_fido2.so
     pam_mfa_fido2_authfile: /tmp/fido2_auth
+    pam_mfa_service_accounts:
+      - ansible
+      - ci
   roles:
     - role: pam_mfa

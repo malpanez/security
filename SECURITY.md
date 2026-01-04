@@ -87,6 +87,7 @@ Include as much information as possible:
 #### PAM MFA Implementation
 
 - **Service account bypass**: Required for automation
+- **Auto-bypass membership**: El rol añade cuentas existentes de `pam_mfa_service_accounts` al grupo `pam_mfa_service_bypass_group` y avisa si faltan.
 - **TOTP backup**: Always enabled to prevent lockout
 - **`nullok` option**: Used temporarily during setup
 - **Order matters**: Service account bypass MUST come before MFA enforcement

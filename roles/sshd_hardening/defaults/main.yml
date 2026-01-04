@@ -70,6 +70,10 @@ sshd_hardening_algorithm_sets:
     hostkey_algorithms:
       - ssh-ed25519
       - ssh-rsa
+sshd_hardening_ciphers: []
+sshd_hardening_macs: []
+sshd_hardening_kex_algorithms: []
+sshd_hardening_hostkey_algorithms: []
 sshd_hardening_service_match_blocks: []
 sshd_hardening_service_name: sshd
 sshd_hardening_package_name: openssh-server

@@ -9,6 +9,7 @@
 - Habilitar `security_capabilities_auth_mode=pam_mfa` o dejar auto en legacy con pam_u2f/pam_fido2 detectado.
 - Registrar YubiKey en `pam_mfa_u2f_keys_path`; configurar TOTP breakglass si `security_capabilities_totp_breakglass_enabled=true` y grupo `mfa-breakglass`.
 - Service accounts quedan exentas por Match Group (solo publickey).
+ - `pam_mfa_primary_module=auto` usa pam_fido2 si el módulo existe; si no, usa pam_u2f.
 
 ## Legacy (MODE_C)
 - Se mantienen `PasswordAuthentication no`; service accounts con `restrict`, ForceCommand, no TTY/forwarding; documentar compensatorios.
@@ -16,4 +17,4 @@
 
 ## Rotación y break-glass
 - Revocar keys en authorized_keys o CA; reenrolar YubiKeys/TOTP y rotar secrets tras uso.
-- Breakglass: añadir temporalmente al grupo `mfa-breakglass`, usar TOTP, retirar y rotar al finalizar.
+- Breakglass: añadir temporalmente al grupo `mfa-breakglass`, se omite U2F y se permite TOTP; retirar y rotar al finalizar.

@@ -31,6 +31,7 @@
     path: "{{ item.item.path }}"
     dest: "{{ compliance_evidence_output_dir }}/{{ inventory_hostname }}-{{ item.item.name }}.tar.gz"
     format: gz
+    mode: "0640"
   loop: "{{ compliance_evidence_stats.results | default([]) }}"
   when:
     - item.stat.exists | default(false)
@@ -39,13 +40,16 @@
   tags: [review]
 
 - name: common | Collect command output evidence
-  ansible.builtin.shell: "{{ item.command }}"
+  ansible.builtin.shell: |
+    set -o pipefail
+    {{ item.command }}
   args:
     executable: /bin/bash
   register: compliance_evidence_cmd
   changed_when: false
   loop: "{{ compliance_evidence_items | selectattr('command', 'defined') | list }}"
   failed_when: false
+  no_log: true
   tags: [review]
 
 - name: common | Write command evidence to files

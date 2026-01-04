@@ -1,10 +1,10 @@
 # Evidence Pack
 
-Generado por el rol `compliance_evidence` (configurable con `compliance_evidence_output_dir`).
+Generado por el rol `compliance_evidence` (configurable con `compliance_evidence_output_dir`, default: `/var/log/compliance`).
 
 Incluye:
-- Copias de configuración: sshd_config, sudoers, audit rules, PAM/SELinux según se añadan.
-- Salida de comandos: `sestatus`, otros checks definidos.
+- Copias de configuración: `sshd_config`, `sudoers`, `audit_rules` (archivado si es directorio).
+- Salida de comandos: `sestatus`, `pam_chain`, `sudoers_summary`, otros definidos en defaults.
 - Se nombra por host: `<host>-<artefacto>`.
 
 Reproducción:

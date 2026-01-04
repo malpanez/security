@@ -1,5 +1,7 @@
 # Renovate Bot Configuration
 
+**Estado**: requiere instalar la app de Renovate en GitHub. Los workflows CI están en `.github/workflows/`.
+
 ## Overview
 
 Este repositorio usa [Renovate Bot](https://github.com/renovatebot/renovate) para gestión automática de dependencias.

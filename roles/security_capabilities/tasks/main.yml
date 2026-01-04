@@ -54,6 +54,20 @@
       pam_u2f_available: "{{ ('libpam-u2f' in ansible_facts.packages) or ('pam_u2f' in ansible_facts.packages) }}"
       pam_fido2_available: "{{ ('libpam-fido2' in ansible_facts.packages) or ('pam_fido2' in ansible_facts.packages) }}"
       selinux_available: "{{ ansible_facts['os_family'] == 'RedHat' }}"
+      mfa_capable: >-
+        {{
+          ('libpam-u2f' in ansible_facts.packages)
+          or ('pam_u2f' in ansible_facts.packages)
+          or ('libpam-fido2' in ansible_facts.packages)
+          or ('pam_fido2' in ansible_facts.packages)
+        }}
+      yubikey_available: >-
+        {{
+          ('libpam-u2f' in ansible_facts.packages)
+          or ('pam_u2f' in ansible_facts.packages)
+          or ('libpam-fido2' in ansible_facts.packages)
+          or ('pam_fido2' in ansible_facts.packages)
+        }}
 
 - name: Capabilities | Select auth mode
   ansible.builtin.set_fact:
@@ -79,6 +93,11 @@
 - name: Capabilities | Set backward-compatible alias
   ansible.builtin.set_fact:
     security_selected_auth_mode: "{{ security_capabilities_selected_auth_mode }}"
+
+- name: Capabilities | Set playbook convenience flags
+  ansible.builtin.set_fact:
+    security_capabilities_mfa_capable: "{{ security_capabilities.mfa_capable }}"
+    security_capabilities_yubikey_available: "{{ security_capabilities.yubikey_available }}"
 
 - name: Capabilities | Summary
   ansible.builtin.debug:

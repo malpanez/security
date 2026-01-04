@@ -1,5 +1,7 @@
 # 📋 Resumen Completo: Corrección de PRs y Workflows
 
+**Estado**: snapshot histórico. Algunas afirmaciones pueden no reflejar el estado actual del repo.
+
 ## 🎯 Objetivo Inicial
 Revisar y corregir 6 PRs de Dependabot con checks fallidos y configurar correctamente el GitFlow.
 
@@ -7,12 +9,8 @@ Revisar y corregir 6 PRs de Dependabot con checks fallidos y configurar correcta
 
 ### 1. Configuración de Dependabot
 - **Archivo**: `.github/dependabot.yml`
-- **Cambios**:
-  - Añadido `target-branch: "develop"` para 3 ecosistemas:
-    - GitHub Actions
-    - Python/pip packages
-    - Docker images
-  - Removida propiedad `reviewers` (no permitida)
+- **Estado actual**: NO HAY EVIDENCIA EN EL REPO de este archivo.
+- **Nota**: Renovate está configurado en `renovate.json`.
 
 ### 2. Sincronización de Ramas
 - Mergeada rama `main` → `develop` (10 commits de diferencia)

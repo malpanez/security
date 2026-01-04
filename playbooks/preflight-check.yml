@@ -181,7 +181,11 @@
     # WARNING: Check disk space
     # ============================================
     - name: Check disk space
-      ansible.builtin.shell: df -h / | tail -1 | awk '{print $5}' | sed 's/%//'
+      ansible.builtin.shell: |
+        set -o pipefail
+        df -h / | tail -1 | awk '{print $5}' | sed 's/%//'
+      args:
+        executable: /bin/bash
       register: disk_usage
       changed_when: false
       become: true
@@ -218,20 +222,34 @@
       ansible.builtin.package_facts:
         manager: auto
 
+    - name: Set package check messages
+      ansible.builtin.set_fact:
+        preflight_openssh_msg: >-
+          {{ '✓ OpenSSH server installed'
+            if ('openssh-server' in packages or 'openssh' in packages)
+            else '⚠️  WARNING: OpenSSH server may not be installed' }}
+        preflight_sudo_msg: >-
+          {{ '✓ Sudo installed'
+            if 'sudo' in packages
+            else '⚠️  WARNING: Sudo may not be installed' }}
+
     - name: Check for openssh-server
       ansible.builtin.debug:
-        msg: "{{ '✓ OpenSSH server installed' if ('openssh-server' in packages or 'openssh' in packages) else '⚠️  WARNING:
-          OpenSSH server may not be installed' }}"
+        msg: "{{ preflight_openssh_msg }}"
 
     - name: Check for sudo
       ansible.builtin.debug:
-        msg: "{{ '✓ Sudo installed' if 'sudo' in packages else '⚠️  WARNING: Sudo may not be installed' }}"
+        msg: "{{ preflight_sudo_msg }}"
 
     # ============================================
     # INFO: MFA Capability Detection
     # ============================================
     - name: Check OpenSSH version for SK keys support
-      ansible.builtin.shell: ssh -V 2>&1 | grep -oP 'OpenSSH_\K[0-9]+\.[0-9]+'
+      ansible.builtin.shell: |
+        set -o pipefail
+        ssh -V 2>&1 | grep -oP 'OpenSSH_\\K[0-9]+\\.[0-9]+'
+      args:
+        executable: /bin/bash
       register: ssh_version
       changed_when: false
       failed_when: false
@@ -311,6 +329,19 @@
     # ============================================
     # Generate Pre-flight Report
     # ============================================
+    - name: Compute preflight status flags
+      ansible.builtin.set_fact:
+        preflight_ready: "{{ sshd_check.rc == 0 and sudoers_check.rc == 0 and become_test.stdout == '0' }}"
+        preflight_ssh_service_status: >-
+          {{ 'running'
+            if (services['sshd.service'].state == 'running' or services['ssh.service'].state == 'running')
+            else 'stopped' }}
+        preflight_ready_status: "{{ 'READY FOR DEPLOYMENT' if preflight_ready else 'CRITICAL ISSUES DETECTED' }}"
+        preflight_ready_short: >-
+          {{ '✓ READY FOR DEPLOYMENT'
+            if preflight_ready
+            else '✗ CRITICAL ISSUES - DO NOT DEPLOY' }}
+
     - name: Generate preflight report
       ansible.builtin.copy:
         dest: "{{ preflight_output }}/{{ inventory_hostname }}.txt"
@@ -332,7 +363,7 @@
           SSH Information:
           ---------------
           OpenSSH version: {{ ssh_version.stdout | default('unknown') }}
-          SSH service: {{ 'running' if (services['sshd.service'].state == 'running' or services['ssh.service'].state == 'running') else 'stopped' }}
+          SSH service: {{ preflight_ssh_service_status }}
           Config syntax: {{ 'valid' if sshd_check.rc == 0 else 'INVALID' }}
 
           Security Capabilities:
@@ -354,7 +385,7 @@
           ----------------
           Count: {{ existing_backups.matched }}
 
-          Status: {{ 'READY FOR DEPLOYMENT' if (sshd_check.rc == 0 and sudoers_check.rc == 0 and become_test.stdout == '0') else 'CRITICAL ISSUES DETECTED' }}
+          Status: {{ preflight_ready_status }}
 
           Next Steps:
           ----------
@@ -383,6 +414,6 @@
 
           Report saved to: {{ preflight_output }}/{{ inventory_hostname }}.txt
 
-          {{ '✓ READY FOR DEPLOYMENT' if (sshd_check.rc == 0 and sudoers_check.rc == 0 and become_test.stdout == '0') else '✗ CRITICAL ISSUES - DO NOT DEPLOY' }}
+          {{ preflight_ready_short }}
 
           ========================================

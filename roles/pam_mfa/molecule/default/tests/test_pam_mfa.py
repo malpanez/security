@@ -98,6 +98,15 @@ def test_service_accounts_exempt(host):
                 f"Service account {account} should have restricted shell"
 
 
+def test_service_accounts_in_bypass_group(host):
+    """Ensure service accounts are added to the MFA bypass group."""
+    bypass_group = host.group("mfa-bypass")
+    assert bypass_group.exists, "mfa-bypass group should exist"
+    for account in ["ansible", "ci"]:
+        assert account in bypass_group.members, \
+            f"Service account {account} should be in mfa-bypass group"
+
+
 def test_pam_configuration_syntax(host):
     """Test that PAM configurations have valid syntax."""
     pam_files = ["/etc/pam.d/sshd", "/etc/pam.d/sudo", "/etc/pam.d/common-auth"]
@@ -168,7 +177,7 @@ def test_pam_control_keywords_safe(host):
             if "pam_google_authenticator" in line:
                 # Should have 'sufficient' control OR 'nullok' argument
                 assert "sufficient" in line or "nullok" in line, \
-            "CRITICAL: google-authenticator must have 'sufficient' control or 'nullok' argument"
+                    "CRITICAL: google-authenticator must have 'sufficient' control or 'nullok' argument"
 
 def test_totp_breakglass_gating(host):
     """CRITICAL: TOTP should only trigger for breakglass group."""

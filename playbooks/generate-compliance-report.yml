@@ -44,14 +44,20 @@
       ansible.builtin.slurp:
         src: /etc/ssh/sshd_config
       register: sshd_config_content
+      no_log: true
 
     - name: Test SSH configuration
       ansible.builtin.command: sshd -T
       register: sshd_test_config
       changed_when: false
+      no_log: true
 
     - name: Get SSH daemon version
-      ansible.builtin.shell: ssh -V 2>&1
+      ansible.builtin.shell: |
+        set -o pipefail
+        ssh -V 2>&1
+      args:
+        executable: /bin/bash
       register: ssh_version
       changed_when: false
 
@@ -62,6 +68,7 @@
       ansible.builtin.command: visudo -c
       register: sudoers_validation
       changed_when: false
+      no_log: true
 
     - name: List sudoers.d files
       ansible.builtin.find:
@@ -77,11 +84,17 @@
         src: /etc/pam.d/sshd
       register: pam_sshd_config
       failed_when: false
+      no_log: true
 
     - name: Check for MFA modules
-      ansible.builtin.shell: grep -E "pam_u2f|pam_google_authenticator" /etc/pam.d/sshd || echo "none"
+      ansible.builtin.shell: |
+        set -o pipefail
+        grep -E "pam_u2f|pam_google_authenticator" /etc/pam.d/sshd || echo "none"
+      args:
+        executable: /bin/bash
       register: pam_mfa_check
       changed_when: false
+      no_log: true
 
     # ============================================
     # Collect SELinux Evidence (RHEL)
@@ -92,12 +105,18 @@
       changed_when: false
       failed_when: false
       when: ansible_os_family == 'RedHat'
+      no_log: true
 
     - name: Get SELinux denials (last 100)
-      ansible.builtin.shell: ausearch -m avc -ts recent 2>/dev/null | tail -100 || echo "none"
+      ansible.builtin.shell: |
+        set -o pipefail
+        ausearch -m avc -ts recent 2>/dev/null | tail -100 || echo "none"
+      args:
+        executable: /bin/bash
       register: selinux_denials
       changed_when: false
       when: ansible_os_family == 'RedHat'
+      no_log: true
 
     # ============================================
     # Collect Audit Log Evidence
@@ -107,35 +126,50 @@
       register: auditd_status
       changed_when: false
       failed_when: false
+      no_log: true
 
     - name: Get loaded audit rules
       ansible.builtin.command: auditctl -l
       register: audit_rules
       changed_when: false
       failed_when: false
+      no_log: true
 
     # ============================================
     # Collect User/Group Evidence
     # ============================================
     - name: List users with UID >= 1000
       ansible.builtin.shell: |
+        set -o pipefail
         getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 {print $1":"$3":"$6":"$7}'
+      args:
+        executable: /bin/bash
       register: user_list
       changed_when: false
+      no_log: true
 
     - name: List sudo-capable users
       ansible.builtin.shell: |
+        set -o pipefail
         getent group sudo wheel 2>/dev/null | cut -d: -f4 | tr ',' '\n' | sort -u
+      args:
+        executable: /bin/bash
       register: sudo_users
       changed_when: false
+      no_log: true
 
     # ============================================
     # Collect Network Configuration Evidence
     # ============================================
     - name: Get listening ports
-      ansible.builtin.shell: ss -tuln | grep LISTEN
+      ansible.builtin.shell: |
+        set -o pipefail
+        ss -tuln | grep LISTEN
+      args:
+        executable: /bin/bash
       register: listening_ports
       changed_when: false
+      no_log: true
 
     - name: Get firewall status
       ansible.builtin.command: >-
@@ -143,6 +177,7 @@
       register: firewall_status
       changed_when: false
       failed_when: false
+      no_log: true
 
     # ============================================
     # Collect Package Evidence
