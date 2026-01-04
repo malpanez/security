@@ -15,8 +15,7 @@ argument_specs:
           - logfile=/var/log/sudo.log
           - timestamp_timeout=5
           - passwd_tries=3
-          - requiretty
-          - "!authenticate"
+          - "!visiblepw"
         description: List of Defaults lines to apply to sudoers.
       sudoers_baseline_secure_path:
         type: str

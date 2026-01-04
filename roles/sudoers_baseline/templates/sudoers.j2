@@ -1,4 +1,11 @@
 # Managed by security.sudoers_baseline
 Defaults {{ sudoers_baseline_defaults | join(',') }}
 Defaults secure_path="{{ sudoers_baseline_secure_path }}"
+{% if sudoers_baseline_iolog_enabled | bool %}
+# I/O Logging - Complete audit trail of all sudo commands
+Defaults log_input
+Defaults log_output
+Defaults iolog_dir="{{ sudoers_baseline_iolog_dir }}"
+Defaults maxseq={{ sudoers_baseline_iolog_maxseq }}
+{% endif %}
 @includedir {{ sudoers_baseline_files_path }}
