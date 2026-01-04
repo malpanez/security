@@ -101,7 +101,7 @@ Include as much information as possible:
 
 - **Syntax validation**: Always uses `visudo -cf` before applying
 - **Root preservation**: Root sudo access always maintained
-- **Production mode**: Never modifies main `/etc/sudoers` file
+- **Modo actual**: Solo aplica cambios si `sudoers_baseline_strict=true` y escribe `/etc/sudoers`
 
 #### SELinux Enforcement
 
@@ -129,11 +129,11 @@ Include as much information as possible:
 
 This collection includes:
 
-- **31+ CRITICAL tests** that prevent lockouts
-- **Molecule tests** on all supported platforms
-- **Syntax validation** (`sshd -t`, `visudo -cf`)
-- **Idempotence testing** (no changes on second run)
-- **Service validation** (SSH, sudo, PAM still work)
+- Molecule por rol (escenario default)
+- Escenario `complete_stack` con 11 plataformas
+- Escenario `chaos` básico
+- Property tests de plantillas (`tests/property_tests/`)
+- Validación de sintaxis (`sshd -t`, `visudo -cf`) en scripts/verifiers
 
 ## Security Best Practices
 
@@ -272,11 +272,163 @@ We practice responsible disclosure:
 4. We coordinate public disclosure timeline
 5. We credit researchers (with permission)
 
+## Dependency Management
+
+### Update Policy
+
+We maintain strict dependency management to ensure security and reproducibility:
+
+- **Python dependencies**: Pinned to exact versions (`==`) in `pyproject.toml`
+- **Ansible collections**: Pinned with upper bounds (`>=X,<Y`) in `requirements.yml`
+- **Lock files**: `uv.lock` committed to repository for reproducible builds
+
+### Update Schedule
+
+| Type | Frequency | Timeline |
+|------|-----------|----------|
+| **Security patches** | Immediate | <24h from CVE disclosure |
+| **Minor updates** | Monthly | First Monday of month |
+| **Major updates** | Quarterly | After testing period |
+
+### Update Process
+
+#### 1. Check for Updates
+
+```bash
+# Python dependencies
+uv pip list --outdated
+
+# Ansible collections
+ansible-galaxy collection list --format=yaml | grep -A2 "version:"
+```
+
+#### 2. Security Vulnerability Scan
+
+```bash
+# Scan Python dependencies
+pip-audit
+
+# Scan Ansible content
+ansible-lint --profile=production roles/ playbooks/
+```
+
+#### 3. Update Dependencies
+
+**For security updates (immediate)**:
+```bash
+# Update specific package
+uv pip compile --upgrade-package <package>==<version> pyproject.toml -o uv.lock
+
+# Update collection
+vim requirements.yml  # Update version constraint
+ansible-galaxy collection install -r requirements.yml --upgrade
+```
+
+**For regular updates (monthly)**:
+```bash
+# Update all Python deps
+uv pip compile --upgrade pyproject.toml -o uv.lock
+
+# Update all collections
+ansible-galaxy collection install -r requirements.yml --upgrade
+```
+
+#### 4. Testing Before Merge
+
+**MANDATORY** - All updates must pass:
+
+```bash
+# 1. Unit tests
+pytest tests/
+
+# 2. Molecule tests (all roles)
+molecule test --all
+
+# 3. Ansible-lint
+ansible-lint roles/ playbooks/
+
+# 4. Integration tests
+pytest tests/integration/
+
+# 5. Validate no_log
+python3 scripts/validate-no-log.py
+```
+
+#### 5. Update Lock Files
+
+```bash
+# Regenerate lock files after updates
+uv pip compile pyproject.toml -o uv.lock
+
+# Commit with descriptive message
+git add uv.lock requirements.yml
+git commit -m "security: Update dependencies (CVE-YYYY-XXXXX)"
+```
+
+### Dependency Review
+
+**Before accepting PRs with dependency changes:**
+
+1. ✅ Check for known vulnerabilities
+2. ✅ Review changelog for breaking changes
+3. ✅ Verify license compatibility
+4. ✅ Run full test suite
+5. ✅ Update documentation if API changed
+
+### Automated Dependency Updates
+
+We use **Renovate Bot** for automated dependency updates:
+
+- **Schedule**: Weekly on Mondays
+- **Auto-merge**: Only patch updates that pass CI
+- **Manual review**: Minor/major version bumps
+
+Configuration: [`.github/renovate.json`](.github/renovate.json)
+
+### Version Pinning Rationale
+
+**Why we pin Python deps to exact versions (`==`)**:
+- Ensures reproducible builds
+- Prevents surprise breakage
+- Controlled update process
+- Faster CI/CD (no resolution)
+
+**Why we pin Ansible collections with ranges (`>=X,<Y`)**:
+- Collections use semantic versioning
+- Patch updates are safe
+- Major version bumps are breaking
+- Balance between security and stability
+
+### Emergency Security Updates
+
+**If a CRITICAL CVE is disclosed:**
+
+1. **Assess impact**: Does it affect our dependencies?
+2. **Create hotfix branch**: `git checkout -b hotfix/cve-YYYY-XXXXX`
+3. **Update dependency**: Pin to patched version
+4. **Fast-track testing**: Priority testing in staging
+5. **Merge and deploy**: <24h timeline
+6. **Notify users**: Security advisory + release notes
+
+### Dependency Sources
+
+**Trusted sources only:**
+- **PyPI**: Python packages (official index)
+- **Ansible Galaxy**: Ansible collections (official registry)
+- **GitHub Releases**: For direct downloads (with SHA256 verification)
+
+**Forbidden sources:**
+- Unverified mirrors
+- Direct git dependencies (use releases)
+- Packages without source code
+
+---
+
 ## Hall of Fame
 
 Security researchers who have responsibly disclosed vulnerabilities will be listed here with their permission.
 
 ---
 
-**Last Updated**: 2025-12-05
-**Contact**: security@[DOMAIN] (replace with actual contact)
+**Last Updated**: 2026-01-04
+**Contact**: alpanez.alcalde@gmail.com
