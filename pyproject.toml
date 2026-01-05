@@ -123,15 +123,14 @@ addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
-    "--cov=roles",
-    "--cov-report=term-missing:skip-covered",
-    "--cov-report=html",
-    "--cov-report=xml",
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+
+# Coverage options removed from addopts to allow tests without pytest-cov
+# To run with coverage, use: pytest --cov=roles --cov-report=html tests/
 
 [tool.coverage.run]
 branch = true
