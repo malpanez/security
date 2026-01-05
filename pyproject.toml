@@ -28,6 +28,7 @@ classifiers = [
 # Update with: pip-compile or dependabot
 dependencies = [
     "ansible-core==2.19.3",
+    "ansible==11.3.0",  # Full package needed for ansible-lint compatibility
 ]
 
 [project.optional-dependencies]

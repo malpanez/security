@@ -1,7 +1,7 @@
 # Managed by security.sudoers_baseline
 Defaults {{ sudoers_baseline_defaults | join(',') }}
 Defaults secure_path="{{ sudoers_baseline_secure_path }}"
-{% if sudoers_baseline_iolog_enabled | bool %}
+{% if sudoers_baseline_iolog_enabled %}
 # I/O Logging - Complete audit trail of all sudo commands
 Defaults log_input
 Defaults log_output

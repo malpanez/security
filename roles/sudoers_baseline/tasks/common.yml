@@ -11,7 +11,7 @@
     owner: root
     group: root
     mode: "0750"
-  when: sudoers_baseline_iolog_enabled | bool
+  when: sudoers_baseline_iolog_enabled
   tags: [enforce]
 
 - name: common | Deploy sudoers defaults

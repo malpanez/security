@@ -4,7 +4,7 @@
 
 - name: Apply sudoers baseline when strict mode enabled
   when:
-    - sudoers_baseline_strict | bool
+    - sudoers_baseline_strict
     - security_mode | default('enforce') == 'enforce'
   tags: [enforce]
   block:
