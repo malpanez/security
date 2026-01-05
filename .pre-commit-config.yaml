@@ -19,7 +19,7 @@ repos:
         args: [--fix, --offline]
         files: \.(yaml|yml)$
         additional_dependencies:
-          - ansible-core==2.19.3
+          - ansible==13.2.0
 
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.37.1
