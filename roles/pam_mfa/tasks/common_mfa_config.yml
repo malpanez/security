@@ -1,14 +1,25 @@
 ---
 # CRITICAL: Pre-flight validation for PAM modules
+- name: Common | Build required PAM module list
+  ansible.builtin.set_fact:
+    pam_mfa_required_modules: >-
+      {{
+        [
+          pam_mfa_primary_module_path,
+          pam_mfa_pam_module_google_authenticator
+            if pam_mfa_totp_enabled else None,
+          pam_mfa_succeed_if_module_path
+        ]
+        | reject('equalto', None)
+        | list
+      }}
+  tags: [enforce]
+
 - name: Common | Verify PAM modules exist before configuration
   ansible.builtin.stat:
     path: "{{ item }}"
-  loop:
-    - "{{ pam_mfa_primary_module_path }}"
-    - "{{ pam_mfa_pam_module_google_authenticator if pam_mfa_totp_enabled else omit }}"
-    - /lib/security/pam_succeed_if.so
+  loop: "{{ pam_mfa_required_modules | default([]) }}"
   register: pam_mfa_module_check
-  when: item != omit
   tags: [enforce]
 
 - name: Common | Fail if required PAM modules missing
@@ -18,7 +29,6 @@
       Install required packages before continuing to prevent lockout.
   loop: "{{ pam_mfa_module_check.results }}"
   when:
-    - item.skipped is not defined
     - not item.stat.exists
   tags: [enforce]
 

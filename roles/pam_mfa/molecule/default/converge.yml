@@ -30,6 +30,16 @@
         path: /lib/security/pam_fido2.so
         state: touch
         mode: "0644"
+    - name: Create fake pam_google_authenticator module for TOTP
+      ansible.builtin.file:
+        path: /lib/security/pam_google_authenticator.so
+        state: touch
+        mode: "0644"
+    - name: Create fake pam_succeed_if module for MFA bypass
+      ansible.builtin.file:
+        path: /lib/security/pam_succeed_if.so
+        state: touch
+        mode: "0644"
     - name: Create service accounts for MFA bypass testing
       ansible.builtin.user:
         name: "{{ item }}"
@@ -44,6 +54,8 @@
     pam_mfa_breakglass_group: mfa-breakglass
     pam_mfa_primary_module: auto
     pam_mfa_pam_module_fido2: /lib/security/pam_fido2.so
+    pam_mfa_pam_module_google_authenticator: /lib/security/pam_google_authenticator.so
+    pam_mfa_succeed_if_module_path: /lib/security/pam_succeed_if.so
     pam_mfa_fido2_authfile: /tmp/fido2_auth
     pam_mfa_service_accounts:
       - ansible
