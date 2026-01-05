@@ -54,9 +54,9 @@ def test_pam_prefers_fido2_when_present(host):
     pam_sshd = host.file("/etc/pam.d/sshd").content_string
     pam_sudo = host.file("/etc/pam.d/sudo").content_string
 
-    assert "/usr/lib/security/pam_fido2.so" in pam_sshd, \
+    assert "/lib/security/pam_fido2.so" in pam_sshd, \
         "PAM sshd should use pam_fido2 when module is present"
-    assert "/usr/lib/security/pam_fido2.so" in pam_sudo, \
+    assert "/lib/security/pam_fido2.so" in pam_sudo, \
         "PAM sudo should use pam_fido2 when module is present"
 
     assert "authfile=/tmp/fido2_auth" in pam_sshd, \
