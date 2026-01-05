@@ -33,11 +33,23 @@
       }}
   tags: [enforce]
 
+- name: Check platform-specific MFA task file
+  ansible.builtin.stat:
+    path: "{{ pam_mfa_platform_task }}"
+  register: pam_mfa_platform_task_stat
+  when:
+    - pam_mfa_platform_task is not none
+    - pam_mfa_platform_task | length > 0
+  tags: [enforce]
+
 - name: Include platform-specific MFA tasks
   ansible.builtin.include_tasks: "{{ pam_mfa_platform_task }}"
   when:
     - pam_mfa_should_configure
-    - pam_mfa_platform_task is not none
+    - pam_mfa_platform_task_stat is defined
+    - pam_mfa_platform_task_stat.stat is defined
+    - pam_mfa_platform_task_stat.stat.exists
+    - pam_mfa_platform_task_stat.stat.isreg
     - security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
