@@ -11,13 +11,12 @@ Exit codes:
     2: Script error
 """
 
-from collections.abc import Iterable
-from pathlib import Path
 import re
 import sys
+from collections.abc import Iterable
+from pathlib import Path
 
 import yaml
-
 
 # Patterns that indicate sensitive data
 SENSITIVE_PATTERNS = [
