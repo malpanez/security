@@ -22,18 +22,24 @@ echo ""
 
 # Function to log results
 log_pass() {
-    echo -e "${GREEN}✓ $1${NC}"
+    local msg=$1
+    echo -e "${GREEN}✓ ${msg}${NC}"
     PASSED=$((PASSED + 1))
+    return 0
 }
 
 log_warn() {
-    echo -e "${YELLOW}⚠ $1${NC}"
+    local msg=$1
+    echo -e "${YELLOW}⚠ ${msg}${NC}"
     WARNINGS=$((WARNINGS + 1))
+    return 0
 }
 
 log_error() {
-    echo -e "${RED}✗ $1${NC}"
+    local msg=$1
+    echo -e "${RED}✗ ${msg}${NC}"
     ERRORS=$((ERRORS + 1))
+    return 0
 }
 
 # 1. Ansible Configuration Syntax
@@ -47,7 +53,7 @@ fi
 # 2. Playbook Syntax Check
 echo -e "\n${BLUE}2. Validating playbook syntax...${NC}"
 for playbook in playbooks/*.yml; do
-    if [ -f "$playbook" ]; then
+    if [[ -f "$playbook" ]]; then
         if ansible-playbook "$playbook" --syntax-check > /dev/null 2>&1; then
             log_pass "$(basename $playbook) syntax valid"
         else
@@ -141,7 +147,7 @@ fi
 # 7. Variable Naming Convention
 echo -e "\n${BLUE}7. Checking variable naming...${NC}"
 for role in roles/*/defaults/main.yml; do
-    if [ -f "$role" ]; then
+    if [[ -f "$role" ]]; then
         role_name=$(basename $(dirname $(dirname "$role")))
         # Check if variables are prefixed with role name
         if grep -E "^[a-z_]+:" "$role" | grep -v "^${role_name}_" | grep -v "^#" > /dev/null 2>&1; then
@@ -167,7 +173,7 @@ required_files=(
 )
 
 for file in "${required_files[@]}"; do
-    if [ -f "$file" ]; then
+    if [[ -f "$file" ]]; then
         log_pass "$file exists"
     else
         log_error "$file missing"
@@ -178,7 +184,7 @@ done
 echo -e "\n${BLUE}9. Checking molecule tests...${NC}"
 for role in roles/*/; do
     role_name=$(basename "$role")
-    if [ -d "${role}molecule/default/" ]; then
+    if [[ -d "${role}molecule/default/" ]]; then
         log_pass "$role_name has molecule tests"
     else
         log_warn "$role_name missing molecule tests"
@@ -189,7 +195,7 @@ done
 echo -e "\n${BLUE}10. Checking argument_specs.yml...${NC}"
 for role in roles/*/; do
     role_name=$(basename "$role")
-    if [ -f "${role}meta/argument_specs.yml" ]; then
+    if [[ -f "${role}meta/argument_specs.yml" ]]; then
         log_pass "$role_name has argument_specs.yml"
     else
         log_error "$role_name missing argument_specs.yml"
@@ -200,7 +206,7 @@ done
 echo -e "\n${BLUE}11. Checking documentation...${NC}"
 for role in roles/*/; do
     role_name=$(basename "$role")
-    if [ -f "${role}README.md" ]; then
+    if [[ -f "${role}README.md" ]]; then
         log_pass "$role_name has README.md"
     else
         log_warn "$role_name missing README.md"
@@ -211,7 +217,7 @@ done
 echo -e "\n${BLUE}12. Checking task organization...${NC}"
 for role in roles/*/; do
     role_name=$(basename "$role")
-    if [ -f "${role}tasks/main.yml" ]; then
+    if [[ -f "${role}tasks/main.yml" ]]; then
         log_pass "$role_name has tasks/main.yml"
     else
         log_error "$role_name missing tasks/main.yml"
@@ -236,7 +242,7 @@ fi
 
 # 15. Version Consistency
 echo -e "\n${BLUE}15. Checking version format...${NC}"
-if [ -f galaxy.yml ]; then
+if [[ -f galaxy.yml ]]; then
     version=$(grep "^version:" galaxy.yml | awk '{print $2}')
     if echo "$version" | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" > /dev/null; then
         log_pass "Version $version follows semver"
@@ -255,9 +261,9 @@ echo -e "${YELLOW}Warnings: $WARNINGS${NC}"
 echo -e "${RED}Errors: $ERRORS${NC}"
 echo ""
 
-if [ $ERRORS -eq 0 ]; then
+if [[ $ERRORS -eq 0 ]]; then
     echo -e "${GREEN}✓ ALL CRITICAL CHECKS PASSED${NC}"
-    if [ $WARNINGS -gt 0 ]; then
+    if [[ $WARNINGS -gt 0 ]]; then
         echo -e "${YELLOW}⚠ $WARNINGS warnings should be addressed${NC}"
     fi
     exit 0

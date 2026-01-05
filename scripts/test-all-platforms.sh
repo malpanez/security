@@ -200,7 +200,7 @@ echo -e "${RED}Failed: ${FAILED}${NC}"
 echo -e "${YELLOW}Warnings: ${WARNINGS}${NC}"
 echo ""
 
-if [ ${FAILED} -eq 0 ]; then
+if [[ ${FAILED} -eq 0 ]]; then
     echo -e "${GREEN}✓ ALL TESTS PASSED${NC}"
     echo ""
     exit 0

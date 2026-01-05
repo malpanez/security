@@ -37,8 +37,7 @@ def test_sudoers_d_file_permissions(host):
 def test_sudoers_syntax_valid(host):
     """CRITICAL: Verify sudoers syntax is valid to prevent lockout."""
     # Test main sudoers file
-    cmd = host.run("visudo -cf /etc/sudoers")
-    assert cmd.rc == 0, \
+    assert host.run("visudo -cf /etc/sudoers").rc == 0, \
         "CRITICAL: /etc/sudoers syntax MUST be valid to prevent sudo lockout"
 
     # Test all files in sudoers.d
@@ -48,8 +47,7 @@ def test_sudoers_syntax_valid(host):
         for f in ["99-security"]:
             file_path = f"/etc/sudoers.d/{f}"
             if host.file(file_path).exists:
-                cmd = host.run(f"visudo -cf {file_path}")
-                assert cmd.rc == 0, \
+                assert host.run(f"visudo -cf {file_path}").rc == 0, \
                     f"CRITICAL: {file_path} syntax MUST be valid"
 
 

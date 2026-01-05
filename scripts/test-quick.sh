@@ -6,10 +6,11 @@ set -e
 
 PLATFORM=${1:-ubuntu:22.04}
 CONTAINER_NAME="security-quick-test"
+SEPARATOR="=========================================="
 
-echo "=========================================="
+echo "${SEPARATOR}"
 echo "Quick Security Test"
-echo "=========================================="
+echo "${SEPARATOR}"
 echo "Platform: ${PLATFORM}"
 echo "Container: ${CONTAINER_NAME}"
 echo ""
@@ -97,9 +98,9 @@ docker exec "${CONTAINER_NAME}" sshd -t
 echo "  ✓ SSH config is valid"
 
 echo ""
-echo "=========================================="
+echo "${SEPARATOR}"
 echo "✓ All tests passed!"
-echo "=========================================="
+echo "${SEPARATOR}"
 echo ""
 echo "Container is still running: ${CONTAINER_NAME}"
 echo ""

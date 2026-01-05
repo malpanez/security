@@ -84,7 +84,7 @@ command -v molecule &> /dev/null || missing_deps+=("molecule")
 command -v docker &> /dev/null || missing_deps+=("docker")
 command -v pytest &> /dev/null || missing_deps+=("pytest")
 
-if [ ${#missing_deps[@]} -eq 0 ]; then
+if [[ ${#missing_deps[@]} -eq 0 ]]; then
     echo -e "${GREEN}✅ All dependencies installed${NC}"
 else
     echo -e "${RED}❌ Missing dependencies:${NC}"
@@ -174,7 +174,7 @@ echo -e "${PURPLE}════════════════════�
 echo ""
 
 # Create journey log
-if [ ! -f JOURNEY_LOG.md ]; then
+if [[ ! -f JOURNEY_LOG.md ]]; then
     cat > JOURNEY_LOG.md << EOF
 # Journey to TOP 0.01% - Log
 
