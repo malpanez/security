@@ -11,10 +11,11 @@ Exit codes:
     2: Script error
 """
 
-import sys
 import re
+import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List, Tuple
+
 import yaml
 
 
@@ -58,7 +59,7 @@ SAFE_MODULES = [
 ]
 
 
-def find_task_files(base_path: Path) -> List[Path]:
+def find_task_files(base_path: Path) -> list[Path]:
     """Find all task YAML files in roles directory."""
     task_files = []
     for pattern in ["**/tasks/*.yml", "**/tasks/*.yaml"]:
@@ -133,7 +134,7 @@ def has_no_log(task: dict) -> bool:
     return False
 
 
-def check_file(file_path: Path) -> List[Tuple[str, dict]]:
+def check_file(file_path: Path) -> list[tuple[str, dict]]:
     """
     Check a single task file for violations.
 
@@ -143,7 +144,7 @@ def check_file(file_path: Path) -> List[Tuple[str, dict]]:
     violations = []
 
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             content = yaml.safe_load(f)
 
         if not isinstance(content, list):
@@ -182,11 +183,11 @@ def _extract_tasks_from_play(play: dict) -> Iterable[dict]:
                     yield task
 
 
-def check_playbook(file_path: Path) -> List[Tuple[str, dict]]:
+def check_playbook(file_path: Path) -> list[tuple[str, dict]]:
     violations = []
 
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             content = yaml.safe_load(f)
 
         if not isinstance(content, list):

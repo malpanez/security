@@ -137,8 +137,6 @@ class TestPAMSudoIntegration:
 
         After timeout, user must re-authenticate.
         """
-        username = test_user["username"]
-
         # Get timestamp_timeout value
         sudoers = test_host.file("/etc/sudoers")
         content = sudoers.content_string
@@ -222,7 +220,7 @@ class TestSSHSudoChain:
         Backups prevent lockout if configuration fails.
         """
         # Check for PAM backup files
-        backups = test_host.run(
+        test_host.run(
             "ls -1 /etc/pam.d/sshd.backup-* 2>/dev/null | head -1"
         )
 

@@ -54,9 +54,9 @@ def test_pam_prefers_fido2_when_present(host):
     pam_sshd = host.file("/etc/pam.d/sshd").content_string
     pam_sudo = host.file("/etc/pam.d/sudo").content_string
 
-    assert "/tmp/pam_fido2.so" in pam_sshd, \
+    assert "/usr/lib/security/pam_fido2.so" in pam_sshd, \
         "PAM sshd should use pam_fido2 when module is present"
-    assert "/tmp/pam_fido2.so" in pam_sudo, \
+    assert "/usr/lib/security/pam_fido2.so" in pam_sudo, \
         "PAM sudo should use pam_fido2 when module is present"
 
     assert "authfile=/tmp/fido2_auth" in pam_sshd, \
@@ -298,8 +298,6 @@ def test_pam_backup_exists(host):
         # Verify backup has same structure as current config
         backup_file = backup_files.stdout.strip().split("\n")[0]
         backup = host.file(backup_file)
-        current = host.file("/etc/pam.d/sshd")
-
         assert backup.exists, "PAM backup file should exist"
         assert backup.size > 0, "PAM backup should not be empty"
         # Backup should have valid PAM directives

@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   test-platforms:
-    name: Test on ${{ matrix.platform }}
+    name: Test on ${{ matrix.platform.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
