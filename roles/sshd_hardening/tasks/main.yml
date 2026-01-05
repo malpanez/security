@@ -28,5 +28,6 @@
   ansible.builtin.include_tasks: "{{ sshd_hardening_platform_task }}"
   when:
     - sshd_hardening_platform_task_stat is defined
+    - sshd_hardening_platform_task_stat.stat is defined
     - sshd_hardening_platform_task_stat.stat.exists
     - sshd_hardening_platform_task_stat.stat.isreg
