@@ -87,6 +87,11 @@
               )
           )
       }}
+  when: security_mode | default('enforce') == 'enforce'
+  tags: [enforce]
+
+- name: common | Resolve primary PAM module paths
+  ansible.builtin.set_fact:
     pam_mfa_primary_module_path: >-
       {{
         pam_mfa_pam_module_fido2
@@ -99,5 +104,7 @@
           if pam_mfa_primary_module_resolved == 'fido2'
           else pam_mfa_u2f_keys_path
       }}
-  when: security_mode | default('enforce') == 'enforce'
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - pam_mfa_primary_module_resolved is defined
   tags: [enforce]
