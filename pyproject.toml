@@ -27,7 +27,7 @@ classifiers = [
 # Use: pip install -e ".[dev]" to install with pinned versions
 # Update with: pip-compile or dependabot
 dependencies = [
-    "ansible==13.2.0",  # Includes ansible-core 2.19.x + collections
+    "ansible==12.3.0",  # Includes ansible-core 2.19.5 + collections
 ]
 
 [project.optional-dependencies]
