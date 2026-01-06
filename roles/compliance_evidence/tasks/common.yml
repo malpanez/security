@@ -62,3 +62,16 @@
   loop: "{{ compliance_evidence_cmd.results | default([]) }}"
   when: compliance_evidence_cmd is defined
   tags: [review]
+
+- name: common | Generate evidence hash manifest
+  ansible.builtin.shell: |
+    set -euo pipefail
+    find "{{ compliance_evidence_output_dir }}" -type f \
+      ! -name "{{ compliance_evidence_hash_manifest_name }}" \
+      -print0 \
+      | sort -z \
+      | xargs -0 sha256sum > "{{ compliance_evidence_output_dir }}/{{ compliance_evidence_hash_manifest_name }}"
+  args:
+    executable: /bin/bash
+  when: compliance_evidence_hash_manifest | bool
+  tags: [review]

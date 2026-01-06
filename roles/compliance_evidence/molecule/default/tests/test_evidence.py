@@ -46,3 +46,9 @@ def test_audit_rules_loaded_report(host):
     assert audit.size >= 0
     if audit.size > 0:
         assert "sshd_config" in audit.content_string
+
+
+def test_hash_manifest_present(host):
+    manifest = host.file("/var/log/compliance/evidence.sha256")
+    assert manifest.exists
+    assert manifest.size > 0

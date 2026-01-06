@@ -6,6 +6,7 @@ Incluye:
 - Copias de configuración: `sshd_config`, `sudoers`, `audit_rules` (archivado si es directorio).
 - Salida de comandos: `sestatus`, `pam_chain`, `sudoers_summary`, otros definidos en defaults.
 - Se nombra por host: `<host>-<artefacto>`.
+- Manifest de integridad: `evidence.sha256` con hashes SHA256.
 
 Reproducción:
 1. Establecer `compliance_evidence_enabled=true`.
