@@ -409,6 +409,7 @@
       args:
         executable: /bin/bash
       delegate_to: localhost
+      changed_when: false
 
     - name: Display completion summary
       ansible.builtin.debug:

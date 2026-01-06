@@ -74,4 +74,5 @@
   args:
     executable: /bin/bash
   when: compliance_evidence_hash_manifest | bool
+  changed_when: false
   tags: [review]
