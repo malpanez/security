@@ -39,6 +39,7 @@
         - /lib/security/pam_succeed_if.so
         - /usr/lib64/security/pam_google_authenticator.so
         - /usr/lib64/security/pam_succeed_if.so
+      changed_when: false
     - name: Create service accounts for MFA bypass testing
       ansible.builtin.user:
         name: "{{ item }}"
@@ -47,6 +48,7 @@
       loop:
         - ansible
         - ci
+      changed_when: false
   vars:
     pam_mfa_enabled: true
     pam_mfa_totp_enabled: true

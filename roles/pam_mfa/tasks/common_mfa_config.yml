@@ -38,6 +38,7 @@
     dest: /etc/pam.d/sshd.backup-{{ ansible_date_time.epoch }}
     remote_src: true
     mode: "0644"
+  changed_when: false
   tags: [enforce]
 
 - name: Common | Configure PAM for SSHD - bypass service accounts group
@@ -187,11 +188,18 @@
   tags: [enforce]
 
 - name: Common | Pause for manual validation (Dead-man switch)
+  vars:
+    pam_mfa_effective_validation_timeout: >-
+      {{
+        1
+        if ansible_check_mode | default(false)
+        else pam_mfa_validation_timeout | default(300)
+      }}
   ansible.builtin.pause:
-    seconds: "{{ pam_mfa_validation_timeout | default(300) }}"
+    seconds: "{{ pam_mfa_effective_validation_timeout }}"
     prompt: |
 
-      Pausing for {{ pam_mfa_validation_timeout | default(300) }} seconds to allow manual SSH testing.
+      Pausing for {{ pam_mfa_effective_validation_timeout }} seconds to allow manual SSH testing.
 
       Test checklist:
       - [ ] New SSH session opens successfully
