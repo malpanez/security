@@ -9,4 +9,4 @@
 | Audit | auditd reglas (`audit_logging`) | audit_rules, logs | PCI 10, HIPAA 164.312(b), SOC2 CC7, FedRAMP AU-* |
 | CIS opcional | Checks/enforce mínimos (`cis_baseline`) | cis_review asserts / visudo | Alineación CIS L1 (parcial) |
 
-> Soporta cumplimiento, no garantiza certificación. Ajusta controles por entorno y conserva trazabilidad en `reports/`.
+> Soporta cumplimiento, no garantiza certificación. Ajusta controles por entorno y conserva trazabilidad en `compliance_evidence_output_dir` (default: `/var/log/compliance`).

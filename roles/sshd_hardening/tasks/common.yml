@@ -59,7 +59,7 @@
         if sshd_hardening_algorithm_profile != 'auto'
         else (
           'legacy'
-          if (sshd_hardening_version is defined and (sshd_hardening_version | float) < 7.8)
+          if ((sshd_hardening_version | default('0.0')) is version('7.8', '<'))
           else 'modern'
         )
       }}

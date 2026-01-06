@@ -25,10 +25,16 @@
 
 - name: common | Ensure authorized_keys with restrictions for service accounts
   vars:
+    effective_allow_from: >-
+      {{
+        item.0.allow_from
+          if item.0.allow_from | default([]) | length > 0
+          else pam_mfa_service_bypass_allow_from | default([])
+      }}
     base_opts: >-
       {{
         [] +
-        (['from=' ~ (item.0.allow_from | join(','))] if item.0.allow_from | default([]) | length > 0 else []) +
+        (['from=' ~ (effective_allow_from | join(','))] if effective_allow_from | length > 0 else []) +
         (['command=\"' ~ item.0.command ~ '\"'] if item.0.command is defined else []) +
         (
           ['restrict', 'no-pty', 'no-agent-forwarding', 'no-port-forwarding', 'no-X11-forwarding']

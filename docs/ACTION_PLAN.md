@@ -1,48 +1,53 @@
-# Action Plan (Seguridad y calidad)
+# Action Plan (seguridad y calidad)
 
-Plan corto y ejecutable basado en el estado actual del repo.
+Plan corto y ejecutable basado en estado real del repo.
 
 ## Prioridad P0 (bloqueante)
 
-1) Alinear documentación con comportamiento real.
-   - Fuentes de verdad: `roles/*/defaults/main.yml`, `roles/*/tasks/*`, `meta/argument_specs.yml`.
-   - Marcar como “plan” todo lo que no exista en código.
+1) **Rollback/lockout en playbooks por defecto.**
+   - `playbooks/site.yml` y `playbooks/enforce-*.yml` deben incluir `tasks/backup-configs.yml` y gatillar `tasks/rollback.yml` ante validaciones fallidas.
+   - Requisito: SSH/PAM/sudoers/SELinux con pre-checks + validación + rollback automático.
 
-2) Corregir defaults inseguros en `sudoers_baseline`.
-   - Revisar `sudoers_baseline_defaults` y eliminar opciones peligrosas (`!authenticate`, `requiretty`).
-   - Añadir tests de plantilla para defaults seguros.
+2) **Corrección de detección de versión OpenSSH.**
+   - Reemplazar comparación `float` por `version()` para evitar `7.10` → `7.1`.
+   - Impacto: selección correcta de perfiles `modern/legacy`.
 
-3) Definir reglas auditd reales o documentar su ausencia.
-   - Establecer `audit_logging_rules` con reglas mínimas (SSH, sudo, config).
-   - Si se deja vacío, documentar explícitamente “solo instala auditd”.
+3) **Validación real de PAM.**
+   - Sustituir `grep -q` por checks estructurales y pruebas de autenticación controladas.
+   - Agregar backup explícito de `/etc/pam.d/sudo` antes de cambios.
+
+4) **Auditd: verificación de reglas cargadas.**
+   - No silenciar errores en `augenrules --load`; fallar si no carga.
+   - Verificar que `auditctl -l` contiene reglas esperadas.
 
 ## Prioridad P1 (alta)
 
-4) End-to-end tests realistas.
-   - Expandir `molecule/complete_stack/verify.yml` con casos de login reales.
-   - Añadir property tests para PAM y audit rules.
+5) **Check mode real.**
+   - Evitar `command`/`shell` que ejecutan cambios en `--check`.
+   - Añadir guards de `ansible_check_mode` o `check_mode: no` justificados.
 
-5) Secretos.
-   - Documentar claramente que no hay integración.
-   - Seleccionar backend (Vault/SM/Infisical) y definir interfaz.
+6) **Claims vs realidad.**
+   - Consolidar claims “TOP 0.1% / TOP 0.01% / battle-tested” como aspiracionales.
+   - Mantener una sola fuente de verdad: `README.md#Feature-Status`.
 
-6) CI mínimo viable.
-   - Añadir workflows para lint + molecule (1-3 plataformas).
-   - Documentar límites y tiempos.
+7) **MFA bypass controlado.**
+   - `pam_mfa_service_bypass_allow_from` debe aplicarse o eliminarse.
+   - Definir scoping por origen o grupo para evitar bypass global.
 
 ## Prioridad P2 (media)
 
-7) Observabilidad.
-   - Métricas de ejecución (tiempo, fallos, cambios).
-   - Logging estructurado para playbooks críticos.
+8) **Tests de regresión lockout.**
+   - Añadir verificaciones de re-login (sshd + sudoers + PAM) en Molecule.
+   - Crear escenarios negativos (bloqueo simulado con rollback).
 
-8) Atomicidad.
-   - Diseñar wrapper transaccional (staging + validate + commit).
-   - Tests de rollback.
+9) **Supply chain.**
+   - Pin explícito por versión/digest en Galaxy (`requirements.yml`) o justificar rangos.
+   - Validar checksums en scripts de descarga.
 
 ## Definición de “DONE”
 
-- Documentación sin “features fantasma”.
-- Defaults seguros en todos los roles.
-- Tests mínimos para lockout-prevention.
-- CI básico funcionando.
+- Playbooks por defecto con backup + validación + rollback automático.
+- Detección de OpenSSH correcta para 7.10+.
+- PAM con precheck + validación real y backup completo.
+- Auditd cargado y verificado.
+- Claims documentales marcados como aspiracionales o respaldados con evidencia.

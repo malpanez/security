@@ -13,4 +13,4 @@
 - Acceso humano: sshd confía en CA, exige MFA (pam_mfa) y aplica sudoers según grupo.
 - Cuentas de servicio: certificados/keys con restricciones, ForceCommand y AllowUsers/AllowGroups según rol.
 - SELinux: modo configurable, booleans/context definidos.
-- Evidencias: se almacenan en `reports/` (configurable) para trazabilidad.
+- Evidencias: se almacenan en `compliance_evidence_output_dir` (default: `/var/log/compliance`).

@@ -137,24 +137,15 @@
     - name: Validate all services
       ansible.builtin.include_tasks: ../tasks/validate-services.yml
     - name: Test SSH access (critical validation)
-      block:
-        - name: Attempt SSH connection test
-          ansible.builtin.wait_for:
-            host: "{{ inventory_hostname }}"
-            port: 22
-            timeout: 10
-            state: started
-          delegate_to: localhost
-          become: false
-
-      rescue:
-        - name: SSH validation failed - initiate rollback
-          ansible.builtin.debug:
-            msg: SSH access validation FAILED - rolling back changes
-
-        - name: Execute rollback
-          ansible.builtin.include_tasks: ../tasks/rollback.yml
-          when: security_staging_rollback_on_failure
+      ansible.builtin.wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        timeout: 10
+        state: started
+      delegate_to: localhost
+      become: false
+      register: ssh_validation
+      failed_when: false
 
     - name: Test sudo access (critical validation)
       ansible.builtin.command: sudo -n true
@@ -162,12 +153,23 @@
       failed_when: false
       changed_when: false
 
-    - name: Verify sudo is functional
-      ansible.builtin.assert:
-        that:
-          - sudo_test.rc in [0, 1] # 0 = success, 1 = password required (OK)
-        fail_msg: Sudo is broken - rolling back
-        success_msg: Sudo is functional
+    - name: Rollback on validation failure
+      block:
+        - name: Verify SSH and sudo are functional
+          ansible.builtin.assert:
+            that:
+              - ssh_validation is success
+              - sudo_test.rc in [0, 1]
+            fail_msg: Validation failed - initiating rollback
+            success_msg: SSH and sudo validated
+
+      rescue:
+        - name: Execute rollback
+          ansible.builtin.include_tasks: ../tasks/rollback.yml
+          when: security_staging_rollback_on_failure
+        - name: Fail playbook after rollback
+          ansible.builtin.fail:
+            msg: Validation failed on {{ inventory_hostname }} - changes rolled back
 
     - name: Generate staging validation report
       ansible.builtin.copy:

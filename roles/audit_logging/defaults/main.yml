@@ -18,3 +18,4 @@ audit_logging_service: auditd
 audit_logging_rules_path: /etc/audit/rules.d/99-security.rules
 audit_logging_auth_log: /var/log/auth.log
 audit_logging_secure_log: /var/log/secure
+audit_logging_verify_rules: true

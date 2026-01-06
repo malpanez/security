@@ -41,6 +41,15 @@
   changed_when: false
   tags: [enforce]
 
+- name: Common | Create backup of PAM sudo config before modification
+  ansible.builtin.copy:
+    src: /etc/pam.d/sudo
+    dest: /etc/pam.d/sudo.backup-{{ ansible_date_time.epoch }}
+    remote_src: true
+    mode: "0644"
+  changed_when: false
+  tags: [enforce]
+
 - name: Common | Configure PAM for SSHD - bypass service accounts group
   community.general.pamd:
     name: sshd
@@ -156,11 +165,54 @@
   tags: [enforce]
 
 # CRITICAL: Post-configuration validation
-- name: Common | Verify PAM configuration syntax
-  ansible.builtin.command: grep -q "auth.*pam_" /etc/pam.d/sshd
+- name: Common | Validate PAM sshd includes primary module
+  ansible.builtin.command: >-
+    grep -Fq "{{ pam_mfa_primary_module_path }}" /etc/pam.d/sshd
   changed_when: false
-  failed_when: false
-  register: pam_mfa_syntax_check
+  failed_when: true
+  when: not pam_mfa_skip_module_validation
+  tags: [enforce]
+
+- name: Common | Validate PAM sudo includes primary module
+  ansible.builtin.command: >-
+    grep -Fq "{{ pam_mfa_primary_module_path }}" /etc/pam.d/sudo
+  changed_when: false
+  failed_when: true
+  when: not pam_mfa_skip_module_validation
+  tags: [enforce]
+
+- name: Common | Validate PAM sshd includes succeed_if
+  ansible.builtin.command: grep -q "pam_succeed_if.so" /etc/pam.d/sshd
+  changed_when: false
+  failed_when: true
+  when: not pam_mfa_skip_module_validation
+  tags: [enforce]
+
+- name: Common | Validate PAM sudo includes succeed_if
+  ansible.builtin.command: grep -q "pam_succeed_if.so" /etc/pam.d/sudo
+  changed_when: false
+  failed_when: true
+  when: not pam_mfa_skip_module_validation
+  tags: [enforce]
+
+- name: Common | Validate PAM sshd includes TOTP backup when enabled
+  ansible.builtin.command: >-
+    grep -Fq "{{ pam_mfa_pam_module_google_authenticator }}" /etc/pam.d/sshd
+  changed_when: false
+  failed_when: true
+  when:
+    - pam_mfa_totp_enabled
+    - not pam_mfa_skip_module_validation
+  tags: [enforce]
+
+- name: Common | Validate PAM sudo includes TOTP backup when enabled
+  ansible.builtin.command: >-
+    grep -Fq "{{ pam_mfa_pam_module_google_authenticator }}" /etc/pam.d/sudo
+  changed_when: false
+  failed_when: true
+  when:
+    - pam_mfa_totp_enabled
+    - not pam_mfa_skip_module_validation
   tags: [enforce]
 
 - name: Common | Display PAM lockout prevention warning
