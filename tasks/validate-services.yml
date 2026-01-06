@@ -103,9 +103,8 @@
   when: security_phase_mfa | default(false)
 
 - name: Validate PAM sshd has required entries
-  shell: |
-    set -o pipefail
-    grep -q "pam_u2f\|pam_google_authenticator" /etc/pam.d/sshd
+  ansible.builtin.command: >-
+    grep -Eq "pam_(u2f|fido2|google_authenticator)" /etc/pam.d/sshd
   register: pam_mfa_check
   failed_when: false
   changed_when: false
@@ -114,8 +113,8 @@
     - pam_mfa_enabled | default(false)
 
 - name: Verify PAM service account bypass exists
-  shell: |
-    grep -q "pam_succeed_if.*mfa-bypass" /etc/pam.d/sshd
+  ansible.builtin.command: >-
+    grep -Eq "pam_succeed_if.*{{ pam_mfa_service_bypass_group | default('mfa-bypass') }}" /etc/pam.d/sshd
   register: pam_bypass_check
   failed_when: false
   changed_when: false

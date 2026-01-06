@@ -37,11 +37,8 @@ cd security
 devcontainer up --config .devcontainer/devcontainer.compliance.json
 ```
 
-El `postCreateCommand` ejecuta:
-
-- `install-security-tools` (instala requirements-dev vía `uv`)
-- `ensure-precommit-locked` (hooks + `pre-commit autoupdate --freeze`)
-- `generate-sbom` (Syft -> `sbom.cyclonedx.json`)
+El `postCreateCommand` instala hooks de `pre-commit`.
+El tooling (`install-security-tools`) y el SBOM (`generate-sbom`) se ejecutan manualmente si lo necesitas.
 
 Nota: el devcontainer compliance requiere `GITLEAKS_CHECKSUM` (y opcionalmente `UV_CHECKSUM`) para descargas verificadas. Define ambos en `.devcontainer/devcontainer.compliance.json` antes de construir.
 
