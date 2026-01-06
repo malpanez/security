@@ -169,6 +169,10 @@
   ansible.builtin.set_fact:
     pam_mfa_primary_module_basename: "{{ pam_mfa_primary_module_path | basename }}"
     pam_mfa_totp_module_basename: "{{ pam_mfa_pam_module_google_authenticator | basename }}"
+    pam_mfa_primary_module_name: >-
+      {{ pam_mfa_primary_module_path | basename | regex_replace('\\.so$', '') }}
+    pam_mfa_totp_module_name: >-
+      {{ pam_mfa_pam_module_google_authenticator | basename | regex_replace('\\.so$', '') }}
   tags: [enforce]
 
 - name: Common | Check PAM sshd for primary module path
@@ -189,10 +193,22 @@
   when: not pam_mfa_skip_module_validation
   tags: [enforce]
 
+- name: Common | Check PAM sshd for primary module name
+  ansible.builtin.command: >-
+    grep -Eq "{{ pam_mfa_primary_module_name }}(\\.so)?\\b" /etc/pam.d/sshd
+  changed_when: false
+  failed_when: false
+  register: pam_mfa_primary_name_check_sshd
+  when: not pam_mfa_skip_module_validation
+  tags: [enforce]
+
 - name: Common | Assert PAM sshd includes primary module
   ansible.builtin.assert:
     that:
-      - pam_mfa_primary_path_check_sshd.rc == 0 or pam_mfa_primary_base_check_sshd.rc == 0
+      - >-
+        pam_mfa_primary_path_check_sshd.rc == 0
+        or pam_mfa_primary_base_check_sshd.rc == 0
+        or pam_mfa_primary_name_check_sshd.rc == 0
     fail_msg: "PAM sshd missing primary module entry"
   when: not pam_mfa_skip_module_validation
   tags: [enforce]
@@ -215,10 +231,22 @@
   when: not pam_mfa_skip_module_validation
   tags: [enforce]
 
+- name: Common | Check PAM sudo for primary module name
+  ansible.builtin.command: >-
+    grep -Eq "{{ pam_mfa_primary_module_name }}(\\.so)?\\b" /etc/pam.d/sudo
+  changed_when: false
+  failed_when: false
+  register: pam_mfa_primary_name_check_sudo
+  when: not pam_mfa_skip_module_validation
+  tags: [enforce]
+
 - name: Common | Assert PAM sudo includes primary module
   ansible.builtin.assert:
     that:
-      - pam_mfa_primary_path_check_sudo.rc == 0 or pam_mfa_primary_base_check_sudo.rc == 0
+      - >-
+        pam_mfa_primary_path_check_sudo.rc == 0
+        or pam_mfa_primary_base_check_sudo.rc == 0
+        or pam_mfa_primary_name_check_sudo.rc == 0
     fail_msg: "PAM sudo missing primary module entry"
   when: not pam_mfa_skip_module_validation
   tags: [enforce]
@@ -259,10 +287,24 @@
     - not pam_mfa_skip_module_validation
   tags: [enforce]
 
+- name: Common | Check PAM sshd for TOTP module name
+  ansible.builtin.command: >-
+    grep -Eq "{{ pam_mfa_totp_module_name }}(\\.so)?\\b" /etc/pam.d/sshd
+  changed_when: false
+  failed_when: false
+  register: pam_mfa_totp_name_check_sshd
+  when:
+    - pam_mfa_totp_enabled
+    - not pam_mfa_skip_module_validation
+  tags: [enforce]
+
 - name: Common | Assert PAM sshd includes TOTP backup when enabled
   ansible.builtin.assert:
     that:
-      - pam_mfa_totp_path_check_sshd.rc == 0 or pam_mfa_totp_base_check_sshd.rc == 0
+      - >-
+        pam_mfa_totp_path_check_sshd.rc == 0
+        or pam_mfa_totp_base_check_sshd.rc == 0
+        or pam_mfa_totp_name_check_sshd.rc == 0
     fail_msg: "PAM sshd missing TOTP backup entry"
   when:
     - pam_mfa_totp_enabled
@@ -291,10 +333,24 @@
     - not pam_mfa_skip_module_validation
   tags: [enforce]
 
+- name: Common | Check PAM sudo for TOTP module name
+  ansible.builtin.command: >-
+    grep -Eq "{{ pam_mfa_totp_module_name }}(\\.so)?\\b" /etc/pam.d/sudo
+  changed_when: false
+  failed_when: false
+  register: pam_mfa_totp_name_check_sudo
+  when:
+    - pam_mfa_totp_enabled
+    - not pam_mfa_skip_module_validation
+  tags: [enforce]
+
 - name: Common | Assert PAM sudo includes TOTP backup when enabled
   ansible.builtin.assert:
     that:
-      - pam_mfa_totp_path_check_sudo.rc == 0 or pam_mfa_totp_base_check_sudo.rc == 0
+      - >-
+        pam_mfa_totp_path_check_sudo.rc == 0
+        or pam_mfa_totp_base_check_sudo.rc == 0
+        or pam_mfa_totp_name_check_sudo.rc == 0
     fail_msg: "PAM sudo missing TOTP backup entry"
   when:
     - pam_mfa_totp_enabled
