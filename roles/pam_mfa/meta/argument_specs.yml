@@ -93,6 +93,13 @@ argument_specs:
         type: str
         default: /lib/security/pam_google_authenticator.so
 
+      pam_mfa_succeed_if_module_path:
+        description:
+          - Path to pam_succeed_if.so module
+          - Auto-detected per OS
+        type: str
+        default: /lib/security/pam_succeed_if.so
+
       pam_mfa_service_bypass_group:
         description:
           - Unix group for MFA bypass

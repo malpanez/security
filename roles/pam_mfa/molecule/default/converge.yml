@@ -20,26 +20,25 @@
         name: openssh-server
         state: present
       when: ansible_facts['os_family'] == 'RedHat'
-    - name: Ensure pam_fido2 module directory exists
+    - name: Ensure PAM module directories exist
       ansible.builtin.file:
-        path: /lib/security
+        path: "{{ item }}"
         state: directory
         mode: "0755"
-    - name: Create fake pam_fido2 module for auto selection
+      loop:
+        - /lib/security
+        - /usr/lib64/security
+    - name: Create fake PAM modules for MFA tests
       ansible.builtin.file:
-        path: /lib/security/pam_fido2.so
+        path: "{{ item }}"
         state: touch
         mode: "0644"
-    - name: Create fake pam_google_authenticator module for TOTP
-      ansible.builtin.file:
-        path: /lib/security/pam_google_authenticator.so
-        state: touch
-        mode: "0644"
-    - name: Create fake pam_succeed_if module for MFA bypass
-      ansible.builtin.file:
-        path: /lib/security/pam_succeed_if.so
-        state: touch
-        mode: "0644"
+      loop:
+        - /lib/security/pam_fido2.so
+        - /lib/security/pam_google_authenticator.so
+        - /lib/security/pam_succeed_if.so
+        - /usr/lib64/security/pam_google_authenticator.so
+        - /usr/lib64/security/pam_succeed_if.so
     - name: Create service accounts for MFA bypass testing
       ansible.builtin.user:
         name: "{{ item }}"
