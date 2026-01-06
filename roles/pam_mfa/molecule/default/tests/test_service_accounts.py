@@ -62,6 +62,8 @@ def test_pam_bypass_rule_exists(host):
         # Check for pam_succeed_if bypass rule
         assert "pam_succeed_if" in content and "mfa-bypass" in content, \
             "PAM configuration must include bypass rule for mfa-bypass group"
+        assert "rhost" in content and "10.0.0.0/8" in content, \
+            "PAM bypass should include source restriction when configured"
 
         # Verify it's in the auth section (required for SSH)
         lines = content.split("\n")

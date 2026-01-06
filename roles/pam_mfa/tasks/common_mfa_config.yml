@@ -51,15 +51,22 @@
   tags: [enforce]
 
 - name: Common | Configure PAM for SSHD - bypass service accounts group
+  vars:
+    pam_mfa_bypass_module_arguments: >-
+      {{
+        ['user', 'ingroup', pam_mfa_service_bypass_group]
+        + (
+          ['rhost', 'in', (pam_mfa_service_bypass_allow_from | join(','))]
+          if pam_mfa_service_bypass_allow_from | default([]) | length > 0
+          else []
+        )
+      }}
   community.general.pamd:
     name: sshd
     type: auth
     control: "[success=1 default=ignore]"
     module_path: pam_succeed_if.so
-    module_arguments:
-      - user
-      - ingroup
-      - "{{ pam_mfa_service_bypass_group }}"
+    module_arguments: "{{ pam_mfa_bypass_module_arguments }}"
   tags: [enforce]
 
 - name: Common | Configure PAM for SSHD - allow breakglass to bypass U2F

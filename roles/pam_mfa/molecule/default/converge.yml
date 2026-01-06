@@ -55,6 +55,8 @@
     pam_mfa_breakglass_group: mfa-breakglass
     pam_mfa_primary_module: auto
     pam_mfa_skip_module_validation: true
+    pam_mfa_service_bypass_allow_from:
+      - 10.0.0.0/8
     pam_mfa_pam_module_fido2: /lib/security/pam_fido2.so
     pam_mfa_pam_module_google_authenticator: /lib/security/pam_google_authenticator.so
     pam_mfa_succeed_if_module_path: /lib/security/pam_succeed_if.so

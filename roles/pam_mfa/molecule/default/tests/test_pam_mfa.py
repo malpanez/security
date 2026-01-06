@@ -87,6 +87,8 @@ def test_service_accounts_exempt(host):
     # CRITICAL: Verify service account bypass exists
     assert "pam_succeed_if" in content and "mfa-bypass" in content, \
         "CRITICAL: Service accounts MUST have MFA bypass to prevent automation lockout"
+    assert "rhost" in content and "10.0.0.0/8" in content, \
+        "CRITICAL: Service account bypass should be scoped by source when configured"
 
     service_accounts = ["ansible", "ci", "sftp", "rsync"]
     for account in service_accounts:
