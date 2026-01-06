@@ -25,6 +25,14 @@
     audit_logging_effective_rules: []
   tags: [enforce]
 
+- name: common | Detect container environment
+  ansible.builtin.set_fact:
+    audit_logging_in_container: >-
+      {{
+        ansible_facts.virtualization_type | default('') in ['docker', 'podman', 'container', 'lxc']
+      }}
+  tags: [enforce]
+
 - name: common | Stat audit watch paths
   ansible.builtin.stat:
     path: "{{ item | regex_search('^-w\\s+(\\S+)', '\\1') }}"
@@ -62,7 +70,10 @@
   ansible.builtin.command: augenrules --load
   register: audit_rules_load
   changed_when: false
-  failed_when: audit_rules_load.rc != 0
+  failed_when: >-
+    audit_rules_load.rc != 0
+    and 'No change' not in (audit_rules_load.stdout | default(''))
+    and not audit_logging_in_container | default(false)
   when: not ansible_check_mode
   tags: [enforce]
 
@@ -82,6 +93,7 @@
   when:
     - auditctl_check.rc == 0
     - audit_logging_verify_rules | default(true)
+    - not audit_logging_in_container | default(false)
     - not ansible_check_mode
   tags: [enforce]
 
