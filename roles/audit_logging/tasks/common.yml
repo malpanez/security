@@ -23,6 +23,7 @@
 - name: common | Initialize effective audit rules
   ansible.builtin.set_fact:
     audit_logging_effective_rules: []
+    audit_logging_rules_combined: "{{ audit_logging_rules + audit_logging_syscall_rules }}"
   tags: [enforce]
 
 - name: common | Detect container environment
@@ -37,7 +38,7 @@
   ansible.builtin.stat:
     path: "{{ item | regex_search('^-w\\s+(\\S+)', '\\1') }}"
   register: audit_logging_watch_stats
-  loop: "{{ audit_logging_rules }}"
+  loop: "{{ audit_logging_rules_combined }}"
   when: item is match('^-w\\s+\\S+')
   tags: [enforce]
 
@@ -51,7 +52,7 @@
 - name: common | Add non-watch rules
   ansible.builtin.set_fact:
     audit_logging_effective_rules: "{{ audit_logging_effective_rules + [item] }}"
-  loop: "{{ audit_logging_rules }}"
+  loop: "{{ audit_logging_rules_combined }}"
   when: item is not match('^-w\\s+\\S+')
   tags: [enforce]
 
@@ -93,6 +94,19 @@
   when:
     - auditctl_check.rc == 0
     - audit_logging_verify_rules | default(true)
+    - not audit_logging_in_container | default(false)
+    - not ansible_check_mode
+  tags: [enforce]
+
+- name: common | Verify audit syscall rules are loaded
+  ansible.builtin.assert:
+    that:
+      - auditctl_check.stdout is search(item)
+    fail_msg: "Audit syscall rule not loaded: {{ item }}"
+  loop: "{{ audit_logging_syscall_rules }}"
+  when:
+    - auditctl_check.rc == 0
+    - audit_logging_verify_syscalls | default(true)
     - not audit_logging_in_container | default(false)
     - not ansible_check_mode
   tags: [enforce]

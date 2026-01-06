@@ -25,6 +25,7 @@ def test_audit_rules_file(host):
     assert "-w /etc/sudoers -p wa -k sudoers" in content
     assert "-w /etc/pam.d/sshd -p wa -k pam_sshd" in content
     assert "-w /etc/pam.d/sudo -p wa -k pam_sudo" in content
+    assert "-a always,exit -F arch=b64 -S execve -k exec" in content
 
 
 def test_audit_rules_loaded(host):
@@ -36,3 +37,4 @@ def test_audit_rules_loaded(host):
     assert "-w /etc/sudoers -p wa -k sudoers" in output
     assert "-w /etc/pam.d/sshd -p wa -k pam_sshd" in output
     assert "-w /etc/pam.d/sudo -p wa -k pam_sudo" in output
+    assert "-a always,exit -F arch=b64 -S execve -k exec" in output

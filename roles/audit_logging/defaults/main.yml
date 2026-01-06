@@ -14,8 +14,12 @@ audit_logging_rules:
   - "-w /etc/group -p wa -k identity"
   - "-w /etc/shadow -p wa -k identity"
   - "-w /etc/gshadow -p wa -k identity"
+audit_logging_syscall_rules:
+  - "-a always,exit -F arch=b64 -S execve -k exec"
+  - "-a always,exit -F arch=b32 -S execve -k exec"
 audit_logging_service: auditd
 audit_logging_rules_path: /etc/audit/rules.d/99-security.rules
 audit_logging_auth_log: /var/log/auth.log
 audit_logging_secure_log: /var/log/secure
 audit_logging_verify_rules: true
+audit_logging_verify_syscalls: true
