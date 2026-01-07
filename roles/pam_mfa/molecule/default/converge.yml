@@ -55,6 +55,12 @@
     pam_mfa_breakglass_group: mfa-breakglass
     pam_mfa_primary_module: auto
     pam_mfa_skip_module_validation: true
+    pam_mfa_use_debian13_stack: >-
+      {{ ansible_facts['distribution'] == 'Debian'
+         and (ansible_facts['distribution_major_version'] | int) >= 13 }}
+    pam_mfa_required_users: >-
+      {{ ['ansible'] if (ansible_facts['distribution'] == 'Debian'
+         and (ansible_facts['distribution_major_version'] | int) >= 13) else [] }}
     pam_mfa_service_bypass_allow_from:
       - 10.0.0.0/8
     pam_mfa_pam_module_fido2: /lib/security/pam_fido2.so

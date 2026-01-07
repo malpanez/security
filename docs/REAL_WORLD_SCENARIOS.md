@@ -11,7 +11,7 @@ La mayoría de entornos mantienen todo en `/etc/sudoers`. El rol actual `sudoers
 
 ## Escenario 2: Múltiples instancias de SSH
 
-`sshd_hardening` genera un único `/etc/ssh/sshd_config` y no gestiona múltiples instancias ni unidades systemd adicionales. Si tu entorno requiere instancias separadas (SFTP, DMZ, etc.), debes:
+`sshd_hardening` genera un único `/etc/ssh/sshd_config` por defecto (o un drop-in en `sshd_config.d` si se habilita) y no gestiona múltiples instancias ni unidades systemd adicionales. Si tu entorno requiere instancias separadas (SFTP, DMZ, etc.), debes:
 
 - crear unidades systemd propias,
 - mantener `sshd_config` por instancia fuera del rol,

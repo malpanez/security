@@ -6,6 +6,10 @@ compliance_evidence_hash_manifest_name: evidence.sha256
 compliance_evidence_items:
   - name: sshd_config
     path: /etc/ssh/sshd_config
+  - name: pam_sudo
+    path: /etc/pam.d/sudo
+  - name: pam_mfa_substack
+    path: /etc/pam.d/mfa-totp
   - name: sudoers
     path: /etc/sudoers
   - name: selinux_status_cmd
@@ -15,7 +19,9 @@ compliance_evidence_items:
   - name: audit_rules_loaded
     command: auditctl -l || true
   - name: pam_chain
-    command: grep -E 'pam_(u2f|fido2|google_authenticator)' /etc/pam.d/sshd || true
+    command: >-
+      grep -E 'pam_(u2f|fido2|google_authenticator)'
+      /etc/pam.d/sshd /etc/pam.d/sudo /etc/pam.d/mfa-totp 2>/dev/null || true
   - name: sudoers_summary
     command: visudo -c -f /etc/sudoers && cat /etc/sudoers
   - name: controls_map

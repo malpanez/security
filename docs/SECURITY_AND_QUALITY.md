@@ -38,7 +38,7 @@ molecule test -s chaos
 
 - Los playbooks de “review/dry-run” no generan diffs propios; dependen de `security_mode` y `--check/--diff`.
 - `sudoers_baseline` solo aplica cambios si `sudoers_baseline_strict=true`; no hay modo híbrido en el rol.
-- `sshd_hardening` escribe `/etc/ssh/sshd_config` completo; no usa `sshd_config.d`.
+- `sshd_hardening` escribe `/etc/ssh/sshd_config` completo por defecto; puede usar `sshd_config.d` cuando `sshd_hardening_use_dropin=true` y el Include está presente.
 - `pam_mfa` puede usar `pam_fido2` o `pam_u2f` según disponibilidad y `pam_mfa_primary_module` (auto por defecto).
 
 ## Próximos pasos sugeridos

@@ -3,6 +3,7 @@ sshd_hardening_password_authentication: false
 sshd_hardening_permit_root_login: "no"
 sshd_hardening_permit_empty_passwords: false
 sshd_hardening_challenge_response_authentication: false
+sshd_hardening_kbd_interactive_authentication: null
 sshd_hardening_use_pam: true
 sshd_hardening_x11_forwarding: false
 sshd_hardening_login_grace_time: "30"
@@ -16,6 +17,8 @@ sshd_hardening_use_dns: false
 sshd_hardening_compression: false
 sshd_hardening_banner: ""
 sshd_hardening_log_level: VERBOSE
+sshd_hardening_authentication_methods: []
+sshd_hardening_pubkey_accepted_algorithms: []
 sshd_hardening_allow_users: []
 sshd_hardening_allow_groups: []
 sshd_hardening_human_groups: "{{ security_capabilities_human_groups | default([]) }}"
@@ -24,6 +27,8 @@ sshd_hardening_trusted_ca_key: ""
 sshd_hardening_trusted_ca_path: /etc/ssh/trusted_user_ca_keys
 sshd_config_path: /etc/ssh/sshd_config
 sshd_config_dir: /etc/ssh/sshd_config.d
+sshd_hardening_use_dropin: false
+sshd_hardening_dropin_path: "{{ sshd_config_dir }}/20-auth-hardening.conf"
 sshd_service_name: sshd
 sshd_binary_path: /usr/sbin/sshd
 ssh_auth_log: /var/log/auth.log

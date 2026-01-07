@@ -5,6 +5,11 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
     ".molecule/ansible_inventory.yml"
 ).get_hosts("all")
 
+def _using_debian13_stack(host):
+    if host.system_info.distribution.lower() != "debian":
+        return False
+    return host.file("/etc/pam.d/mfa-totp").exists
+
 
 def test_pam_packages_installed(host):
     """Test that required PAM packages are installed."""
@@ -22,6 +27,8 @@ def test_pam_packages_installed(host):
 
 def test_pam_sshd_contains_u2f_or_fido2(host):
     """Test that PAM SSH configuration includes U2F or FIDO2."""
+    if _using_debian13_stack(host):
+        return
     pam_sshd = host.file("/etc/pam.d/sshd")
     assert pam_sshd.exists, "/etc/pam.d/sshd should exist"
     content = pam_sshd.content_string
@@ -31,6 +38,8 @@ def test_pam_sshd_contains_u2f_or_fido2(host):
 
 def test_pam_sshd_contains_totp(host):
     """Test that PAM SSH configuration includes TOTP backup."""
+    if _using_debian13_stack(host):
+        return
     pam_sshd = host.file("/etc/pam.d/sshd")
     content = pam_sshd.content_string
     assert "pam_google_authenticator" in content, \
@@ -43,6 +52,8 @@ def test_pam_sshd_contains_totp(host):
 
 def test_pam_sudo_contains_u2f_or_fido2(host):
     """Test that PAM sudo configuration includes MFA."""
+    if _using_debian13_stack(host):
+        return
     pam_sudo = host.file("/etc/pam.d/sudo")
     assert pam_sudo.exists, "/etc/pam.d/sudo should exist"
     content = pam_sudo.content_string
@@ -51,6 +62,8 @@ def test_pam_sudo_contains_u2f_or_fido2(host):
 
 def test_pam_prefers_fido2_when_present(host):
     """Primary module should be pam_fido2 when the module path is present."""
+    if _using_debian13_stack(host):
+        return
     pam_sshd = host.file("/etc/pam.d/sshd").content_string
     pam_sudo = host.file("/etc/pam.d/sudo").content_string
 
@@ -67,6 +80,8 @@ def test_pam_prefers_fido2_when_present(host):
 
 def test_u2f_keys_directory_exists(host):
     """Test that U2F keys directory exists with correct permissions."""
+    if _using_debian13_stack(host):
+        return
     keys_dir = host.file("/etc/Yubico")
     assert keys_dir.exists, "/etc/Yubico directory should exist"
     assert keys_dir.is_directory, "/etc/Yubico should be a directory"
@@ -75,12 +90,16 @@ def test_u2f_keys_directory_exists(host):
 
 def test_mfa_breakglass_group_exists(host):
     """Test that MFA breakglass group exists."""
+    if _using_debian13_stack(host):
+        return
     group = host.group("mfa-breakglass")
     assert group.exists, "mfa-breakglass group should exist for TOTP fallback"
 
 
 def test_service_accounts_exempt(host):
     """Test that service accounts bypass MFA (CRITICAL for automation)."""
+    if _using_debian13_stack(host):
+        return
     pam_sshd = host.file("/etc/pam.d/sshd")
     content = pam_sshd.content_string
 
@@ -102,6 +121,8 @@ def test_service_accounts_exempt(host):
 
 def test_service_accounts_in_bypass_group(host):
     """Ensure service accounts are added to the MFA bypass group."""
+    if _using_debian13_stack(host):
+        return
     bypass_group = host.group("mfa-bypass")
     assert bypass_group.exists, "mfa-bypass group should exist"
     for account in ["ansible", "ci"]:
@@ -146,6 +167,8 @@ def test_totp_directory_exists(host):
 
 def test_pam_order_prevents_lockout(host):
     """CRITICAL: Test that PAM order allows bypass before MFA enforcement."""
+    if _using_debian13_stack(host):
+        return
     pam_sshd = host.file("/etc/pam.d/sshd")
     content = pam_sshd.content_string
     lines = content.split("\n")
@@ -169,6 +192,8 @@ def test_pam_order_prevents_lockout(host):
 
 def test_pam_control_keywords_safe(host):
     """CRITICAL: Verify PAM control keywords won't cause lockout."""
+    if _using_debian13_stack(host):
+        return
     pam_sshd = host.file("/etc/pam.d/sshd")
     content = pam_sshd.content_string
 
@@ -183,6 +208,8 @@ def test_pam_control_keywords_safe(host):
 
 def test_totp_breakglass_gating(host):
     """CRITICAL: TOTP should only trigger for breakglass group."""
+    if _using_debian13_stack(host):
+        return
     pam_sshd = host.file("/etc/pam.d/sshd").content_string.splitlines()
     pam_sudo = host.file("/etc/pam.d/sudo").content_string.splitlines()
 
@@ -206,6 +233,8 @@ def test_totp_breakglass_gating(host):
 
 def test_breakglass_skips_u2f(host):
     """CRITICAL: Breakglass users should be able to bypass U2F for TOTP."""
+    if _using_debian13_stack(host):
+        return
     pam_sshd = host.file("/etc/pam.d/sshd").content_string.splitlines()
     pam_sudo = host.file("/etc/pam.d/sudo").content_string.splitlines()
 
@@ -229,6 +258,8 @@ def test_breakglass_skips_u2f(host):
 
 def test_totp_rate_limit_enabled(host):
     """CRITICAL: TOTP should enforce rate limiting when enabled."""
+    if _using_debian13_stack(host):
+        return
     pam_sshd = host.file("/etc/pam.d/sshd").content_string
     pam_sudo = host.file("/etc/pam.d/sudo").content_string
 
@@ -240,6 +271,8 @@ def test_totp_rate_limit_enabled(host):
 
 def test_ssh_allows_keyboard_interactive(host):
     """CRITICAL: Verify SSH is configured to allow keyboard-interactive auth for MFA."""
+    if _using_debian13_stack(host):
+        return
     sshd_config = host.file("/etc/ssh/sshd_config")
 
     if sshd_config.exists:
@@ -252,6 +285,8 @@ def test_ssh_allows_keyboard_interactive(host):
 
 def test_pam_modules_exist_before_use(host):
     """CRITICAL: Verify PAM modules exist before being referenced in configuration."""
+    if _using_debian13_stack(host):
+        return
     pam_sshd = host.file("/etc/pam.d/sshd")
     content = pam_sshd.content_string
 
@@ -293,7 +328,8 @@ def test_pam_modules_exist_before_use(host):
 
 def test_pam_backup_exists(host):
     """Test that PAM configuration backup was created before modification."""
-    backup_files = host.run("ls -1 /etc/pam.d/sshd.backup-* 2>/dev/null || true")
+    backup_target = "sudo" if _using_debian13_stack(host) else "sshd"
+    backup_files = host.run(f"ls -1 /etc/pam.d/{backup_target}.backup-* 2>/dev/null || true")
     # If role has been run, backup should exist
     # This is informational - backup creation is tested in the actual deployment
     if backup_files.stdout:
@@ -315,3 +351,17 @@ def test_lockout_prevention_variables_set(host):
     # Check if pause task would be present (tests role logic)
     cmd = host.run("echo 'Lockout prevention check: Variables should be in defaults/main.yml'")
     assert cmd.rc == 0  # Basic sanity check
+
+
+def test_debian13_sudo_totp_stack(host):
+    """Debian 13 stack should add a sudo-only TOTP substack."""
+    if not _using_debian13_stack(host):
+        return
+    pam_mfa = host.file("/etc/pam.d/mfa-totp")
+    assert pam_mfa.exists
+    content = pam_mfa.content_string
+    assert "pam_google_authenticator" in content
+    assert "secret=/var/lib/pam-google-authenticator/%u/.google_authenticator" in content
+    assert "allowed_perm=0400" in content
+    sudo_cfg = host.file("/etc/pam.d/sudo").content_string
+    assert "auth    include    mfa-totp" in sudo_cfg

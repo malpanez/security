@@ -124,6 +124,39 @@
   failed_when: false
   changed_when: false
 
+- name: common | Ensure sshd config drop-in directory exists
+  ansible.builtin.file:
+    path: "{{ sshd_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - sshd_hardening_use_dropin
+  tags: [enforce]
+
+- name: common | Verify sshd_config includes drop-in directory
+  ansible.builtin.command: grep -Eq "^[[:space:]]*Include[[:space:]]+{{ sshd_config_dir }}/\\*\\.conf" {{ sshd_config_path }}
+  register: sshd_hardening_include_check
+  changed_when: false
+  failed_when: false
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - sshd_hardening_use_dropin
+  tags: [enforce]
+
+- name: common | Fail if sshd_config lacks Include for drop-ins
+  ansible.builtin.fail:
+    msg: >-
+      CRITICAL: {{ sshd_config_path }} does not include {{ sshd_config_dir }}/*.conf.
+      Enable Include before using sshd_hardening_use_dropin to avoid a lockout.
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - sshd_hardening_use_dropin
+    - sshd_hardening_include_check.rc != 0
+  tags: [enforce]
+
 - name: common | Configure sshd_config
   ansible.builtin.template:
     src: sshd_config.j2
@@ -133,7 +166,51 @@
     mode: "0600"
     validate: "{{ sshd_binary_path }} -t -f %s"
   notify: Restart sshd
-  when: security_mode | default('enforce') == 'enforce'
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - not sshd_hardening_use_dropin
+  tags: [enforce]
+
+- name: common | Configure sshd drop-in with rollback protection
+  block:
+    - name: common | Backup existing drop-in (if present)
+      ansible.builtin.copy:
+        src: "{{ sshd_hardening_dropin_path }}"
+        dest: "{{ sshd_hardening_dropin_path }}.backup-{{ ansible_date_time.epoch }}"
+        remote_src: true
+        mode: "0644"
+      changed_when: false
+      failed_when: false
+
+    - name: common | Write sshd drop-in
+      ansible.builtin.template:
+        src: sshd_config_dropin.j2
+        dest: "{{ sshd_hardening_dropin_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart sshd
+
+    - name: common | Validate sshd_config after drop-in change
+      ansible.builtin.command: "{{ sshd_binary_path }} -t"
+      register: sshd_hardening_dropin_validate
+      changed_when: false
+      failed_when: sshd_hardening_dropin_validate.rc != 0
+  rescue:
+    - name: common | Restore previous drop-in after validation failure
+      ansible.builtin.copy:
+        src: "{{ sshd_hardening_dropin_path }}.backup-{{ ansible_date_time.epoch }}"
+        dest: "{{ sshd_hardening_dropin_path }}"
+        remote_src: true
+        mode: "0644"
+      changed_when: false
+      failed_when: false
+    - name: common | Fail due to invalid sshd config
+      ansible.builtin.fail:
+        msg: "CRITICAL: sshd -t failed after drop-in update; restored previous drop-in."
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - sshd_hardening_use_dropin
   tags: [enforce]
 
 - name: common | Ensure sshd service is enabled and running

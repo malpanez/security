@@ -20,6 +20,10 @@ argument_specs:
         type: bool
         default: false
         description: Enable challenge-response (keyboard-interactive) authentication.
+      sshd_hardening_kbd_interactive_authentication:
+        type: bool
+        default: null
+        description: Explicitly enable/disable KbdInteractiveAuthentication when supported (null leaves unset).
       sshd_hardening_use_pam:
         type: bool
         default: true
@@ -72,6 +76,11 @@ argument_specs:
         type: str
         default: VERBOSE
         description: Log verbosity.
+      sshd_hardening_authentication_methods:
+        type: list
+        elements: str
+        default: []
+        description: AuthenticationMethods directive values (empty leaves unset).
       sshd_hardening_allow_users:
         type: list
         elements: str
@@ -108,6 +117,14 @@ argument_specs:
         type: str
         default: /etc/ssh/sshd_config.d
         description: Directory for drop-in SSHD configuration files.
+      sshd_hardening_use_dropin:
+        type: bool
+        default: false
+        description: Write a drop-in file in sshd_config.d instead of replacing sshd_config.
+      sshd_hardening_dropin_path:
+        type: str
+        default: /etc/ssh/sshd_config.d/20-auth-hardening.conf
+        description: Path for the sshd drop-in file when sshd_hardening_use_dropin is true.
       sshd_service_name:
         type: str
         default: sshd
@@ -175,6 +192,11 @@ argument_specs:
         elements: dict
         default: []
         description: "List of Match blocks for service accounts (keys: group/match, options)."
+      sshd_hardening_pubkey_accepted_algorithms:
+        type: list
+        elements: str
+        default: []
+        description: Allowed PubkeyAcceptedAlgorithms list (empty leaves unset).
       sshd_hardening_service_name:
         type: str
         default: sshd

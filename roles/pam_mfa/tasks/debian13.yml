@@ -1,0 +1,129 @@
+---
+- name: Debian13 | Ensure MFA required group exists
+  ansible.builtin.group:
+    name: "{{ pam_mfa_required_group }}"
+    state: present
+  tags: [enforce]
+
+- name: Debian13 | Add required users to MFA group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ pam_mfa_required_group }}"
+    append: true
+  loop: "{{ pam_mfa_required_users }}"
+  when: pam_mfa_required_users | length > 0
+  tags: [enforce]
+
+- name: Debian13 | Ensure TOTP secret base directory exists
+  ansible.builtin.file:
+    path: "{{ pam_mfa_totp_secret_base }}"
+    state: directory
+    owner: "{{ pam_mfa_totp_owner }}"
+    group: "{{ pam_mfa_totp_group }}"
+    mode: "0700"
+  tags: [enforce]
+
+- name: Debian13 | Ensure per-user TOTP directories exist
+  ansible.builtin.file:
+    path: "{{ pam_mfa_totp_secret_base }}/{{ item }}"
+    state: directory
+    owner: "{{ pam_mfa_totp_owner }}"
+    group: "{{ pam_mfa_totp_group }}"
+    mode: "0700"
+  loop: "{{ pam_mfa_required_users }}"
+  when: pam_mfa_required_users | length > 0
+  tags: [enforce]
+
+- name: Debian13 | Verify required PAM modules exist
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ pam_mfa_pam_module_google_authenticator }}"
+    - "{{ pam_mfa_succeed_if_module_path }}"
+  register: pam_mfa_debian13_module_check
+  tags: [enforce]
+
+- name: Debian13 | Fail if required PAM modules missing
+  ansible.builtin.fail:
+    msg: >
+      CRITICAL: PAM module {{ item.item }} not found.
+      Install required packages before continuing to prevent lockout.
+  loop: "{{ pam_mfa_debian13_module_check.results }}"
+  when:
+    - not item.stat.exists
+  tags: [enforce]
+
+- name: Debian13 | Check for system faillock pam-config
+  ansible.builtin.stat:
+    path: /usr/share/pam-configs/faillock
+  register: pam_mfa_faillock_profile
+  when: pam_mfa_enable_faillock
+  tags: [enforce]
+
+- name: Debian13 | Install local faillock pam-config
+  ansible.builtin.template:
+    src: faillock-pam-config.j2
+    dest: "/usr/share/pam-configs/{{ pam_mfa_faillock_profile_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - pam_mfa_enable_faillock
+    - not pam_mfa_faillock_profile.stat.exists
+  tags: [enforce]
+
+- name: Debian13 | Enable faillock profile via pam-auth-update
+  ansible.builtin.command: >-
+    pam-auth-update --enable {{ 'faillock' if pam_mfa_faillock_profile.stat.exists else pam_mfa_faillock_profile_name }}
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  changed_when: false
+  when: pam_mfa_enable_faillock
+  tags: [enforce]
+
+- name: Debian13 | Backup PAM sudo config before modification
+  ansible.builtin.copy:
+    src: /etc/pam.d/sudo
+    dest: /etc/pam.d/sudo.backup-{{ ansible_date_time.epoch }}
+    remote_src: true
+    mode: "0644"
+  changed_when: false
+  tags: [enforce]
+
+- name: Debian13 | Backup PAM su config before modification
+  ansible.builtin.copy:
+    src: /etc/pam.d/su
+    dest: /etc/pam.d/su.backup-{{ ansible_date_time.epoch }}
+    remote_src: true
+    mode: "0644"
+  changed_when: false
+  when: pam_mfa_enable_su
+  tags: [enforce]
+
+- name: Debian13 | Install sudo MFA substack
+  ansible.builtin.template:
+    src: mfa-totp.j2
+    dest: "/etc/pam.d/{{ pam_mfa_sudo_substack_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+  tags: [enforce]
+
+- name: Debian13 | Ensure sudo includes MFA substack
+  ansible.builtin.blockinfile:
+    path: /etc/pam.d/sudo
+    insertafter: "^#%PAM-1.0"
+    marker: "# {mark} managed by malpanez.security pam_mfa"
+    block: |-
+      auth    include    {{ pam_mfa_sudo_substack_name }}
+  tags: [enforce]
+
+- name: Debian13 | Ensure su includes MFA substack
+  ansible.builtin.blockinfile:
+    path: /etc/pam.d/su
+    insertafter: "^#%PAM-1.0"
+    marker: "# {mark} managed by malpanez.security pam_mfa"
+    block: |-
+      auth    include    {{ pam_mfa_sudo_substack_name }}
+  when: pam_mfa_enable_su
+  tags: [enforce]

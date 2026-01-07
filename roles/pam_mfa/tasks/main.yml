@@ -18,6 +18,7 @@
   ansible.builtin.include_tasks: common.yml
   when:
     - pam_mfa_should_configure
+    - not pam_mfa_use_debian13_stack
     - security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
@@ -53,9 +54,20 @@
     - security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
+- name: Include Debian 13 MFA stack
+  ansible.builtin.include_tasks: debian13.yml
+  when:
+    - pam_mfa_should_configure
+    - pam_mfa_use_debian13_stack
+    - ansible_facts['distribution'] == 'Debian'
+    - ansible_facts['distribution_major_version'] | int >= 13
+    - security_mode | default('enforce') == 'enforce'
+  tags: [enforce]
+
 - name: Configure common PAM MFA chains
   ansible.builtin.include_tasks: common_mfa_config.yml
   when:
     - pam_mfa_should_configure
+    - not pam_mfa_use_debian13_stack
     - security_mode | default('enforce') == 'enforce'
   tags: [enforce]

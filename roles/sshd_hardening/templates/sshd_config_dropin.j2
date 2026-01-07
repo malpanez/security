@@ -1,4 +1,4 @@
-# Managed by malpanez.security.sshd_hardening
+# Managed by malpanez.security.sshd_hardening (drop-in)
 {% if sshd_hardening_trusted_ca_key | length > 0 -%}
 TrustedUserCAKeys {{ sshd_hardening_trusted_ca_path }}
 {% endif %}

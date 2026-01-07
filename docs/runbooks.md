@@ -18,3 +18,6 @@
 ## Rotación y break-glass
 - Revocar keys en authorized_keys o CA; reenrolar YubiKeys/TOTP y rotar secrets tras uso.
 - Breakglass: añadir temporalmente al grupo `mfa-breakglass`, se omite U2F y se permite TOTP; retirar y rotar al finalizar.
+
+## Debian 13 sudo TOTP
+- Ver `docs/debian13-authentication-runbook.md` para el stack sudo-only con drop-in SSHD.
