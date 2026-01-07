@@ -53,6 +53,12 @@
     - not item.stat.exists
   tags: [enforce]
 
+- name: Debian13 | Ensure TOTP package installed
+  ansible.builtin.package:
+    name: "{{ pam_mfa_package_totp }}"
+    state: present
+  tags: [enforce]
+
 - name: Debian13 | Check for system faillock pam-config
   ansible.builtin.stat:
     path: /usr/share/pam-configs/faillock

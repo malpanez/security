@@ -47,6 +47,7 @@
   ansible.builtin.include_tasks: "{{ pam_mfa_platform_task }}"
   when:
     - pam_mfa_should_configure
+    - not pam_mfa_use_debian13_stack
     - pam_mfa_platform_task_stat is defined
     - pam_mfa_platform_task_stat.stat is defined
     - pam_mfa_platform_task_stat.stat.exists

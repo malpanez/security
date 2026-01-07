@@ -51,7 +51,8 @@ PasswordAuthentication no
 ChallengeResponseAuthentication no
 KbdInteractiveAuthentication no
 AuthenticationMethods publickey
-PubkeyAcceptedAlgorithms sk-ssh-ed25519@openssh.com,sk-ecdsa-sha2-nistp256@openssh.com
+# Opcional (gradual): limitar a SK keys con Match/User/Group
+# PubkeyAcceptedAlgorithms sk-ssh-ed25519@openssh.com,sk-ecdsa-sha2-nistp256@openssh.com
 UsePAM yes
 PermitRootLogin no
 EOF

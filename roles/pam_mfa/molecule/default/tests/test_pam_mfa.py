@@ -363,5 +363,6 @@ def test_debian13_sudo_totp_stack(host):
     assert "pam_google_authenticator" in content
     assert "secret=/var/lib/pam-google-authenticator/%u/.google_authenticator" in content
     assert "allowed_perm=0400" in content
+    assert "rate_limit=3" in content
     sudo_cfg = host.file("/etc/pam.d/sudo").content_string
     assert "auth    include    mfa-totp" in sudo_cfg

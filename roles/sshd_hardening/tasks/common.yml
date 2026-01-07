@@ -75,6 +75,26 @@
     sshd_hardening_effective_hostkeys: >-
       {{ sshd_hardening_algorithm_sets[sshd_hardening_algorithm_profile_effective].hostkey_algorithms }}
 
+- name: common | Derive human MFA mode for SSHD
+  ansible.builtin.set_fact:
+    sshd_hardening_human_mfa_mode: >-
+      {{
+        (security_capabilities_selected_auth_mode | default('legacy') == 'pam_mfa')
+        or (
+          security_capabilities_selected_auth_mode | default('legacy') == 'sk_keys'
+          and security_capabilities_mfa_for_humans_even_with_sk_keys | default(false)
+        )
+      }}
+
+- name: common | Prevent invalid keyboard-interactive settings with MFA
+  ansible.builtin.assert:
+    that:
+      - not sshd_hardening_human_mfa_mode or sshd_hardening_kbd_interactive_authentication is not false
+    fail_msg: >-
+      CRITICAL: sshd_hardening_kbd_interactive_authentication=false
+      conflicts with MFA AuthenticationMethods for human groups.
+      Enable keyboard-interactive or disable MFA Match blocks to avoid lockout.
+
 - name: common | Override effective algorithms when explicitly set
   ansible.builtin.set_fact:
     sshd_hardening_effective_ciphers: >-
@@ -197,6 +217,12 @@
       changed_when: false
       failed_when: sshd_hardening_dropin_validate.rc != 0
   rescue:
+    - name: common | Check for drop-in backup after validation failure
+      ansible.builtin.stat:
+        path: "{{ sshd_hardening_dropin_path }}.backup-{{ ansible_date_time.epoch }}"
+      register: sshd_hardening_dropin_backup
+      changed_when: false
+
     - name: common | Restore previous drop-in after validation failure
       ansible.builtin.copy:
         src: "{{ sshd_hardening_dropin_path }}.backup-{{ ansible_date_time.epoch }}"
@@ -205,6 +231,14 @@
         mode: "0644"
       changed_when: false
       failed_when: false
+      when: sshd_hardening_dropin_backup.stat.exists | default(false)
+
+    - name: common | Remove invalid drop-in when no backup exists
+      ansible.builtin.file:
+        path: "{{ sshd_hardening_dropin_path }}"
+        state: absent
+      changed_when: false
+      when: not sshd_hardening_dropin_backup.stat.exists | default(false)
     - name: common | Fail due to invalid sshd config
       ansible.builtin.fail:
         msg: "CRITICAL: sshd -t failed after drop-in update; restored previous drop-in."
