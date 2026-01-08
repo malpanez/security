@@ -157,7 +157,9 @@
   tags: [enforce]
 
 - name: common | Verify sshd_config includes drop-in directory
-  ansible.builtin.command: grep -Eq "^[[:space:]]*Include[[:space:]]+{{ sshd_config_dir }}/\\*\\.conf" {{ sshd_config_path }}
+  ansible.builtin.command: >-
+    grep -Eq "^[[:space:]]*Include[[:space:]]+{{ sshd_config_dir }}/\\*\\.conf"
+    {{ sshd_config_path }}
   register: sshd_hardening_include_check
   changed_when: false
   failed_when: false
