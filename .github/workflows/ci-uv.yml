@@ -40,13 +40,17 @@ jobs:
 
       - name: Cache venv
         uses: actions/cache@v4
+        id: cache-venv
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-
 
       - name: Install dependencies (dev extras)
         run: |
           uv sync --frozen --extra dev
+        if: steps.cache-venv.outputs.cache-hit != 'true'
 
       - name: Cache Ansible + Molecule
         uses: actions/cache@v4
@@ -120,13 +124,17 @@ jobs:
 
       - name: Cache venv
         uses: actions/cache@v4
+        id: cache-venv
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-
 
       - name: Install dependencies (dev extras)
         run: |
           uv sync --frozen --extra dev
+        if: steps.cache-venv.outputs.cache-hit != 'true'
 
       - name: Cache Ansible + Molecule
         uses: actions/cache@v4
@@ -188,13 +196,17 @@ jobs:
 
       - name: Cache venv
         uses: actions/cache@v4
+        id: cache-venv
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-
 
       - name: Install dependencies (dev extras)
         run: |
           uv sync --frozen --extra dev
+        if: steps.cache-venv.outputs.cache-hit != 'true'
 
       - name: Cache Ansible + Molecule
         uses: actions/cache@v4
@@ -246,8 +258,18 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ env.PYTHON_VERSION }}
 
+      - name: Cache venv
+        uses: actions/cache@v4
+        id: cache-venv
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-
+
       - name: Install dependencies
         run: uv sync --frozen
+        if: steps.cache-venv.outputs.cache-hit != 'true'
 
       - name: Build collection
         run: |
