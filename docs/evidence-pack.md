@@ -4,7 +4,7 @@ Generado por el rol `compliance_evidence` (configurable con `compliance_evidence
 
 Incluye:
 - Copias de configuración: `sshd_config`, `sudoers`, `audit_rules` (archivado si es directorio).
-- Salida de comandos: `sestatus`, `pam_chain`, `sudoers_summary`, otros definidos en defaults.
+- Salida de comandos: `sestatus`, `pam_chain`, `pam_auth_update`, `sshd_effective_auth`, `sudoers_summary`, otros definidos en defaults.
 - Se nombra por host: `<host>-<artefacto>`.
 - Manifest de integridad: `evidence.sha256` con hashes SHA256.
 

@@ -6,6 +6,8 @@ compliance_evidence_hash_manifest_name: evidence.sha256
 compliance_evidence_items:
   - name: sshd_config
     path: /etc/ssh/sshd_config
+  - name: sshd_config_d
+    path: /etc/ssh/sshd_config.d
   - name: pam_sudo
     path: /etc/pam.d/sudo
   - name: pam_mfa_substack
@@ -22,6 +24,12 @@ compliance_evidence_items:
     command: >-
       grep -E 'pam_(u2f|fido2|google_authenticator)'
       /etc/pam.d/sshd /etc/pam.d/sudo /etc/pam.d/mfa-totp 2>/dev/null || true
+  - name: pam_auth_update
+    command: pam-auth-update --list || true
+  - name: sshd_effective_auth
+    command: >-
+      sshd -T | egrep -i
+      'passwordauthentication|kbdinteractiveauthentication|challengeresponseauthentication|authenticationmethods|pubkeyacceptedalgorithms|permitrootlogin|usepam' || true
   - name: sudoers_summary
     command: visudo -c -f /etc/sudoers && cat /etc/sudoers
   - name: controls_map
