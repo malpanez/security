@@ -59,12 +59,30 @@ AllowGroups {{ sshd_hardening_allow_groups | join(' ') }}
 Match Group {{ sshd_hardening_human_groups | join(',') }}
   AuthenticationMethods {{ 'publickey,keyboard-interactive' if human_mfa else 'publickey' }}
   PubkeyAuthentication yes
+{% if sshd_hardening_human_pubkey_accepted_algorithms | default([]) | length > 0 -%}
+  PubkeyAcceptedAlgorithms {{ sshd_hardening_human_pubkey_accepted_algorithms | join(',') }}
+{% endif -%}
+{% if sshd_hardening_human_allow_users | default([]) | length > 0 -%}
+  AllowUsers {{ sshd_hardening_human_allow_users | join(' ') }}
+{% endif -%}
+{% if sshd_hardening_human_allow_groups | default([]) | length > 0 -%}
+  AllowGroups {{ sshd_hardening_human_allow_groups | join(' ') }}
+{% endif -%}
 {% endif -%}
 {% if sshd_hardening_service_groups | length > 0 -%}
 Match Group {{ sshd_hardening_service_groups | join(',') }}
   AuthenticationMethods publickey
   PermitTTY no
   AllowTcpForwarding no
+{% if sshd_hardening_service_pubkey_accepted_algorithms | default([]) | length > 0 -%}
+  PubkeyAcceptedAlgorithms {{ sshd_hardening_service_pubkey_accepted_algorithms | join(',') }}
+{% endif -%}
+{% if sshd_hardening_service_allow_users | default([]) | length > 0 -%}
+  AllowUsers {{ sshd_hardening_service_allow_users | join(' ') }}
+{% endif -%}
+{% if sshd_hardening_service_allow_groups | default([]) | length > 0 -%}
+  AllowGroups {{ sshd_hardening_service_allow_groups | join(' ') }}
+{% endif -%}
 {% endif -%}
 {% for block in sshd_hardening_service_match_blocks %}
 Match {{ block.get('match', 'Group ' ~ block.get('group', '')) }}

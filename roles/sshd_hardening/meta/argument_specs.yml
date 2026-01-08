@@ -101,6 +101,26 @@ argument_specs:
         elements: str
         default: []
         description: Groups for service accounts restricted to publickey and limited forwarding/TTY.
+      sshd_hardening_human_allow_users:
+        type: list
+        elements: str
+        default: []
+        description: AllowUsers applied inside the human Match Group block.
+      sshd_hardening_human_allow_groups:
+        type: list
+        elements: str
+        default: []
+        description: AllowGroups applied inside the human Match Group block.
+      sshd_hardening_service_allow_users:
+        type: list
+        elements: str
+        default: []
+        description: AllowUsers applied inside the service Match Group block.
+      sshd_hardening_service_allow_groups:
+        type: list
+        elements: str
+        default: []
+        description: AllowGroups applied inside the service Match Group block.
       sshd_hardening_trusted_ca_key:
         type: str
         default: ""
@@ -197,6 +217,16 @@ argument_specs:
         elements: str
         default: []
         description: Allowed PubkeyAcceptedAlgorithms list (empty leaves unset).
+      sshd_hardening_human_pubkey_accepted_algorithms:
+        type: list
+        elements: str
+        default: []
+        description: PubkeyAcceptedAlgorithms applied inside the human Match Group block.
+      sshd_hardening_service_pubkey_accepted_algorithms:
+        type: list
+        elements: str
+        default: []
+        description: PubkeyAcceptedAlgorithms applied inside the service Match Group block.
       sshd_hardening_service_name:
         type: str
         default: sshd

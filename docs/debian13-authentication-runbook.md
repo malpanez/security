@@ -131,6 +131,13 @@ ansible-playbook playbooks/debian13-auth-hardening.yml -i <tu_inventario> \
   -e pam_mfa_enable_faillock=true
 ```
 
+Para SK-only gradual por grupo humano:
+
+```
+ansible-playbook playbooks/debian13-auth-hardening.yml -i <tu_inventario> \
+  -e sshd_hardening_human_pubkey_accepted_algorithms='["sk-ssh-ed25519@openssh.com","sk-ecdsa-sha2-nistp256@openssh.com"]'
+```
+
 ## Verificacion
 
 Antes:

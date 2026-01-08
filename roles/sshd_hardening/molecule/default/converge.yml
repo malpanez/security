@@ -11,3 +11,8 @@
       ansible.builtin.setup:
   roles:
     - role: sshd_hardening
+      vars:
+        sshd_hardening_human_groups:
+          - humans
+        sshd_hardening_human_pubkey_accepted_algorithms:
+          - sk-ssh-ed25519@openssh.com

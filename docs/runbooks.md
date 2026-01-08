@@ -4,6 +4,7 @@
 - Generar key en cliente: `ssh-keygen -t ed25519-sk -O resident -O verify-required -C user@host`.
 - Distribuir cert/CA según `sshd_hardening_trusted_ca_key` y asignar grupos humanos (`security_capabilities_human_groups`).
 - Si se requiere MFA adicional, habilitar `security_capabilities_mfa_for_humans_even_with_sk_keys=true`.
+- Para rollout gradual de SK-only, usar `sshd_hardening_human_pubkey_accepted_algorithms` en Match Group.
 
 ## PAM MFA (MODE_B)
 - Habilitar `security_capabilities_auth_mode=pam_mfa` o dejar auto en legacy con pam_u2f/pam_fido2 detectado.
