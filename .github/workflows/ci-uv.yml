@@ -38,12 +38,9 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ env.PYTHON_VERSION }}
 
-      - name: Create virtualenv
-        run: uv venv
-
       - name: Install dependencies (dev extras)
         run: |
-          uv pip install -e ".[dev]"
+          uv sync --frozen --extra dev
 
       - name: Cache Ansible Galaxy collections
         uses: actions/cache@v4
@@ -107,12 +104,9 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ env.PYTHON_VERSION }}
 
-      - name: Create virtualenv
-        run: uv venv
-
       - name: Install dependencies (dev extras)
         run: |
-          uv pip install -e ".[dev]"
+          uv sync --frozen --extra dev
 
       - name: Cache Ansible Galaxy collections
         uses: actions/cache@v4
@@ -153,11 +147,8 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ env.PYTHON_VERSION }}
 
-      - name: Create virtualenv
-        run: uv venv
-
       - name: Install dependencies
-        run: uv pip install -e .
+        run: uv sync --frozen
 
       - name: Build collection
         run: |

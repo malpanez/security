@@ -61,12 +61,26 @@ lint = [
 
 docs = [
     "mkdocs==1.6.1",
-    "mkdocs-material==9.5.51",
-    "mkdocstrings[python]==0.27.2",
+    "mkdocs-material==9.7.1",
+    "mkdocstrings[python]==1.0.0",
 ]
 
 all = [
-    "malpanez-security[dev,test,lint,docs]",
+    "ansible-lint==24.12.2",
+    "yamllint==1.37.1",
+    "molecule==25.1.0",
+    "molecule-plugins[docker]==25.8.12",
+    "pytest==8.3.4",
+    "pytest-testinfra==10.1.1",
+    "pytest-cov==6.0.0",
+    "pytest-xdist==3.6.1",
+    "hypothesis==6.125.0",
+    "pre-commit==4.0.1",
+    "ruff==0.9.1",
+    "mypy==1.14.1",
+    "mkdocs==1.6.1",
+    "mkdocs-material==9.7.1",
+    "mkdocstrings[python]==1.0.0",
 ]
 
 [project.urls]
@@ -116,6 +130,9 @@ ignore = [
 "tests/*" = ["S101", "I001", "F401"]  # assert, imports, unused imports allowed in tests
 "**/tests/**" = ["S101", "I001", "F401"]  # assert, imports, unused imports allowed in molecule tests
 "**/test_*.py" = ["S101", "I001", "F401"]  # assert, imports, unused imports allowed in test files
+
+[tool.uv]
+environments = ["sys_platform == 'linux'"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
