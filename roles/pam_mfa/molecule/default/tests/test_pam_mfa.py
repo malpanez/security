@@ -366,3 +366,18 @@ def test_debian13_sudo_totp_stack(host):
     assert "rate_limit=3" in content
     sudo_cfg = host.file("/etc/pam.d/sudo").content_string
     assert "auth    include    mfa-totp" in sudo_cfg
+    if "common-auth" in sudo_cfg:
+        assert sudo_cfg.index("auth    include    mfa-totp") < sudo_cfg.index("common-auth")
+
+
+def test_debian13_faillock_enabled(host):
+    """Debian 13 stack should enable faillock via pam-auth-update."""
+    if not _using_debian13_stack(host):
+        return
+    common_auth = host.file("/etc/pam.d/common-auth")
+    assert common_auth.exists
+    content = common_auth.content_string
+    assert "pam_faillock.so" in content
+    local_profile = host.file("/usr/share/pam-configs/zz-local-faillock")
+    system_profile = host.file("/usr/share/pam-configs/faillock")
+    assert local_profile.exists or system_profile.exists

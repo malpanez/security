@@ -131,6 +131,13 @@ ansible-playbook playbooks/debian13-auth-hardening.yml -i <tu_inventario> \
   -e pam_mfa_enable_faillock=true
 ```
 
+Verificacion faillock:
+
+```
+grep -n "pam_faillock.so" /etc/pam.d/common-auth
+pam-auth-update --list | grep faillock
+```
+
 Para SK-only gradual por grupo humano:
 
 ```

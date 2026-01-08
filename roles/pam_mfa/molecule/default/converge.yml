@@ -58,6 +58,9 @@
     pam_mfa_use_debian13_stack: >-
       {{ ansible_facts['distribution'] == 'Debian'
          and (ansible_facts['distribution_major_version'] | int) >= 13 }}
+    pam_mfa_enable_faillock: >-
+      {{ ansible_facts['distribution'] == 'Debian'
+         and (ansible_facts['distribution_major_version'] | int) >= 13 }}
     pam_mfa_required_users: >-
       {{ ['ansible'] if (ansible_facts['distribution'] == 'Debian'
          and (ansible_facts['distribution_major_version'] | int) >= 13) else [] }}
