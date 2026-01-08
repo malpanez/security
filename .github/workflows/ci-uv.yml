@@ -98,6 +98,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 40
+    env:
+      MOLECULE_OPTS: --parallel
     strategy:
       fail-fast: false
       matrix:
@@ -166,13 +168,15 @@ jobs:
         run: |
           source .venv/bin/activate
           cd roles/${{ matrix.role }}
-          molecule test
+          molecule test $MOLECULE_OPTS
 
   test-roles-slow:
     name: Test ${{ matrix.role }} (slow)
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 40
+    env:
+      MOLECULE_OPTS: --parallel
     strategy:
       fail-fast: false
       matrix:
@@ -238,7 +242,7 @@ jobs:
         run: |
           source .venv/bin/activate
           cd roles/${{ matrix.role }}
-          molecule test
+          molecule test $MOLECULE_OPTS
 
   build:
     name: Build Collection
