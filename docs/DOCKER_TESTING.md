@@ -6,7 +6,7 @@ La validación con Docker se puede ejecutar localmente y también hay workflows 
 
 ```bash
 ./scripts/test-quick.sh
-./scripts/test-quick.sh rockylinux:9
+./scripts/test-quick.sh rockylinux@sha256:d7be1c094cc5845ee815d4632fe377514ee6ebcf8efaed6892889657e5ddaaa6
 ```
 
 ## Full test (plataformas script)
@@ -17,10 +17,10 @@ La validación con Docker se puede ejecutar localmente y también hay workflows 
 
 ### Plataformas usadas por `scripts/test-all-platforms.sh`
 
-- Ubuntu 22.04, 20.04
-- Debian 12, 11
-- Rocky Linux 9, 8
-- UBI 9, 8
+- Ubuntu 22.04, 20.04 (imágenes Ansible con digest)
+- Debian 13, 12, 11 (imágenes Ansible con digest)
+- Rocky Linux 9, 8 (imágenes Ansible con digest)
+- UBI 9, 8 (digest)
 
 ## Molecule (stack completo)
 
@@ -34,3 +34,4 @@ molecule test -s complete_stack
 
 - En Docker algunos checks pueden producir warnings (systemd/SELinux).
 - El script `test-all-platforms.sh` corre preflight, audit-only, dry-run y `sshd_hardening`.
+- Las imágenes están fijadas por digest para reproducibilidad; actualiza los digests cuando sea necesario.

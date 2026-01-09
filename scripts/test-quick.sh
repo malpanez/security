@@ -1,10 +1,10 @@
 #!/bin/bash
 # Quick single-platform test
-# Default: Ubuntu 22.04 (most common)
+# Default: Ubuntu 22.04 (pinned)
 
 set -euo pipefail
 
-PLATFORM=${1:-ubuntu:22.04}
+PLATFORM=${1:-geerlingguy/docker-ubuntu2204-ansible@sha256:2744f5aca5e33c01a682ff1ea201dc3841b0eaaa1f5c448e6bd9a6156a831638}
 CONTAINER_NAME="security-quick-test"
 SEPARATOR="=========================================="
 

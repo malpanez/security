@@ -17,14 +17,15 @@ WARNINGS=0
 
 # Platforms to test
 declare -A PLATFORMS=(
-    ["ubuntu-2204"]="ubuntu:22.04|/lib/systemd/systemd|apt-get"
-    ["ubuntu-2004"]="ubuntu:20.04|/lib/systemd/systemd|apt-get"
-    ["debian-12"]="debian:12|/lib/systemd/systemd|apt-get"
-    ["debian-11"]="debian:11|/lib/systemd/systemd|apt-get"
-    ["rocky-9"]="rockylinux:9|/usr/sbin/init|dnf"
-    ["rocky-8"]="rockylinux:8|/usr/sbin/init|dnf"
-    ["ubi-9"]="redhat/ubi9:latest|/usr/sbin/init|dnf"
-    ["ubi-8"]="redhat/ubi8:latest|/usr/sbin/init|dnf"
+    ["ubuntu-2204"]="geerlingguy/docker-ubuntu2204-ansible@sha256:2744f5aca5e33c01a682ff1ea201dc3841b0eaaa1f5c448e6bd9a6156a831638|/lib/systemd/systemd|apt-get"
+    ["ubuntu-2004"]="geerlingguy/docker-ubuntu2004-ansible@sha256:532fb09e9f152e9f85ae348befa9ef09a9d0d23ca6c3361714d041f5a998c826|/lib/systemd/systemd|apt-get"
+    ["debian-13"]="geerlingguy/docker-debian13-ansible@sha256:afb2e84b6787fb89c687c8df557ebf465cc9ef2302aed4324bc6c7f3c65f07b5|/lib/systemd/systemd|apt-get"
+    ["debian-12"]="geerlingguy/docker-debian12-ansible@sha256:f69527a18970386befd62a36f68d5c39422a7ad15e4005133670566dd3b0da7f|/lib/systemd/systemd|apt-get"
+    ["debian-11"]="geerlingguy/docker-debian11-ansible@sha256:877c2660bfe9921190f975cc750987c0905300f54bd4879af2697ba12436153b|/lib/systemd/systemd|apt-get"
+    ["rocky-9"]="geerlingguy/docker-rockylinux9-ansible@sha256:09c1074489a704687b2b1f3d16a4f537b211b49b64eb7a5b6e4d6d1eae5b8ba9|/usr/sbin/init|dnf"
+    ["rocky-8"]="geerlingguy/docker-rockylinux8-ansible@sha256:4ec20ce51385c96a566c4141430ae2254f57c822e9e472abe70123987591f456|/usr/sbin/init|dnf"
+    ["ubi-9"]="redhat/ubi9@sha256:2c9bb68a869abf7d7417f6639509ab5eb8500d8429ea11ab59e677be5545162b|/usr/sbin/init|dnf"
+    ["ubi-8"]="redhat/ubi8@sha256:ceea2c6434cc16cd796b7fcab26f351c308675bd3256894f7377262f3ed2f277|/usr/sbin/init|dnf"
 )
 
 echo -e "${GREEN}========================================${NC}"

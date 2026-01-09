@@ -17,6 +17,7 @@ Este documento resume el estado real del repositorio y separa lo implementado de
 - Validación local: `scripts/validate-all.sh` (lint, sintaxis, checks básicos de seguridad).
 - Workflows CI/CD: `.github/workflows/*.yml` (lint, pruebas, scans, quality gates, etc.).
 - Supply-chain: `requirements.yml` con versiones de colecciones fijadas para reproducibilidad.
+- Supply-chain: imágenes Docker fijadas por digest en workflows y scripts de testing.
 
 ## No implementado / fuera del repo
 

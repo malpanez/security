@@ -371,14 +371,14 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - { name: "Ubuntu 22.04", image: "ubuntu:22.04", init: "/lib/systemd/systemd", pkg: "apt-get" }
-          - { name: "Ubuntu 20.04", image: "ubuntu:20.04", init: "/lib/systemd/systemd", pkg: "apt-get" }
-          - { name: "Debian 12", image: "debian:12", init: "/lib/systemd/systemd", pkg: "apt-get" }
-          - { name: "Debian 11", image: "debian:11", init: "/lib/systemd/systemd", pkg: "apt-get" }
-          - { name: "Rocky 9", image: "rockylinux:9", init: "/usr/sbin/init", pkg: "dnf" }
-          - { name: "Rocky 8", image: "rockylinux:8", init: "/usr/sbin/init", pkg: "dnf" }
-          - { name: "RHEL 9", image: "redhat/ubi9:latest", init: "/usr/sbin/init", pkg: "dnf" }
-          - { name: "RHEL 8", image: "redhat/ubi8:latest", init: "/usr/sbin/init", pkg: "dnf" }
+          - { name: "Ubuntu 22.04", image: "ubuntu@sha256:104ae83764a5119017b8e8d6218fa0832b09df65aae7d5a6de29a85d813da2fb", init: "/lib/systemd/systemd", pkg: "apt-get" }
+          - { name: "Ubuntu 20.04", image: "ubuntu@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214", init: "/lib/systemd/systemd", pkg: "apt-get" }
+          - { name: "Debian 12", image: "debian@sha256:c66c66fac809bfb56a8001b12f08181a49b6db832d2c8ddabe22b6374264055f", init: "/lib/systemd/systemd", pkg: "apt-get" }
+          - { name: "Debian 11", image: "debian@sha256:3bbe51d205c8c0ea0473bb33fa6c18c836ca49ac3032c0bf71413cda8515354f", init: "/lib/systemd/systemd", pkg: "apt-get" }
+          - { name: "Rocky 9", image: "rockylinux@sha256:d7be1c094cc5845ee815d4632fe377514ee6ebcf8efaed6892889657e5ddaaa6", init: "/usr/sbin/init", pkg: "dnf" }
+          - { name: "Rocky 8", image: "rockylinux@sha256:9794037624aaa6212aeada1d28861ef5e0a935adaf93e4ef79837119f2a2d04c", init: "/usr/sbin/init", pkg: "dnf" }
+          - { name: "RHEL 9", image: "redhat/ubi9@sha256:2c9bb68a869abf7d7417f6639509ab5eb8500d8429ea11ab59e677be5545162b", init: "/usr/sbin/init", pkg: "dnf" }
+          - { name: "RHEL 8", image: "redhat/ubi8@sha256:ceea2c6434cc16cd796b7fcab26f351c308675bd3256894f7377262f3ed2f277", init: "/usr/sbin/init", pkg: "dnf" }
 
     steps:
       - name: Checkout
