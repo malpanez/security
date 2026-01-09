@@ -16,6 +16,7 @@ Este documento resume el estado real del repositorio y separa lo implementado de
   - Property tests de plantillas en `tests/property_tests/`.
 - Validación local: `scripts/validate-all.sh` (lint, sintaxis, checks básicos de seguridad).
 - Workflows CI/CD: `.github/workflows/*.yml` (lint, pruebas, scans, quality gates, etc.).
+- Supply-chain: `requirements.yml` con versiones de colecciones fijadas para reproducibilidad.
 
 ## No implementado / fuera del repo
 

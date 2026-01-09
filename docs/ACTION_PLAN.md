@@ -41,7 +41,7 @@ Plan corto y ejecutable basado en estado real del repo.
    - Crear escenarios negativos (bloqueo simulado con rollback).
 
 9) **Supply chain.**
-   - Pin explícito por versión/digest en Galaxy (`requirements.yml`) o justificar rangos.
+   - Pin explícito por versión/digest en Galaxy (`requirements.yml`).
    - Validar checksums en scripts de descarga.
 
 ## Definición de “DONE”
