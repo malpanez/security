@@ -2,7 +2,7 @@
 # Test security collection across all supported platforms
 # Safe Docker-based testing - no risk to real systems
 
-set -e
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -40,6 +40,7 @@ test_platform() {
     IFS='|' read -r image init pkg_mgr <<< "$platform_config"
 
     local container_name="security-test-${platform_name}"
+    local inventory_file
 
     echo -e "${YELLOW}Testing: ${platform_name}${NC}"
     echo "  Image: ${image}"
@@ -58,7 +59,7 @@ test_platform() {
         --tmpfs /run \
         --tmpfs /run/lock \
         "${image}" \
-        ${init} >/dev/null 2>&1; then
+        "${init}" >/dev/null 2>&1; then
         echo -e "  ${RED}✗ Failed to start container${NC}"
         FAILED=$((FAILED + 1))
         return 1
@@ -73,11 +74,12 @@ test_platform() {
         docker exec "${container_name}" apt-get update -qq >/dev/null 2>&1
         docker exec "${container_name}" apt-get install -y -qq python3 sudo openssh-server systemd >/dev/null 2>&1
     else
-        docker exec "${container_name}" ${pkg_mgr} install -y -q python3 sudo openssh-server >/dev/null 2>&1
+        docker exec "${container_name}" "${pkg_mgr}" install -y -q python3 sudo openssh-server >/dev/null 2>&1
     fi
 
     # Create test inventory
-    cat > "/tmp/test-inventory-${platform_name}.yml" <<EOF
+    inventory_file=$(mktemp -t "test-inventory-${platform_name}.XXXXXX.yml")
+    cat > "${inventory_file}" <<EOF
 all:
   hosts:
     test:
@@ -87,7 +89,7 @@ EOF
 
     # Test 1: Preflight check
     echo "  → Running preflight check..."
-    if ansible-playbook -i "/tmp/test-inventory-${platform_name}.yml" \
+    if ansible-playbook -i "${inventory_file}" \
         playbooks/preflight-check.yml \
         >/dev/null 2>&1; then
         echo -e "  ${GREEN}✓ Preflight check passed${NC}"
@@ -98,7 +100,7 @@ EOF
 
     # Test 2: Audit-only (review mode)
     echo "  → Running audit-only playbook..."
-    if ansible-playbook -i "/tmp/test-inventory-${platform_name}.yml" \
+    if ansible-playbook -i "${inventory_file}" \
         playbooks/audit-only.yml \
         >/dev/null 2>&1; then
         echo -e "  ${GREEN}✓ Audit-only passed${NC}"
@@ -106,12 +108,13 @@ EOF
         echo -e "  ${RED}✗ Audit-only failed${NC}"
         FAILED=$((FAILED + 1))
         docker rm -f "${container_name}" >/dev/null 2>&1
+        rm -f "${inventory_file}"
         return 1
     fi
 
     # Test 3: Dry-run (check mode)
     echo "  → Running dry-run playbook..."
-    if ansible-playbook -i "/tmp/test-inventory-${platform_name}.yml" \
+    if ansible-playbook -i "${inventory_file}" \
         playbooks/dry-run.yml \
         --check --diff \
         >/dev/null 2>&1; then
@@ -120,12 +123,13 @@ EOF
         echo -e "  ${RED}✗ Dry-run failed${NC}"
         FAILED=$((FAILED + 1))
         docker rm -f "${container_name}" >/dev/null 2>&1
+        rm -f "${inventory_file}"
         return 1
     fi
 
     # Test 4: SSH hardening
     echo "  → Testing SSH hardening role..."
-    if ansible-playbook -i "/tmp/test-inventory-${platform_name}.yml" \
+    if ansible-playbook -i "${inventory_file}" \
         playbooks/site.yml \
         --tags sshd_hardening \
         >/dev/null 2>&1; then
@@ -134,6 +138,7 @@ EOF
         echo -e "  ${RED}✗ SSH hardening failed${NC}"
         FAILED=$((FAILED + 1))
         docker rm -f "${container_name}" >/dev/null 2>&1
+        rm -f "${inventory_file}"
         return 1
     fi
 
@@ -145,13 +150,14 @@ EOF
         echo -e "  ${RED}✗ SSH config invalid${NC}"
         FAILED=$((FAILED + 1))
         docker rm -f "${container_name}" >/dev/null 2>&1
+        rm -f "${inventory_file}"
         return 1
     fi
 
     # Cleanup
     echo "  → Cleaning up..."
     docker rm -f "${container_name}" >/dev/null 2>&1
-    rm -f "/tmp/test-inventory-${platform_name}.yml"
+    rm -f "${inventory_file}"
 
     echo -e "  ${GREEN}✓ ${platform_name} - ALL TESTS PASSED${NC}"
     echo ""
