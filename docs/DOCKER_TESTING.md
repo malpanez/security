@@ -35,3 +35,4 @@ molecule test -s complete_stack
 - En Docker algunos checks pueden producir warnings (systemd/SELinux).
 - El script `test-all-platforms.sh` corre preflight, audit-only, dry-run y `sshd_hardening`.
 - Las imágenes están fijadas por digest para reproducibilidad; actualiza los digests cuando sea necesario.
+- Usa `scripts/resolve-docker-digests.sh` para recalcular digests.
