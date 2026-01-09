@@ -146,10 +146,14 @@ else
 fi
 
 # Check for no_log on sensitive tasks
-if grep -r "password\|secret\|token" roles/ playbooks/ 2>/dev/null | grep -v "no_log: true" | grep -v "#" | grep -v "\.bak" | head -5; then
-    log_warn "Found sensitive tasks without no_log (showing first 5)"
+if command -v python3 &> /dev/null; then
+    if python3 scripts/validate-no-log.py > /dev/null 2>&1; then
+        log_pass "Sensitive tasks have no_log"
+    else
+        log_warn "Found sensitive tasks without no_log"
+    fi
 else
-    log_pass "Sensitive tasks have no_log"
+    log_warn "python3 not installed (required for scripts/validate-no-log.py)"
 fi
 
 # 7. Variable Naming Convention
