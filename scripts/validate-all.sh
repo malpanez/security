@@ -100,6 +100,19 @@ fi
 # 5. Secret Scanning
 echo -e "\n${BLUE}5. Scanning for secrets/credentials...${NC}"
 
+# Check with gitleaks if installed
+if command -v gitleaks &> /dev/null; then
+    gitleaks_log="${tmp_dir}/gitleaks.log"
+    if gitleaks detect --source . --no-git --config .gitleaks.toml > "${gitleaks_log}" 2>&1; then
+        log_pass "gitleaks passed"
+    else
+        log_error "gitleaks found potential secrets"
+        cat "${gitleaks_log}"
+    fi
+else
+    log_warn "gitleaks not installed"
+fi
+
 # Check for hardcoded passwords
 if grep -r -i "password\s*:\s*['\"]" playbooks/ roles/ 2>/dev/null | grep -v "no_log\|example\|CHANGEME"; then
     log_error "Found potential hardcoded passwords!"

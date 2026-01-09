@@ -16,6 +16,7 @@ Este documento resume el estado real del repositorio y separa lo implementado de
   - Property tests de plantillas en `tests/property_tests/`.
 - Validación local: `scripts/validate-all.sh` (lint, sintaxis, checks básicos de seguridad).
 - Workflows CI/CD: `.github/workflows/*.yml` (lint, pruebas, scans, quality gates, etc.).
+- Secret scanning: `gitleaks` con configuración en `.gitleaks.toml`.
 - Supply-chain: `requirements.yml` con versiones de colecciones fijadas para reproducibilidad.
 - Supply-chain: imágenes Docker fijadas por digest en workflows y scripts de testing.
 
