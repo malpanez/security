@@ -33,10 +33,10 @@
   ansible.builtin.set_fact:
     sshd_hardening_resolved_service_name: >-
       {{ 'ssh' if 'ssh.service' in ansible_facts.services else
-         ('sshd' if 'sshd.service' in ansible_facts.services else sshd_service_name) }}
+         ('sshd' if 'sshd.service' in ansible_facts.services else sshd_hardening_service_name) }}
 
 - name: common | Detect OpenSSH version
-  ansible.builtin.command: "{{ sshd_binary_path }} -V"
+  ansible.builtin.command: "{{ sshd_hardening_binary_path }} -V"
   register: sshd_hardening_version_raw
   failed_when: false
   changed_when: false
@@ -146,7 +146,7 @@
 
 - name: common | Ensure sshd config drop-in directory exists
   ansible.builtin.file:
-    path: "{{ sshd_config_dir }}"
+    path: "{{ sshd_hardening_config_dir }}"
     state: directory
     owner: root
     group: root
@@ -158,8 +158,8 @@
 
 - name: common | Verify sshd_config includes drop-in directory
   ansible.builtin.command: >-
-    grep -Eq "^[[:space:]]*Include[[:space:]]+{{ sshd_config_dir }}/\\*\\.conf"
-    {{ sshd_config_path }}
+    grep -Eq "^[[:space:]]*Include[[:space:]]+{{ sshd_hardening_config_dir }}/\\*\\.conf"
+    {{ sshd_hardening_config_path }}
   register: sshd_hardening_include_check
   changed_when: false
   failed_when: false
@@ -171,7 +171,7 @@
 - name: common | Fail if sshd_config lacks Include for drop-ins
   ansible.builtin.fail:
     msg: >-
-      CRITICAL: {{ sshd_config_path }} does not include {{ sshd_config_dir }}/*.conf.
+      CRITICAL: {{ sshd_hardening_config_path }} does not include {{ sshd_hardening_config_dir }}/*.conf.
       Enable Include before using sshd_hardening_use_dropin to avoid a lockout.
   when:
     - security_mode | default('enforce') == 'enforce'
@@ -182,11 +182,11 @@
 - name: common | Configure sshd_config
   ansible.builtin.template:
     src: sshd_config.j2
-    dest: "{{ sshd_config_path }}"
+    dest: "{{ sshd_hardening_config_path }}"
     owner: root
     group: root
     mode: "0600"
-    validate: "{{ sshd_binary_path }} -t -f %s"
+    validate: "{{ sshd_hardening_binary_path }} -t -f %s"
   notify: Restart sshd
   when:
     - security_mode | default('enforce') == 'enforce'
@@ -214,7 +214,7 @@
       notify: Restart sshd
 
     - name: common | Validate sshd_config after drop-in change
-      ansible.builtin.command: "{{ sshd_binary_path }} -t"
+      ansible.builtin.command: "{{ sshd_hardening_binary_path }} -t"
       register: sshd_hardening_dropin_validate
       changed_when: false
       failed_when: sshd_hardening_dropin_validate.rc != 0
@@ -251,7 +251,7 @@
 
 - name: common | Ensure sshd service is enabled and running
   ansible.builtin.service:
-    name: "{{ sshd_hardening_resolved_service_name | default(sshd_service_name) }}"
+    name: "{{ sshd_hardening_resolved_service_name | default(sshd_hardening_service_name) }}"
     state: started
     enabled: true
   when: security_mode | default('enforce') == 'enforce'

@@ -1,9 +1,9 @@
 # Quickstart (ND-friendly)
 
-1) Ejecuta `ansible-galaxy collection install -r requirements.yml`.
-2) Ajusta inventario (`inventory`) y, si quieres, `group_vars/all.yml` con tus grupos humanos/servicio.
-3) Aplica capacidades auto con `security_capabilities` (modo `auto` por defecto).
-4) Lanza playbook simple (modo enforce):
+1) Run `ansible-galaxy collection install -r requirements.yml`.
+2) Adjust the inventory (`inventory`) and, if desired, `group_vars/all.yml` with your human/service groups.
+3) Apply capabilities automatically with `security_capabilities` (mode `auto` by default).
+4) Launch a simple playbook (enforce mode):
 ```yaml
 - hosts: all
   become: true
@@ -17,29 +17,29 @@
     - malpanez.security.audit_logging
     - malpanez.security.compliance_evidence
 ```
-5) Revisa evidencias en `compliance_evidence_output_dir` (default: `/var/log/compliance`).
+5) Review evidence in `compliance_evidence_output_dir` (default: `/var/log/compliance`).
 
-Tips: pasos cortos, variables claras por rol (`*_` con prefijo del rol), lee `docs/runbooks.md` para breakglass/MFA y `docs/capabilities-matrix.md` para modos.***
+Tips: short steps, clear variables per role (`*_` with role prefix), read `docs/runbooks.md` for breakglass/MFA and `docs/capabilities-matrix.md` for modes.***
 
-### Review primero, enforce después
+### Review First, Enforce Later
 
-1. Ajusta `group_vars/all.yml` o inventario con `security_mode: review`.
-2. Ejecuta `ansible-playbook playbooks/review.yml -i inventory` para recolectar capacidades y evidencias (`tags: review`).
-3. Analiza `/var/log/compliance` (capabilities, policy, archivos `.tar.gz` de config, salidas de comandos).
-4. Cuando tengas sign-off, vuelve a `security_mode: enforce` y corre `playbooks/site.yml`.
+1. Adjust `group_vars/all.yml` or inventory with `security_mode: review`.
+2. Run `ansible-playbook playbooks/review.yml -i inventory` to collect capabilities and evidence (`tags: review`).
+3. Analyze `/var/log/compliance` (capabilities, policy, `.tar.gz` config archives, command outputs).
+4. Once you have sign-off, switch back to `security_mode: enforce` and run `playbooks/site.yml`.
 
 ### Devcontainer
 
-Para una experiencia curada:
+For a curated experience:
 
 ```bash
 cd security
 devcontainer up --config .devcontainer/devcontainer.compliance.json
 ```
 
-El `postCreateCommand` instala hooks de `pre-commit`.
-El tooling (`install-security-tools`) y el SBOM (`generate-sbom`) se ejecutan manualmente si lo necesitas.
+The `postCreateCommand` installs `pre-commit` hooks.
+The tooling (`install-security-tools`) and the SBOM (`generate-sbom`) are run manually when needed.
 
-Nota: el devcontainer compliance requiere `GITLEAKS_CHECKSUM` (y opcionalmente `UV_CHECKSUM`) para descargas verificadas. Define ambos en `.devcontainer/devcontainer.compliance.json` antes de construir.
+Note: the compliance devcontainer requires `GITLEAKS_CHECKSUM` (and optionally `UV_CHECKSUM`) for verified downloads. Define both in `.devcontainer/devcontainer.compliance.json` before building.
 
-El contenedor corre read-only con `tmpfs` para `/tmp`/`/run`, capabilities mínimas y logging audit en `$ANSIBLE_AUDIT_LOG`.
+The container runs read-only with `tmpfs` for `/tmp`/`/run`, minimal capabilities and audit logging at `$ANSIBLE_AUDIT_LOG`.

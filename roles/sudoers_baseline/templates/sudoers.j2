@@ -1,4 +1,4 @@
-# Managed by security.sudoers_baseline
+{{ ansible_managed | comment }}
 Defaults {{ sudoers_baseline_defaults | join(',') }}
 Defaults secure_path="{{ sudoers_baseline_secure_path }}"
 {% if sudoers_baseline_iolog_enabled %}

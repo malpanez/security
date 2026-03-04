@@ -1,35 +1,35 @@
 # Security and Quality Status
 
-Este documento resume el estado real del repositorio y separa lo implementado de lo planificado.
+This document summarizes the actual state of the repository and separates what is implemented from what is planned.
 
-## Implementado (en este repo)
+## Implemented (in this repo)
 
-- Roles de hardening: `sshd_hardening`, `pam_mfa`, `sudoers_baseline`, `selinux_enforcement`, `audit_logging`.
-- Detección de capacidades: `security_capabilities` (OpenSSH + PAM U2F/FIDO2 + SELinux).
-- Evidencias: `compliance_evidence` genera artefactos en `compliance_evidence_output_dir` (default: `/var/log/compliance`).
-- Modos de ejecución: `security_mode=review` evita cambios; `security_mode=enforce` aplica cambios.
-- Backups y rollback: tareas en `tasks/backup-configs.yml` y `tasks/rollback.yml`.
-- Testing local:
-  - Molecule por rol (`roles/*/molecule/default/`).
-  - Escenario full-stack (`molecule/complete_stack`).
-  - Escenario básico de chaos (`molecule/chaos`).
-  - Property tests de plantillas en `tests/property_tests/`.
-- Validación local: `scripts/validate-all.sh` (lint, sintaxis, checks básicos de seguridad).
-- Workflows CI/CD: `.github/workflows/*.yml` (lint, pruebas, scans, quality gates, etc.).
-- Secret scanning: `gitleaks` con configuración en `.gitleaks.toml`.
-- Supply-chain: `requirements.yml` con versiones de colecciones fijadas para reproducibilidad.
-- Supply-chain: imágenes Docker fijadas por digest en workflows y scripts de testing.
+- Hardening roles: `sshd_hardening`, `pam_mfa`, `sudoers_baseline`, `selinux_enforcement`, `audit_logging`.
+- Capability detection: `security_capabilities` (OpenSSH + PAM U2F/FIDO2 + SELinux).
+- Evidence: `compliance_evidence` generates artifacts in `compliance_evidence_output_dir` (default: `/var/log/compliance`).
+- Execution modes: `security_mode=review` avoids changes; `security_mode=enforce` applies changes.
+- Backups and rollback: tasks in `tasks/backup-configs.yml` and `tasks/rollback.yml`.
+- Local testing:
+  - Molecule per role (`roles/*/molecule/default/`).
+  - Full-stack scenario (`molecule/complete_stack`).
+  - Basic chaos scenario (`molecule/chaos`).
+  - Template property tests in `tests/property_tests/`.
+- Local validation: `scripts/validate-all.sh` (lint, syntax, basic security checks).
+- CI/CD workflows: `.github/workflows/*.yml` (lint, tests, scans, quality gates, etc.).
+- Secret scanning: `gitleaks` with configuration in `.gitleaks.toml`.
+- Supply-chain: `requirements.yml` with pinned collection versions for reproducibility.
+- Supply-chain: Docker images pinned by digest in workflows and testing scripts.
 
-## No implementado / fuera del repo
+## Not implemented / outside the repo
 
-- Renovate App y dashboards automáticos (requiere instalación en GitHub).
-- SBOM en CI vía `security-scan.yml` (syft + grype); sin firmas/provenance.
-- Observabilidad (métricas, dashboards).
+- Renovate App and automatic dashboards (requires installation on GitHub).
+- SBOM in CI via `security-scan.yml` (syft + grype); no signatures/provenance.
+- Observability (metrics, dashboards).
 - Drift detection/continuous compliance.
-- Integración de secretos (Vault/SM/Infisical).
-- Atomicidad transaccional (2PC real).
+- Secrets integration (Vault/SM/Infisical).
+- Transactional atomicity (real 2PC).
 
-## Validación local recomendada
+## Recommended local validation
 
 ```bash
 ./scripts/validate-all.sh
@@ -37,15 +37,15 @@ molecule test -s complete_stack
 molecule test -s chaos
 ```
 
-## Riesgos y límites actuales
+## Current risks and limits
 
-- Los playbooks de “review/dry-run” no generan diffs propios; dependen de `security_mode` y `--check/--diff`.
-- `sudoers_baseline` solo aplica cambios si `sudoers_baseline_strict=true`; no hay modo híbrido en el rol.
-- `sshd_hardening` escribe `/etc/ssh/sshd_config` completo por defecto; puede usar `sshd_config.d` cuando `sshd_hardening_use_dropin=true` y el Include está presente.
-- `pam_mfa` puede usar `pam_fido2` o `pam_u2f` según disponibilidad y `pam_mfa_primary_module` (auto por defecto).
+- The "review/dry-run" playbooks do not generate their own diffs; they depend on `security_mode` and `--check/--diff`.
+- `sudoers_baseline` only applies changes if `sudoers_baseline_strict=true`; there is no hybrid mode in the role.
+- `sshd_hardening` writes a complete `/etc/ssh/sshd_config` by default; it can use `sshd_config.d` when `sshd_hardening_use_dropin=true` and the Include is present.
+- `pam_mfa` can use `pam_fido2` or `pam_u2f` depending on availability and `pam_mfa_primary_module` (auto by default).
 
-## Próximos pasos sugeridos
+## Suggested next steps
 
-- Mantener workflows CI/CD existentes y documentar qué jobs son obligatorios.
-- Completar pruebas end-to-end y ampliar chaos/property tests.
-- Definir estrategia de secretos y registrar implementación real.
+- Maintain existing CI/CD workflows and document which jobs are mandatory.
+- Complete end-to-end tests and expand chaos/property tests.
+- Define a secrets strategy and record the actual implementation.

@@ -4,7 +4,7 @@
     name: >-
       {{
         sshd_hardening_resolved_service_name
-          | default(sshd_service_name | default(sshd_hardening_service_name))
+          | default(sshd_hardening_service_name | default(sshd_hardening_service_name))
       }}
     state: restarted
   register: sshd_restart_result

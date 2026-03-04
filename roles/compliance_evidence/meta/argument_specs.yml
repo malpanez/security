@@ -2,6 +2,10 @@
 argument_specs:
   main:
     short_description: Collect compliance evidence artifacts
+    description: >
+      Collects file snapshots, directory archives, and command outputs from
+      managed hosts and writes them to a local evidence directory. Optionally
+      generates a SHA-256 hash manifest for integrity verification.
     options:
       compliance_evidence_enabled:
         type: bool
@@ -9,10 +13,43 @@ argument_specs:
         description: Whether to collect evidence on the target.
       compliance_evidence_output_dir:
         type: str
-        default: reports
-        description: Directory (relative) where evidence files are stored.
+        default: /var/log/compliance
+        description: Absolute path on the target where evidence files are written.
+      compliance_evidence_hash_manifest:
+        type: bool
+        default: true
+        description: >
+          Generate a SHA-256 hash manifest of all collected evidence files.
+          Useful for integrity verification and audit trails.
+      compliance_evidence_hash_manifest_name:
+        type: str
+        default: evidence.sha256
+        description: Filename for the SHA-256 hash manifest within compliance_evidence_output_dir.
       compliance_evidence_items:
         type: list
         elements: dict
         default: []
-        description: List of evidence items (path or command).
+        description: >
+          List of evidence items to collect. Each item is a dict with a
+          mandatory 'name' key and either a 'path' key (for files/directories)
+          or a 'command' key (for command output). Both keys are mutually
+          exclusive per item.
+        options:
+          name:
+            type: str
+            required: true
+            description: >
+              Identifier used to name the output file:
+              {hostname}-{name} for path items,
+              {hostname}-{name}.log for command items.
+          path:
+            type: str
+            description: >
+              Absolute path on the target to collect. Files are copied directly;
+              directories are archived as .tar.gz.
+          command:
+            type: str
+            description: >
+              Shell command to execute on the target. stdout is written to a
+              .log file. Commands run with 'set -o pipefail' and bash.
+              Use '|| true' to prevent failure on non-critical commands.

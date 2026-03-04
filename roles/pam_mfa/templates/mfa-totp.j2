@@ -1,3 +1,4 @@
+{{ ansible_managed | comment }}
 #%PAM-1.0
 auth [success=1 default=ignore] pam_succeed_if.so user notingroup {{ pam_mfa_required_group }}
 auth required {{ pam_mfa_pam_module_google_authenticator | basename }} secret={{ pam_mfa_totp_secret_file }} user={{ pam_mfa_totp_owner }} allowed_perm={{ pam_mfa_totp_allowed_perm }}{% if pam_mfa_totp_rate_limit %} rate_limit={{ pam_mfa_totp_rate_limit_count }}{% endif %}

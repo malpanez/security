@@ -8,6 +8,14 @@ argument_specs:
       - Configure rsync with restricted command execution
       - Generate SSH authorized_keys with command restrictions
       - Integrate with SSH Match blocks
+      - >
+        Cross-role dependencies (consumed as facts, not declared as hard dependencies):
+        'security_capabilities_selected_auth_mode' (set by malpanez.security.security_capabilities)
+        is used to determine whether to apply 'restrict' authorized_keys options.
+        'pam_mfa_service_bypass_allow_from' (set by malpanez.security.pam_mfa)
+        is used as fallback IP allowlist when per-account allow_from is empty.
+        Run security_capabilities and pam_mfa before this role for full functionality;
+        defaults apply ('legacy' mode, no IP restriction) if those roles are skipped.
     author: Miguel Alpañez
     options:
       service_accounts_transfer_accounts:

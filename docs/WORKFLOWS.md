@@ -1,8 +1,8 @@
-# Workflow Map (Estado real)
+# Workflow Map (Actual state)
 
-Este repo sí tiene workflows en `.github/workflows/`. La fuente de verdad son esos archivos.
+This repo does have workflows in `.github/workflows/`. Those files are the source of truth.
 
-Workflows presentes:
+Workflows present:
 - `ci.yml`
 - `ci-uv.yml`
 - `ci-cd-enterprise.yml`
@@ -16,20 +16,20 @@ Workflows presentes:
 - `scorecard.yml`
 - `branch-management.yml`
 
-## Flujos locales recomendados
+## Recommended local flows
 
-1. Validación rápida:
+1. Quick validation:
    - `./scripts/validate-all.sh`
 
-2. Testing por rol:
-   - `molecule test` dentro de cada `roles/<role>/`
+2. Per-role testing:
+   - `molecule test` inside each `roles/<role>/`
 
-3. Stack completo:
+3. Full stack:
    - `molecule test -s complete_stack`
 
-4. Chaos básico:
+4. Basic chaos:
    - `molecule test -s chaos`
 
-## Nota
+## Note
 
-Algunos workflows pueden requerir secretos o permisos específicos en GitHub. Revisa cada YAML para conocer triggers y requisitos.
+Some workflows may require secrets or specific permissions on GitHub. Review each YAML for triggers and requirements.

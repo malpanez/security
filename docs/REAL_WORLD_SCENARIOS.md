@@ -1,18 +1,18 @@
-# Real-World Scenarios (Estado real)
+# Real-World Scenarios (Actual state)
 
-## Escenario 1: Sudoers monolítico
+## Scenario 1: Monolithic sudoers
 
-La mayoría de entornos mantienen todo en `/etc/sudoers`. El rol actual `sudoers_baseline` **solo aplica cambios si** `sudoers_baseline_strict=true` y siempre escribe:
+Most environments keep everything in `/etc/sudoers`. The current `sudoers_baseline` role **only applies changes if** `sudoers_baseline_strict=true` and always writes:
 
 - `/etc/sudoers`
 - `/etc/sudoers.d/99-security`
 
-**Implicación**: no hay modo híbrido ni preservación automática del archivo principal. Si necesitas migración gradual, gestiona `/etc/sudoers` externamente y habilita el rol solo cuando estés listo para reemplazarlo.
+**Implication**: there is no hybrid mode or automatic preservation of the main file. If you need a gradual migration, manage `/etc/sudoers` externally and enable the role only when you are ready to replace it.
 
-## Escenario 2: Múltiples instancias de SSH
+## Scenario 2: Multiple SSH instances
 
-`sshd_hardening` genera un único `/etc/ssh/sshd_config` por defecto (o un drop-in en `sshd_config.d` si se habilita) y no gestiona múltiples instancias ni unidades systemd adicionales. Si tu entorno requiere instancias separadas (SFTP, DMZ, etc.), debes:
+`sshd_hardening` generates a single `/etc/ssh/sshd_config` by default (or a drop-in in `sshd_config.d` if enabled) and does not manage multiple instances or additional systemd units. If your environment requires separate instances (SFTP, DMZ, etc.), you must:
 
-- crear unidades systemd propias,
-- mantener `sshd_config` por instancia fuera del rol,
-- usar el rol solo si aceptas que gestione el `sshd_config` principal.
+- create your own systemd units,
+- maintain `sshd_config` per instance outside the role,
+- use the role only if you accept it managing the main `sshd_config`.

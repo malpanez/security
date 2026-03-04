@@ -4,6 +4,7 @@
   register: cis_baseline_sshd_passwordauth
   changed_when: false
   failed_when: false
+  no_log: true
 
 - name: Cis Review | Assert PasswordAuthentication no
   ansible.builtin.assert:
@@ -18,6 +19,7 @@
   register: cis_baseline_sudo_use_pty
   changed_when: false
   failed_when: false
+  no_log: true
 
 - name: Cis Review | Assert sudo use_pty configured
   ansible.builtin.assert:

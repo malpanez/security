@@ -29,7 +29,7 @@ repos:
         files: \.(yaml|yml)$
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.30.0
+    rev: v8.26.0
     hooks:
       - id: gitleaks
         args: [--config=.gitleaks.toml, --redact]

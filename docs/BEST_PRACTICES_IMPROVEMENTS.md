@@ -1,24 +1,24 @@
-# Mejores Prácticas y Roadmap - Colección malpanez.security
+# Best Practices and Roadmap - malpanez.security Collection
 
-**Estado**: guía conceptual. Algunas variables mostradas en ejemplos no están implementadas en los roles actuales. Usa `meta/argument_specs.yml` y `defaults/main.yml` como fuente de verdad.
+**Status**: conceptual guide. Some variables shown in examples are not implemented in the current roles. Use `meta/argument_specs.yml` and `defaults/main.yml` as the source of truth.
 
-## Filosofía: Nunca Romper Producción
+## Philosophy: Never Break Production
 
-### Principios Fundamentales
+### Core Principles
 
-1. **Review Primero, Enforce Después** - SIEMPRE
-2. **Migración Progresiva** - Nunca big-bang
-3. **Rollback Siempre Posible** - Backups automáticos
-4. **Validación en Cada Paso** - Tests antes de aplicar
-5. **Compatibilidad Legacy** - Soportar configuraciones existentes
+1. **Review First, Enforce Later** - ALWAYS
+2. **Progressive Migration** - Never big-bang
+3. **Rollback Always Possible** - Automatic backups
+4. **Validation at Every Step** - Tests before applying
+5. **Legacy Compatibility** - Support existing configurations
 
 ---
 
-## Modos de Operación
+## Operation Modes
 
-### Modo 1: Review (Auditoría Sin Cambios)
+### Mode 1: Review (Audit Without Changes)
 
-**Propósito:** Entender el estado actual SIN modificar NADA
+**Purpose:** Understand the current state WITHOUT modifying ANYTHING
 
 ```yaml
 ---
@@ -27,11 +27,11 @@
   hosts: all
   become: true
   vars:
-    # CRÍTICO: Modo review global
+    # CRITICAL: Global review mode
     security_mode: review
 
-    # Roles ejecutan en modo "check"
-    ansible_check_mode: false  # No, queremos ejecutar
+    # Roles run in "check" mode
+    ansible_check_mode: false  # No, we want to execute
 
   roles:
     - role: malpanez.security.security_capabilities
@@ -55,24 +55,24 @@
           - {{ compliance_evidence_output_dir }}/sudoers_current.txt
 ```
 
-**Resultado:**
-- ✅ NO modifica ningún archivo
-- ✅ Genera reportes en `/tmp/security-audit-*/`
-- ✅ Identifica capacidades del sistema
-- ✅ Documenta configuración actual
-- ✅ Detecta desviaciones de baseline
+**Result:**
+- ✅ Does NOT modify any file
+- ✅ Generates reports in `/tmp/security-audit-*/`
+- ✅ Identifies system capabilities
+- ✅ Documents current configuration
+- ✅ Detects baseline deviations
 
-**Cuándo usar:**
-- Primera vez que ejecutas la colección
-- Cada vez antes de enforce
-- Auditorías periódicas
+**When to use:**
+- First time you run the collection
+- Every time before enforce
+- Periodic audits
 - Troubleshooting
 
 ---
 
-### Modo 2: Dry-Run (Simula Cambios)
+### Mode 2: Dry-Run (Simulate Changes)
 
-**Propósito:** Ver QUÉ cambiaría sin aplicarlo
+**Purpose:** See WHAT would change without applying it
 
 ```yaml
 ---
@@ -81,10 +81,10 @@
   hosts: all
   become: true
   check_mode: true  # Ansible check mode
-  diff: true        # Mostrar diffs
+  diff: true        # Show diffs
 
   vars:
-    security_mode: enforce  # Queremos ver qué haría enforce
+    security_mode: enforce  # We want to see what enforce would do
 
   roles:
     - malpanez.security.sshd_hardening
@@ -97,34 +97,34 @@
         msg: "Dry-run completed. Review output for proposed changes."
 ```
 
-**Resultado:**
-- ✅ Muestra DIFF de cambios
-- ✅ NO aplica cambios
-- ✅ Identifica archivos a modificar
-- ✅ Valida sintaxis de configuraciones
+**Result:**
+- ✅ Shows DIFF of changes
+- ✅ Does NOT apply changes
+- ✅ Identifies files to be modified
+- ✅ Validates configuration syntax
 
-**Cuándo usar:**
-- Después de review, antes de enforce
-- Para aprobar cambios con equipo
-- Documentar cambios propuestos
-- Validar templates
+**When to use:**
+- After review, before enforce
+- To approve changes with the team
+- Document proposed changes
+- Validate templates
 
 ---
 
-### Modo 3: Enforce Progresivo (Aplicar Cambios)
+### Mode 3: Progressive Enforce (Apply Changes)
 
-**Propósito:** Aplicar cambios de forma CONTROLADA y GRADUAL
+**Purpose:** Apply changes in a CONTROLLED and GRADUAL manner
 
-#### Nivel 1: Solo Nuevos Servidores
+#### Level 1: New Servers Only
 
 ```yaml
 ---
 # playbooks/enforce-new-servers.yml
 - name: Security Enforcement - New Servers Only
-  hosts: new_servers  # Inventario separado
+  hosts: new_servers  # Separate inventory
   become: true
-  serial: 1  # Uno a uno
-  max_fail_percentage: 0  # Parar si falla uno
+  serial: 1  # One at a time
+  max_fail_percentage: 0  # Stop if one fails
 
   vars:
     security_mode: enforce
@@ -172,7 +172,7 @@
           Sudo: {{ 'OK' if sudo_check.rc == 0 else 'VERIFY' }}
 ```
 
-#### Nivel 2: Staging Environment
+#### Level 2: Staging Environment
 
 ```yaml
 ---
@@ -183,7 +183,7 @@
 
   vars:
     security_mode: enforce
-    # Configuración más agresiva en staging
+    # More aggressive configuration in staging
     pam_mfa_enabled: true
     selinux_enforcement_mode: enforcing
 
@@ -225,7 +225,7 @@
         name: malpanez.security.compliance_evidence
 ```
 
-#### Nivel 3: Producción por Batches
+#### Level 3: Production by Batches
 
 ```yaml
 ---
@@ -239,9 +239,9 @@
   vars:
     security_mode: enforce
 
-    # Configuración conservadora en producción
-    pam_mfa_enabled: false  # MFA en fase 2
-    selinux_enforcement_mode: permissive  # Enforcing en fase 3
+    # Conservative configuration in production
+    pam_mfa_enabled: false  # MFA in phase 2
+    selinux_enforcement_mode: permissive  # Enforcing in phase 3
 
   pre_tasks:
     - name: Verify not in maintenance window
@@ -276,14 +276,14 @@
     - role: malpanez.security.sshd_hardening
       tags: [phase1]
       vars:
-        # Cambios conservadores primero
+        # Conservative changes first
         sshd_hardening_password_authentication: false
         sshd_hardening_permit_root_login: false
 
     - role: malpanez.security.sudoers_baseline
       tags: [phase1]
       vars:
-        # Solo agregar en sudoers.d/, no tocar /etc/sudoers
+        # Only add in sudoers.d/, do not touch /etc/sudoers
         sudoers_baseline_manage_main_file: false
 
     - role: malpanez.security.audit_logging
@@ -321,15 +321,15 @@
 
 ---
 
-## Estrategia de Rollout Completa
+## Complete Rollout Strategy
 
-### Fase 0: Preparación (Semana 1-2)
+### Phase 0: Preparation (Week 1-2)
 
 ```yaml
-# Objetivos:
-# - Conocer el estado actual
-# - Identificar riesgos
-# - Planificar migración
+# Goals:
+# - Understand the current state
+# - Identify risks
+# - Plan migration
 
 - name: Phase 0 - Discovery
   hosts: all
@@ -351,21 +351,21 @@
         dest: ./reports/security-analysis-{{ inventory_hostname }}.html
 ```
 
-**Entregables:**
-- Inventario de capacidades por servidor
-- Configuraciones actuales documentadas
-- Gaps de seguridad identificados
-- Plan de migración aprobado
+**Deliverables:**
+- Capabilities inventory per server
+- Current configurations documented
+- Security gaps identified
+- Migration plan approved
 
 ---
 
-### Fase 1: SSH Hardening (Semana 3-4)
+### Phase 1: SSH Hardening (Week 3-4)
 
 ```yaml
-# Objetivos:
-# - Deshabilitar password authentication
-# - Configurar algoritmos modernos
-# - Solo servidores nuevos y staging
+# Goals:
+# - Disable password authentication
+# - Configure modern algorithms
+# - New servers and staging only
 
 - name: Phase 1 - SSH Hardening
   hosts: new_servers:staging
@@ -390,21 +390,21 @@
         sshd_hardening_max_auth_tries: 3
 ```
 
-**Validación:**
-- [ ] Todos los admins pueden acceder con keys
-- [ ] Password authentication deshabilitado
-- [ ] Root login bloqueado
-- [ ] Logs sin errores
+**Validation:**
+- [ ] All admins can access with keys
+- [ ] Password authentication disabled
+- [ ] Root login blocked
+- [ ] Logs without errors
 
 ---
 
-### Fase 2: Sudoers Modular (Semana 5-6)
+### Phase 2: Modular Sudoers (Week 5-6)
 
 ```yaml
-# Objetivos:
-# - Migrar a sudoers.d/
-# - Configurar logging
-# - Aplicar en staging primero
+# Goals:
+# - Migrate to sudoers.d/
+# - Configure logging
+# - Apply to staging first
 
 - name: Phase 2 - Sudoers Baseline
   hosts: staging
@@ -423,10 +423,10 @@
   roles:
     - malpanez.security.sudoers_baseline
       vars:
-        # NO tocar /etc/sudoers principal
+        # Do NOT touch the main /etc/sudoers
         sudoers_baseline_manage_main_file: false
 
-        # Solo gestionar sudoers.d/
+        # Only manage sudoers.d/
         sudoers_baseline_groups:
           linux_admins:
             require_password: true
@@ -439,29 +439,29 @@
               - "/usr/bin/systemctl restart myapp"
               - "/usr/bin/docker *"
 
-        # Defaults de seguridad
+        # Security defaults
         sudoers_baseline_defaults:
           - "use_pty"
           - "logfile=/var/log/sudo.log"
           - "log_output"
 ```
 
-**Validación:**
-- [ ] `/etc/sudoers` sin cambios
-- [ ] Nuevas reglas en `/etc/sudoers.d/99-security`
-- [ ] `visudo -c` pasa
-- [ ] Todos los admins pueden hacer sudo
-- [ ] Logging funciona
+**Validation:**
+- [ ] `/etc/sudoers` unchanged
+- [ ] New rules in `/etc/sudoers.d/99-security`
+- [ ] `visudo -c` passes
+- [ ] All admins can sudo
+- [ ] Logging works
 
 ---
 
-### Fase 3: MFA (Semana 7-10)
+### Phase 3: MFA (Week 7-10)
 
 ```yaml
-# Objetivos:
-# - Habilitar MFA con YubiKey
-# - TOTP como backup
-# - Solo para humanos, eximir service accounts
+# Goals:
+# - Enable MFA with YubiKey
+# - TOTP as backup
+# - Only for humans, exempt service accounts
 
 - name: Phase 3 - MFA Rollout
   hosts: staging
@@ -500,19 +500,19 @@
         pam_mfa_enabled: true
         pam_mfa_totp_enabled: true
 
-        # CRÍTICO: Service accounts bypass
+        # CRITICAL: Service accounts bypass
         pam_mfa_service_accounts:
           - ansible
           - jenkins
           - backup_user
           - monitoring
 
-        # Humanos requieren MFA
+        # Humans require MFA
         pam_mfa_human_groups:
           - linux_admins
           - devops_team
 
-        # Breakglass con TOTP
+        # Breakglass with TOTP
         pam_mfa_breakglass_group: mfa-breakglass
 
   post_tasks:
@@ -524,22 +524,22 @@
         msg: "MANUAL TEST: SSH as human user and verify MFA prompt"
 ```
 
-**Validación Crítica:**
-- [ ] Ansible puede conectar (service account bypass)
-- [ ] Humanos ven prompt de YubiKey
-- [ ] TOTP funciona como fallback
-- [ ] Emergency access funciona
-- [ ] Nadie bloqueado
+**Critical Validation:**
+- [ ] Ansible can connect (service account bypass)
+- [ ] Humans see YubiKey prompt
+- [ ] TOTP works as fallback
+- [ ] Emergency access works
+- [ ] Nobody locked out
 
 ---
 
-### Fase 4: SELinux (Semana 11-12)
+### Phase 4: SELinux (Week 11-12)
 
 ```yaml
-# Objetivos:
-# - Habilitar SELinux en modo permissive
-# - Recopilar denials (semana 11)
-# - Enforcing en semana 12 si no hay problemas
+# Goals:
+# - Enable SELinux in permissive mode
+# - Collect denials (week 11)
+# - Enforcing in week 12 if no issues
 
 - name: Phase 4.1 - SELinux Permissive
   hosts: staging
@@ -549,10 +549,10 @@
     - role: malpanez.security.selinux_enforcement
       vars:
         selinux_enforcement_enabled: true
-        selinux_enforcement_mode: permissive  # Permissive primero
+        selinux_enforcement_mode: permissive  # Permissive first
         selinux_enforcement_restorecon: true
 
-# Una semana después, revisar denials
+# One week later, review denials
 - name: Phase 4.2 - Review SELinux Denials
   hosts: staging
   become: true
@@ -567,7 +567,7 @@
       debug:
         msg: "{{ denials.stdout_lines }}"
 
-    # Si no hay denials críticos, enforcing
+    # If no critical denials, switch to enforcing
     - include_role:
         name: malpanez.security.selinux_enforcement
       vars:
@@ -577,13 +577,13 @@
 
 ---
 
-### Fase 5: Auditoría y Compliance (Semana 13-14)
+### Phase 5: Audit and Compliance (Week 13-14)
 
 ```yaml
-# Objetivos:
-# - Habilitar audit logging
-# - Recopilar evidencia
-# - Generar reportes
+# Goals:
+# - Enable audit logging
+# - Collect evidence
+# - Generate reports
 
 - name: Phase 5 - Audit and Compliance
   hosts: all
@@ -602,13 +602,13 @@
 
 ---
 
-### Fase 6: Producción (Semana 15+)
+### Phase 6: Production (Week 15+)
 
 ```yaml
-# Objetivos:
-# - Rollout gradual a producción
-# - 10% batch inicial
-# - Aumentar si no hay incidentes
+# Goals:
+# - Gradual rollout to production
+# - 10% initial batch
+# - Increase if no incidents
 
 - name: Phase 6 - Production Rollout
   hosts: production
@@ -638,7 +638,7 @@
     - malpanez.security.security_capabilities
     - malpanez.security.sshd_hardening
     - malpanez.security.sudoers_baseline
-    - malpanez.security.pam_mfa  # Solo si fase 3 exitosa
+    - malpanez.security.pam_mfa  # Only if phase 3 successful
     - malpanez.security.audit_logging
 
   post_tasks:
@@ -668,7 +668,7 @@
 
 ---
 
-## Archivos de Soporte
+## Support Files
 
 ### backup-configs.yml
 
@@ -818,18 +818,18 @@
 
 ---
 
-## Variables de Control por Fase
+## Phase Control Variables
 
 ### group_vars/all/security_phases.yml
 
 ```yaml
 ---
-# Control de fases por grupo de servidores
+# Phase control by server group
 
-# Fase actual del rollout
+# Current rollout phase
 security_phase: 0  # 0=review, 1=ssh, 2=sudo, 3=mfa, 4=selinux, 5=audit, 6=production
 
-# Configuración por fase
+# Configuration per phase
 security_phase_config:
   0:  # Review only
     security_mode: review
@@ -857,8 +857,8 @@ security_phase_config:
   4:  # SELinux
     security_mode: enforce
     apply_all: true
-    selinux_enforcement_mode: permissive  # Semana 1
-    # selinux_enforcement_mode: enforcing  # Semana 2
+    selinux_enforcement_mode: permissive  # Week 1
+    # selinux_enforcement_mode: enforcing  # Week 2
 
   5:  # Audit
     security_mode: enforce
@@ -870,7 +870,7 @@ security_phase_config:
     apply_all: true
     production_ready: true
 
-# Configuración de rollout
+# Rollout configuration
 rollout_config:
   batch_size: "10%"
   max_fail_percentage: 5
@@ -883,7 +883,7 @@ rollout_config:
 
 ```yaml
 ---
-# Servidores nuevos - configuración agresiva
+# New servers - aggressive configuration
 security_phase: 6
 security_mode: enforce
 
@@ -896,11 +896,11 @@ sshd_hardening_strict_mode: true
 
 ```yaml
 ---
-# Staging - campo de pruebas
+# Staging - test environment
 security_phase: 6
 security_mode: enforce
 
-# Todo habilitado para testing
+# Everything enabled for testing
 pam_mfa_enabled: true
 selinux_enforcement_mode: enforcing
 audit_logging_verbose: true
@@ -910,22 +910,22 @@ audit_logging_verbose: true
 
 ```yaml
 ---
-# Producción - conservador y gradual
+# Production - conservative and gradual
 security_phase: "{{ production_security_phase | default(1) }}"
 security_mode: enforce
 
-# Empezar conservador
+# Start conservative
 pam_mfa_enabled: "{{ production_mfa_enabled | default(false) }}"
 selinux_enforcement_mode: "{{ production_selinux_mode | default('permissive') }}"
 
-# Rollout gradual
+# Gradual rollout
 rollout_batch: "{{ production_rollout_batch | default('5%') }}"
 require_maintenance_window: true
 ```
 
 ---
 
-## Checklist Pre-Deployment
+## Pre-Deployment Checklist
 
 ```yaml
 ---
@@ -982,7 +982,7 @@ require_maintenance_window: true
 
 ---
 
-## Monitoreo Post-Deployment
+## Post-Deployment Monitoring
 
 ```yaml
 ---
@@ -1038,13 +1038,13 @@ require_maintenance_window: true
 
 ---
 
-## Roadmap v2.0 - Mejoras Futuras
+## Roadmap v2.0 - Future Improvements
 
-### PAM Modular con Includes
+### Modular PAM with Includes
 
-**Estado Actual (v1.x):**
+**Current State (v1.x):**
 ```yaml
-# Usa community.general.pamd - Modifica archivos directamente
+# Uses community.general.pamd - Modifies files directly
 - community.general.pamd:
     name: sshd
     type: auth
@@ -1052,33 +1052,33 @@ require_maintenance_window: true
     module_path: pam_u2f.so
 ```
 
-**Mejora v2.0:**
+**v2.0 Improvement:**
 ```yaml
-# Usa archivos separados con @include
-# /etc/pam.d/sshd-mfa (nuevo archivo)
+# Uses separate files with @include
+# /etc/pam.d/sshd-mfa (new file)
 auth    [success=1 default=ignore]  pam_succeed_if.so  user ingroup mfa-bypass
 auth    required                     pam_u2f.so         authfile=/etc/Yubico/u2f_keys
 auth    sufficient                   pam_google_authenticator.so nullok
 
-# /etc/pam.d/sshd (modificado solo con include)
+# /etc/pam.d/sshd (modified only with include)
 @include sshd-mfa
 @include common-auth
 ```
 
-**Ventajas:**
-- Más fácil de mantener
-- Mejor para rollback (solo borrar include)
-- Más limpio para auditoría
-- Separación de concerns
+**Advantages:**
+- Easier to maintain
+- Better for rollback (just remove the include)
+- Cleaner for auditing
+- Separation of concerns
 
-**Implementación:**
+**Implementation:**
 ```yaml
 # roles/pam_mfa/tasks/main-v2.yml
 - name: Deploy PAM MFA module file
   template:
     src: pam-mfa.j2
     dest: /etc/pam.d/sshd-mfa
-    validate: '/usr/sbin/pam-validate %s'  # Si existe
+    validate: '/usr/sbin/pam-validate %s'  # If it exists
     mode: '0644'
 
 - name: Include MFA in main PAM config
@@ -1089,10 +1089,10 @@ auth    sufficient                   pam_google_authenticator.so nullok
     state: present
 ```
 
-### Multi-Instance SSH Support Nativo
+### Native Multi-Instance SSH Support
 
 ```yaml
-# v2.0: Soporte nativo para múltiples instancias
+# v2.0: Native support for multiple instances
 - role: malpanez.security.sshd_hardening
   vars:
     sshd_instances:
@@ -1116,29 +1116,29 @@ auth    sufficient                   pam_google_authenticator.so nullok
 
 ---
 
-## Conclusión
+## Conclusion
 
-**Filosofía de la Colección:**
-1. Review primero, SIEMPRE
-2. Progresivo, nunca big-bang
-3. Rollback siempre disponible
-4. Validación en cada paso
-5. Compatibilidad con legacy
+**Collection Philosophy:**
+1. Review first, ALWAYS
+2. Progressive, never big-bang
+3. Rollback always available
+4. Validation at every step
+5. Legacy compatibility
 
-**Para v1.x:**
-- ✅ Approach actual es CORRECTO y SEGURO
-- ✅ Funciona en producción
-- ✅ Tests exhaustivos
-- ✅ Soporte legacy completo
+**For v1.x:**
+- ✅ Current approach is CORRECT and SAFE
+- ✅ Works in production
+- ✅ Exhaustive tests
+- ✅ Full legacy support
 
-**Para v2.0:**
-- 🔄 PAM includes (después de validación extensa)
-- 🔄 Multi-instance SSH nativo
-- 🔄 Mejor integración con authselect (RHEL 8+)
+**For v2.0:**
+- 🔄 PAM includes (after extensive validation)
+- 🔄 Native multi-instance SSH
+- 🔄 Better integration with authselect (RHEL 8+)
 
 ---
 
-**Última Actualización:** 2025-12-05
-**Versión:** 1.0.0
-**Mantenedor:** Miguel Alpañez
-**Estado:** ✅ Production Ready
+**Last Updated:** 2025-12-05
+**Version:** 1.0.0
+**Maintainer:** Miguel Alpañez
+**Status:** ✅ Production Ready

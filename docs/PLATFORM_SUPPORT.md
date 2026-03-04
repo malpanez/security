@@ -1,17 +1,17 @@
-# Platform Support Matrix (Estado real)
+# Platform Support Matrix (Actual state)
 
-## Familias soportadas
+## Supported families
 
 - Debian/Ubuntu (ansible_os_family: `Debian`)
 - RHEL-like (ansible_os_family: `RedHat`)
 
-## Requisitos mínimos (preflight-check)
+## Minimum requirements (preflight-check)
 
 - Debian: >= 10
 - Ubuntu: >= 18.04
 - RedHat family: >= 7
 
-## Probado localmente
+## Tested locally
 
 ### Molecule `complete_stack`
 - Ubuntu: 18.04, 20.04, 22.04, 24.04
@@ -19,12 +19,12 @@
 - Rocky: 8, 9
 - Alma: 8, 9
 
-### Scripts Docker
+### Docker Scripts
 - `scripts/test-all-platforms.sh`: Ubuntu 20/22, Debian 11/12, Rocky 8/9, UBI 8/9
-- `scripts/test-quick.sh`: imagen Docker indicada por el usuario
+- `scripts/test-quick.sh`: Docker image specified by the user
 
-## Notas importantes
+## Important notes
 
-- Los workflows CI existen en `.github/workflows/`; valida en local si necesitas reproducir fallos.
-- SELinux solo se aplica en RedHat family.
-- `sshd_hardening` escribe `/etc/ssh/sshd_config` completo; no usa `sshd_config.d`.
+- CI workflows exist in `.github/workflows/`; validate locally if you need to reproduce failures.
+- SELinux is only applied on RedHat family.
+- `sshd_hardening` writes a complete `/etc/ssh/sshd_config`; it does not use `sshd_config.d`.
