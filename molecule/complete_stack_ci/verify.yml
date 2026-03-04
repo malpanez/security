@@ -24,19 +24,12 @@
     - name: Gather service facts
       ansible.builtin.service_facts:
 
-    - name: Check if auditd is available
-      ansible.builtin.command: auditctl -l
-      register: auditctl_available
-      failed_when: false
-      changed_when: false
-
-    - name: Assert auditd service is running (when available)
+    - name: Assert auditd service is running
       ansible.builtin.assert:
         that:
           - "'auditd.service' in ansible_facts.services"
           - ansible_facts.services['auditd.service'].state == 'running'
         fail_msg: auditd service not running
-      when: auditctl_available.rc == 0
 
     - name: Check compliance report exists
       ansible.builtin.stat:
@@ -51,30 +44,20 @@
     - name: Verify human account requires MFA (expect failure without MFA)
       ansible.builtin.command: >
         ssh -o StrictHostKeyChecking=no
-            -o ConnectTimeout=5
             -i /home/test_human/.ssh/id_ed25519
             test_human@localhost exit
       register: human_login
       changed_when: false
-      failed_when: false
+      failed_when: human_login.rc == 0
 
     - name: Verify service account key works (no MFA expected)
       ansible.builtin.command: >
         ssh -o StrictHostKeyChecking=no
-            -o ConnectTimeout=5
             -i /home/test_service_account/.ssh/id_ed25519
             test_service_account@localhost exit
       register: service_login
       changed_when: false
-      failed_when: false
-
-    - name: Display SSH test results
-      ansible.builtin.debug:
-        msg: |
-          Human login RC: {{ human_login.rc }}
-          Service account login RC: {{ service_login.rc }}
-          Human login should fail (MFA required): {{ human_login.rc != 0 }}
-          Service account should succeed: {{ service_login.rc == 0 }}
+      failed_when: service_login.rc != 0
 
     - name: Confirm sudo works for test_admin if present
       ansible.builtin.command: sudo -n true
@@ -83,37 +66,3 @@
       register: sudo_test
       changed_when: false
       failed_when: sudo_test.rc not in [0, 1]
-
-    - name: Test root console access (should be restricted)
-      ansible.builtin.command: cat /etc/securetty
-      register: securetty
-      changed_when: false
-      failed_when: false
-
-    - name: Check for SELinux denials (RHEL-based only)
-      ansible.builtin.command: ausearch -m avc -ts recent
-      register: selinux_denials
-      changed_when: false
-      failed_when: false
-      when: ansible_os_family == "RedHat"
-
-    - name: Verify PAM MFA configuration
-      ansible.builtin.stat:
-        path: /etc/pam.d/sshd
-      register: pam_sshd
-      failed_when: not pam_sshd.stat.exists
-
-    - name: Verify SSH service is active
-      ansible.builtin.service:
-        name: ssh
-        state: started
-      check_mode: true
-      register: ssh_service
-      failed_when: false
-
-    - name: Final health check - all critical services running
-      ansible.builtin.assert:
-        that:
-          - auditctl_available.rc != 0 or ansible_facts.services['auditd.service'].state == 'running'
-        success_msg: All critical security services are operational
-        fail_msg: One or more critical services failed

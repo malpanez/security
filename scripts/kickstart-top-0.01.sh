@@ -2,7 +2,7 @@
 # Kickstart Script - malpanez.security TOP 0.01% Implementation
 # This script helps you start the implementation journey
 
-set -euo pipefail
+set -e
 
 # Colors
 RED='\033[0;31m'
@@ -39,7 +39,7 @@ if [[ "$current_branch" == "feature/top-0.01-percent" ]]; then
 else
     echo -e "${YELLOW}📋 Current branch: $current_branch${NC}"
     echo ""
-read -r -p "Create feature branch 'feature/top-0.01-percent'? (y/n) " -n 1
+    read -p "Create feature branch 'feature/top-0.01-percent'? (y/n) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         git checkout -b feature/top-0.01-percent
@@ -58,7 +58,7 @@ echo -e "  4. ${GREEN}IMPLEMENTATION_PROMPT.md${NC}  - LLM prompts with technica
 echo -e "  5. ${GREEN}QUICK_REFERENCE.md${NC}        - Commands and troubleshooting"
 
 echo ""
-read -r -p "Open START_HERE.md now? (y/n) " -n 1
+read -p "Open START_HERE.md now? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     if command -v code &> /dev/null; then
@@ -84,7 +84,7 @@ command -v molecule &> /dev/null || missing_deps+=("molecule")
 command -v docker &> /dev/null || missing_deps+=("docker")
 command -v pytest &> /dev/null || missing_deps+=("pytest")
 
-if [[ ${#missing_deps[@]} -eq 0 ]]; then
+if [ ${#missing_deps[@]} -eq 0 ]; then
     echo -e "${GREEN}✅ All dependencies installed${NC}"
 else
     echo -e "${RED}❌ Missing dependencies:${NC}"
@@ -112,12 +112,10 @@ echo ""
 
 # Check 3: Validation baseline
 echo -n "Running validation baseline... "
-baseline_log=$(mktemp -t validate-baseline.XXXXXX)
-trap 'rm -f "$baseline_log"' EXIT
-if ./scripts/validate-all.sh &> "$baseline_log"; then
+if ./scripts/validate-all.sh &> /tmp/validate-baseline.log; then
     echo -e "${GREEN}✅ Baseline validation passed${NC}"
 else
-    echo -e "${YELLOW}⚠️  Some validations failed (see ${baseline_log})${NC}"
+    echo -e "${YELLOW}⚠️  Some validations failed (see /tmp/validate-baseline.log)${NC}"
     echo -e "   ${YELLOW}This is expected - we'll fix these issues during implementation${NC}"
 fi
 
@@ -176,7 +174,7 @@ echo -e "${PURPLE}════════════════════�
 echo ""
 
 # Create journey log
-if [[ ! -f JOURNEY_LOG.md ]]; then
+if [ ! -f JOURNEY_LOG.md ]; then
     cat > JOURNEY_LOG.md << EOF
 # Journey to TOP 0.01% - Log
 

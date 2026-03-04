@@ -4,6 +4,7 @@
 
 - name: Converge - Apply Complete Security Baseline
   hosts: all
+  become: true
   gather_facts: true
 
   pre_tasks:
@@ -19,6 +20,37 @@
           Mode: {{ security_mode | default('enforce') }}
           ========================================
 
+    - name: Update apt cache (Debian/Ubuntu)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == 'Debian'
+      changed_when: false
+
+    - name: Install required packages (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name:
+          - openssh-server
+          - sudo
+          - python3
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Install required packages (RedHat)
+      ansible.builtin.dnf:
+        name:
+          - openssh-server
+          - sudo
+          - python3
+        state: present
+      when: ansible_os_family == 'RedHat'
+
+    - name: Ensure SSH service is enabled
+      ansible.builtin.service:
+        name: sshd
+        enabled: true
+        state: started
+
     - name: Create test service account
       ansible.builtin.user:
         name: test_service_account
@@ -26,19 +58,16 @@
         shell: /bin/bash
         create_home: true
         state: present
-      become: true
 
     - name: Ensure MFA bypass group exists
       ansible.builtin.group:
         name: "{{ pam_mfa_service_bypass_group }}"
         state: present
-      become: true
 
     - name: Ensure admin group exists for sudoers defaults
       ansible.builtin.group:
         name: linux_admins
         state: present
-      become: true
 
     - name: Create test admin user
       ansible.builtin.user:
@@ -49,7 +78,6 @@
         shell: /bin/bash
         create_home: true
         state: present
-      become: true
 
     - name: Create test human user
       ansible.builtin.user:
@@ -58,7 +86,6 @@
         shell: /bin/bash
         create_home: true
         state: present
-      become: true
 
     - name: Generate SSH key for test service account
       ansible.builtin.command:
@@ -74,31 +101,20 @@
       become: true
       become_user: test_human
 
-    - name: Read SSH public keys
-      ansible.builtin.slurp:
-        src: "{{ item }}"
-      register: ssh_keys
-      become: true
-      loop:
-        - /home/test_service_account/.ssh/id_ed25519.pub
-        - /home/test_human/.ssh/id_ed25519.pub
-
     - name: Add public keys to authorized_keys
       ansible.posix.authorized_key:
         user: "{{ item.user }}"
-        key: "{{ item.key }}"
-      become: true
+        key: "{{ lookup('file', item.key) }}"
       loop:
-        - { user: test_service_account, key: "{{ (ssh_keys.results[0].content | b64decode).strip() }}" }
-        - { user: test_human, key: "{{ (ssh_keys.results[1].content | b64decode).strip() }}" }
-        - { user: test_admin, key: "{{ (ssh_keys.results[0].content | b64decode).strip() }}" }
+        - { user: test_service_account, key: /home/test_service_account/.ssh/id_ed25519.pub }
+        - { user: test_human, key: /home/test_human/.ssh/id_ed25519.pub }
+        - { user: test_admin, key: /home/test_service_account/.ssh/id_ed25519.pub }
 
     - name: Add service account to MFA bypass group
       ansible.builtin.user:
         name: test_service_account
         groups: "{{ pam_mfa_service_bypass_group }}"
         append: true
-      become: true
 
   roles:
     # PHASE 1: Detect system capabilities
@@ -151,13 +167,6 @@
       when: security_phase | int >= 6
 
   post_tasks:
-    - name: Compute convergence status flags
-      ansible.builtin.set_fact:
-        converge_selinux_status: >-
-          {{ '✅'
-             if (security_phase | int >= 4 and ansible_os_family == 'RedHat')
-             else '⏭️ Skipped' }}
-
     - name: Display convergence summary
       ansible.builtin.debug:
         msg: |
@@ -173,7 +182,7 @@
           - sshd_hardening: {{ '✅' if security_phase | int >= 1 else '⏭️ Skipped' }}
           - pam_mfa: {{ '✅' if (security_phase | int >= 3 and pam_mfa_enabled) else '⏭️ Skipped' }}
           - sudoers_baseline: {{ '✅' if security_phase | int >= 2 else '⏭️ Skipped' }}
-          - selinux_enforcement: {{ converge_selinux_status }}
+          - selinux_enforcement: {{ '✅' if (security_phase | int >= 4 and ansible_os_family == 'RedHat') else '⏭️ Skipped' }}
           - audit_logging: {{ '✅' if security_phase | int >= 5 else '⏭️ Skipped' }}
           - compliance_evidence: {{ '✅' if security_phase | int >= 6 else '⏭️ Skipped' }}
           - cis_baseline: {{ '✅' if security_phase | int >= 6 else '⏭️ Skipped' }}

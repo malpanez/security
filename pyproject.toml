@@ -3,7 +3,7 @@ name = "malpanez-security"
 version = "1.0.0"
 description = "TOP 0.1% Enterprise Ansible Security Collection"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Miguel Alpañez", email = "miguel@alpanez.com"}
@@ -16,71 +16,49 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Security",
     "Topic :: System :: Systems Administration",
 ]
 
-# PINNED DEPENDENCIES (for reproducible builds)
-# Use: pip install -e ".[dev]" to install with pinned versions
-# Update with: pip-compile or dependabot
 dependencies = [
-    "ansible-core==2.18.6",  # Compatible with ansible-lint 24.12.x
+    "ansible-core>=2.16,<2.18",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "ansible-lint==24.12.2",
-    "yamllint==1.37.1",
-    "molecule==25.1.0",
-    "molecule-plugins[docker]==25.8.12",
-    "pytest==8.3.4",
-    "pytest-testinfra==10.1.1",
-    "pytest-cov==6.0.0",
-    "hypothesis==6.125.0",
-    "pre-commit==4.0.1",
-    "ruff==0.9.1",
+    "ansible-lint>=24.5.0,<25.13",
+    "yamllint>=1.35.1",
+    "molecule>=24.7.0",
+    "molecule-plugins[docker]>=23.5.0",
+    "pytest>=8.0.0",
+    "pytest-testinfra>=10.0.0",
+    "pre-commit>=4.0.0",
 ]
 
 test = [
-    "pytest==8.3.4",
-    "pytest-testinfra==10.1.1",
-    "pytest-cov==6.0.0",
-    "pytest-xdist==3.6.1",
-    "hypothesis==6.125.0",
+    "pytest>=8.0.0",
+    "pytest-testinfra>=10.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.5.0",
 ]
 
 lint = [
-    "ansible-lint==24.12.2",
-    "yamllint==1.37.1",
-    "ruff==0.9.1",
-    "mypy==1.14.1",
+    "ansible-lint>=24.5.0,<25.13",
+    "yamllint>=1.35.1",
+    "ruff>=0.1.0",
+    "mypy>=1.7.0",
 ]
 
 docs = [
-    "mkdocs==1.6.1",
-    "mkdocs-material==9.7.1",
-    "mkdocstrings[python]==1.0.0",
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.24.0",
 ]
 
 all = [
-    "ansible-lint==24.12.2",
-    "yamllint==1.37.1",
-    "molecule==25.1.0",
-    "molecule-plugins[docker]==25.8.12",
-    "pytest==8.3.4",
-    "pytest-testinfra==10.1.1",
-    "pytest-cov==6.0.0",
-    "pytest-xdist==3.6.1",
-    "hypothesis==6.125.0",
-    "pre-commit==4.0.1",
-    "ruff==0.9.1",
-    "mypy==1.14.1",
-    "mkdocs==1.6.1",
-    "mkdocs-material==9.7.1",
-    "mkdocstrings[python]==1.0.0",
+    "malpanez-security[dev,test,lint,docs]",
 ]
 
 [project.urls]
@@ -131,23 +109,21 @@ ignore = [
 "**/tests/**" = ["S101", "I001", "F401"]  # assert, imports, unused imports allowed in molecule tests
 "**/test_*.py" = ["S101", "I001", "F401"]  # assert, imports, unused imports allowed in test files
 
-[tool.uv]
-environments = ["sys_platform == 'linux'"]
-
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
+    "--cov=roles",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=html",
+    "--cov-report=xml",
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-
-# Coverage options removed from addopts to allow tests without pytest-cov
-# To run with coverage, use: pytest --cov=roles --cov-report=html tests/
 
 [tool.coverage.run]
 branch = true

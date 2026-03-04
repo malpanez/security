@@ -2,34 +2,23 @@
 # Molecule prepare - minimal bootstrap so converge can run cleanly
 - name: Prepare instances for complete stack
   hosts: all
-  gather_facts: true
+  become: true
+  gather_facts: false
 
   tasks:
-    - name: Ensure openssh-client is installed (Debian/Ubuntu)
-      ansible.builtin.raw: |
-        if ! command -v ssh-keygen >/dev/null 2>&1; then
-          apt-get update -qq && apt-get install -y -qq openssh-client
+    - name: Install Python for Ansible
+      raw: |
+        if command -v apt-get >/dev/null 2>&1; then
+          apt-get update -y && apt-get install -y python3 sudo openssh-server
+        elif command -v dnf >/dev/null 2>&1; then
+          dnf install -y python3 sudo openssh-server
+        elif command -v yum >/dev/null 2>&1; then
+          yum install -y python3 sudo openssh-server
         fi
-      become: true
-      when: ansible_os_family == 'Debian'
       changed_when: false
 
-    - name: Ensure openssh-clients is installed (RedHat)
-      ansible.builtin.raw: |
-        if ! command -v ssh-keygen >/dev/null 2>&1; then
-          dnf install -y -q openssh-clients || yum install -y -q openssh-clients
-        fi
-      become: true
-      when: ansible_os_family == 'RedHat'
-      changed_when: false
-
-    - name: Ensure test groups exist
-      ansible.builtin.group:
-        name: "{{ item }}"
-        state: present
-      become: true
-      loop:
-        - test_service_accounts
-        - test_human_users
-        - mfa-bypass
-        - linux_admins
+    - name: Ensure SSH service is available
+      ansible.builtin.service:
+        name: sshd
+        state: started
+      failed_when: false
