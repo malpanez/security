@@ -16,9 +16,8 @@ security_mode: enforce
 # PRODUCTION SAFETY
 # ============================================
 
-# CRITICAL: Preserve existing sudoers
-sudoers_baseline_preserve_main: true
-sudoers_baseline_manage_main_file: false
+# WARNING: role manages /etc/sudoers when strict is true
+sudoers_baseline_strict: false
 
 # Gradual rollout - 10% at a time
 rollout_percentage: 10%
@@ -101,18 +100,11 @@ selinux_enforcement_mode: "{{ 'enforcing' if selinux_enforcement_production_read
 # Enable in Phase 5
 audit_logging_enabled: "{{ current_security_phase >= 5 }}"
 
-# Conservative logging in production
-audit_logging_verbose: false
-audit_logging_log_commands: true
-
 # ============================================
 # PRODUCTION COMPLIANCE
 # ============================================
 
-compliance_evidence_output_path: /var/log/security-compliance
-compliance_evidence_frameworks:
-  - soc2
-  - pci-dss # If applicable
+compliance_evidence_output_dir: /var/log/security-compliance
 
 # ============================================
 # PRODUCTION-SPECIFIC SUDO GROUPS

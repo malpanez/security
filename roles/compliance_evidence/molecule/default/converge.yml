@@ -2,7 +2,16 @@
 - name: Converge
   hosts: all
   become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Ensure remote tmp directory
+      ansible.builtin.raw: mkdir -p /tmp/ansible-tmp
+      changed_when: false
+    - name: Gather facts
+      ansible.builtin.setup:
   vars:
     compliance_evidence_enabled: true
+    security_capabilities_selected_auth_mode: legacy
+    compliance_evidence_output_dir: /var/log/compliance
   roles:
     - role: compliance_evidence

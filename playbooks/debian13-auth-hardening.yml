@@ -1,0 +1,25 @@
+---
+- name: Debian 13 authentication hardening (SSH keys + sudo TOTP)
+  hosts: all
+  become: true
+  vars:
+    admin_user: "{{ lookup('env', 'ADMIN_USER') | default('root', true) }}"
+    mfa_group: "{{ lookup('env', 'MFA_GROUP') | default('mfa-required', true) }}"
+  roles:
+    - role: sshd_hardening
+      vars:
+        sshd_hardening_use_dropin: true
+        sshd_hardening_dropin_path: /etc/ssh/sshd_config.d/20-auth-hardening.conf
+        sshd_hardening_password_authentication: false
+        sshd_hardening_challenge_response_authentication: false
+        sshd_hardening_kbd_interactive_authentication: false
+        sshd_hardening_authentication_methods:
+          - publickey
+    - role: pam_mfa
+      vars:
+        pam_mfa_enabled: true
+        pam_mfa_use_debian13_stack: true
+        pam_mfa_required_group: "{{ mfa_group }}"
+        pam_mfa_required_users:
+          - "{{ admin_user }}"
+        pam_mfa_totp_enabled: true

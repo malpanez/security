@@ -1,57 +1,137 @@
-# Ansible Collection - malpanez.security
+# malpanez.security
 
-Colección orientada a endurecer la configuración de SSH.
+[![CI](https://github.com/malpanez/security/actions/workflows/ci-uv.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/ci-uv.yml)
+[![Quality Gates](https://github.com/malpanez/security/actions/workflows/quality-gates.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/quality-gates.yml)
+[![Security Scan](https://github.com/malpanez/security/actions/workflows/security-scan.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/security-scan.yml)
+[![CodeQL](https://github.com/malpanez/security/actions/workflows/codeql.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/codeql.yml)
+[![Molecule](https://github.com/malpanez/security/actions/workflows/molecule-test.yml/badge.svg)](https://github.com/malpanez/security/actions/workflows/molecule-test.yml)
 
-## Roles (qué hace cada uno)
+An Ansible collection for Linux security hardening — SSH, MFA, SELinux, sudoers, auditd, and compliance evidence — tested across Debian, Ubuntu, and RHEL-family systems.
 
-- `malpanez.security.security_capabilities`: detecta versión de OpenSSH/capacidades (SK keys, PAM, SELinux) y selecciona modo de autenticación.
-- `malpanez.security.sshd_hardening`: aplica parámetros seguros en `sshd_config` y asegura que el servicio esté en marcha.
-- `malpanez.security.pam_mfa`: configura MFA con YubiKey (U2F/FIDO2) y TOTP de contingencia, con bypass controlado para cuentas de servicio.
-- `malpanez.security.sudoers_baseline`: sudoers mínimo privilegio y defaults auditables.
-- `malpanez.security.selinux_enforcement`: habilita y configura SELinux, booleans y contextos.
-- `malpanez.security.service_accounts_transfer`: cuentas de servicio (SFTP/rsync) con restricciones y ForceCommand.
-- `malpanez.security.audit_logging`: reglas auditd para SSH/sudo/config.
-- `malpanez.security.compliance_evidence`: recopila evidencias en `reports/`.
+Designed to be **audit-ready from day one**: run in review mode first to collect evidence without touching the system, then enforce when ready.
 
-## Uso rápido
+## What it does
+
+| Role | Description |
+|------|-------------|
+| `security_capabilities` | Auto-detects OpenSSH version and available MFA modules; selects the right authentication mode |
+| `sshd_hardening` | Enforces secure `sshd_config`: algorithms, access control, CA trust, Match blocks per user class |
+| `pam_mfa` | MFA with YubiKey (FIDO2/U2F) for humans, TOTP as breakglass fallback, bypass for service accounts |
+| `sudoers_baseline` | Least-privilege sudoers with visudo validation and auditable defaults |
+| `selinux_enforcement` | Enables SELinux, configures booleans and file contexts (RHEL family) |
+| `service_accounts_transfer` | SFTP/rsync accounts with ForceCommand, AllowUsers/AllowGroups, and certificate restrictions |
+| `audit_logging` | auditd rules covering SSH, sudo, and configuration changes |
+| `compliance_evidence` | Collects configuration snapshots and command outputs to `/var/log/compliance` |
+
+## Authentication mode auto-selection
+
+The `security_capabilities` role detects your environment and picks the right authentication mode automatically:
+
+| Mode | Trigger | MFA method |
+|------|---------|------------|
+| `sk_keys` | OpenSSH ≥ 8.2 | Hardware key (ed25519-sk / ecdsa-sk) |
+| `pam_mfa` | pam_u2f or pam_fido2 available | YubiKey U2F + TOTP fallback |
+| `legacy` | Older systems | Compensating controls (no password auth, restricted accounts) |
+
+Override with `security_capabilities_auth_mode: sk_keys|pam_mfa|legacy|auto`.
+
+## Platform support
+
+Tested with Molecule and Docker across:
+
+| Family | Versions |
+|--------|---------|
+| Ubuntu | 18.04, 20.04, 22.04, 24.04 |
+| Debian | 10, 11, 12 |
+| Rocky Linux | 8, 9 |
+| AlmaLinux | 8, 9 |
+
+## Installation
+
+```bash
+ansible-galaxy collection install malpanez.security
+```
+
+Or pin a version in `requirements.yml`:
 
 ```yaml
+collections:
+  - name: malpanez.security
+    version: ">=1.0.0"
+```
+
+## Quick start
+
+### 1. Review first (no changes applied)
+
+Collect evidence and capabilities without touching the system:
+
+```bash
+ansible-playbook playbooks/review.yml -i inventory
+```
+
+Review the output in `/var/log/compliance`, then sign off.
+
+### 2. Enforce
+
+```yaml
+# playbook.yml
 - hosts: all
   become: true
   roles:
-    - role: malpanez.security.sshd_hardening
-      vars:
-        sshd_hardening_password_authentication: false
-        sshd_hardening_allow_users:
-          - admin
+    - malpanez.security.security_capabilities
+    - malpanez.security.sshd_hardening
+    - malpanez.security.pam_mfa
+    - malpanez.security.sudoers_baseline
+    - malpanez.security.selinux_enforcement
+    - malpanez.security.service_accounts_transfer
+    - malpanez.security.audit_logging
+    - malpanez.security.compliance_evidence
 ```
 
-## Variables clave
+```bash
+ansible-playbook playbook.yml -i inventory -e security_mode=enforce
+```
 
-- `sshd_hardening_password_authentication`: habilita autenticación por contraseña (default: `false`).
-- `sshd_hardening_permit_root_login`: control de login de root (`no`, `prohibit-password`, `yes`; default: `no`).
-- Algoritmos: controlados por `sshd_hardening_algorithm_profile` y `sshd_hardening_algorithm_sets` (ciphers, MACs, KEX, hostkey) para compatibilidad según versión de OpenSSH.
-- `sshd_hardening_allow_users` / `sshd_hardening_allow_groups`: listas explícitas de acceso.
-- `sshd_hardening_client_alive_interval` / `sshd_hardening_client_alive_count_max`: keepalives y desconexión de sesiones inactivas.
-- Otras opciones endurecidas: `sshd_hardening_max_auth_tries`, `sshd_hardening_max_sessions`, `sshd_hardening_max_startups`, `sshd_hardening_use_dns`, `sshd_hardening_compression`, `sshd_hardening_banner`, `sshd_hardening_log_level`, `sshd_hardening_hostkey_algorithms`.
-- `sshd_hardening_algorithm_profile`: `auto` selecciona algoritmos modernos salvo que se detecte OpenSSH < 7.8 (ej. RHEL7), en cuyo caso usa el set `legacy`. Puedes forzar `modern`/`legacy` o sobreescribir `sshd_hardening_algorithm_sets`.
-- `sshd_hardening_trusted_ca_key`/`sshd_hardening_trusted_ca_path`: habilitan TrustedUserCAKeys para certificados SSH.
-- `sshd_hardening_human_groups` / `sshd_hardening_service_groups`: definen Match blocks para exigir MFA a humanos (publickey+keyboard-interactive) y restringir cuentas de servicio a publickey sin TTY/forwarding.
+### Key variables
 
-Consulta `roles/sshd_hardening/meta/argument_specs.yml` para el catálogo completo de opciones.
+```yaml
+security_mode: review                        # review | enforce
+security_capabilities_auth_mode: auto        # auto | sk_keys | pam_mfa | legacy
 
-## Modos de ejecución (review vs enforce)
+sshd_hardening_password_authentication: false
+sshd_hardening_permit_root_login: "no"
+sshd_hardening_allow_users: [admin]
+sshd_hardening_algorithm_profile: auto       # auto | modern | legacy
 
-- Usa `security_mode=review` para evitar cambios disruptivos; los roles que tocan el sistema tienen `when: security_mode == 'enforce'`.
-- El playbook `playbooks/review.yml` ejecuta únicamente `security_capabilities` + `compliance_evidence` con `tags: review` para obtener reportes sin tocar servicios.
-- Para pasar a enforcement, vuelve a `security_mode=enforce` y ejecuta `playbooks/site.yml`.
-- Aprovecha que `service_accounts_transfer` corre antes que `sshd_hardening`: primero define cuentas/certificados, luego `sshd_config` renderiza los `Match` según los facts generados.
+compliance_evidence_output_dir: /var/log/compliance
+```
 
-## Devcontainer compliance-ready
+Full variable reference: [`roles/sshd_hardening/meta/argument_specs.yml`](roles/sshd_hardening/meta/argument_specs.yml)
 
-En `.devcontainer/` hay dos perfiles:
+## Dev environment
 
-- `devcontainer.json`: entorno estándar (imagen publicada `ghcr.io/malpanez/devcontainer-ansible`).
-- `devcontainer.compliance.json` + `Dockerfile.compliance`: configuración reforzada (root FS `--read-only`, tmpfs para `/tmp`/`/run`/`/var/log`, sops/age, syft y gitleaks preinstalados). Ejecuta el build con los valores `BASE_IMAGE`, `UV_VERSION` y `UV_CHECKSUM` fijados a los checksums oficiales; si dejas `UV_CHECKSUM=sha256:UNSET` se omite la instalación de uv para evitar binarios sin verificar.
+A compliance-hardened devcontainer is available:
 
-Lanza VS Code Remote Containers apuntando al perfil compliance para validar SOC2/HIPAA/FedRAMP: se instala `ansible-lint --profile production --strict`, hooks de `pre-commit` y se generan SBOMs automáticamente.
+```bash
+devcontainer up --config .devcontainer/devcontainer.compliance.json
+```
+
+Runs read-only with tmpfs, minimal capabilities, and audit logging enabled.
+
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [Capabilities matrix](docs/capabilities-matrix.md)
+- [Runbooks](docs/runbooks.md) — breakglass, MFA recovery, rollback
+- [Compliance evidence](docs/compliance-evidence.md)
+- [Platform support](docs/PLATFORM_SUPPORT.md)
+- [Workflows](docs/WORKFLOWS.md)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+MIT

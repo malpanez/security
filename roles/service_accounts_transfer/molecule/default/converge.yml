@@ -2,9 +2,19 @@
 - name: Converge
   hosts: all
   become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Ensure remote tmp directory
+      ansible.builtin.raw: mkdir -p /tmp/ansible-tmp
+      changed_when: false
+    - name: Gather facts
+      ansible.builtin.setup:
   vars:
+    pam_mfa_service_bypass_allow_from:
+      - 192.0.2.0/24
     service_accounts_transfer_accounts:
       - name: svc_ci
+        home: /srv/sftp/svc_ci
         shell: /usr/sbin/nologin
         keys:
           - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdummykeyexample svc_ci
@@ -13,5 +23,13 @@
           - 10.0.0.0/8
         command: /usr/lib/openssh/sftp-server
         chroot: /srv/sftp/svc_ci
+      - name: svc_backup
+        home: /srv/sftp/svc_backup
+        shell: /usr/sbin/nologin
+        keys:
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdummykeyexamplebackup svc_backup
+        sftp_only: true
+        command: /usr/lib/openssh/sftp-server
+        chroot: /srv/sftp/svc_backup
   roles:
     - role: service_accounts_transfer

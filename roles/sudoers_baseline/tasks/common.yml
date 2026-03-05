@@ -4,6 +4,16 @@
     name: sudo
     state: present
 
+- name: common | Create sudo I/O log directory
+  ansible.builtin.file:
+    path: "{{ sudoers_baseline_iolog_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  when: sudoers_baseline_iolog_enabled
+  tags: [enforce]
+
 - name: common | Deploy sudoers defaults
   ansible.builtin.template:
     src: sudoers.j2

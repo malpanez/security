@@ -27,6 +27,13 @@ argument_specs:
           - enforce
           - review
 
+      cis_baseline_review_fail_on_violation:
+        description:
+          - Fail the play when review checks detect non-compliance
+          - Useful for CI enforcement of baseline compliance
+        type: bool
+        default: false
+
       cis_baseline_controls:
         description:
           - CIS controls to verify/enforce

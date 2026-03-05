@@ -1,12 +1,19 @@
 ---
 sudoers_baseline_strict: false
+
+# I/O logging for complete audit trail (ADVANCED)
+# WARNING: Generates significant disk usage - plan for log rotation
+sudoers_baseline_iolog_enabled: false  # Set true for HIGH security environments
+sudoers_baseline_iolog_dir: /var/log/sudo-io
+sudoers_baseline_iolog_maxseq: 1000  # Rotate after 1000 sessions
+
 sudoers_baseline_defaults:
   - use_pty
   - logfile=/var/log/sudo.log
   - timestamp_timeout=5
   - passwd_tries=3
-  - requiretty
-  - "!authenticate"
+  - "!visiblepw"
+
 sudoers_baseline_secure_path: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 sudoers_baseline_groups:
   linux_admins:

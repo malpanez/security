@@ -12,14 +12,12 @@ exclude_paths:
   - group_vars/
   - inventory/
   - "**/.molecule/**"
+# Minimal skip_list - only for justified exceptions
 skip_list:
-  - var-naming[no-role-prefix]
-  - var-naming[no-reserved]
-  - yaml[line-length]
-  - risky-shell-pipe
-  - ignore-errors
-  - no-changed-when
-  - command-instead-of-module
-  - fqcn[action-core]
-  - risky-file-permissions
-  - key-order[task]
+  - var-naming[no-role-prefix]  # Role-specific vars use security_*, not role prefix
+  - var-naming[no-reserved]     # Using 'name' as variable is intentional
+  - yaml[line-length]           # Some long lines for readability (URLs, long strings)
+  - command-instead-of-module   # Some commands have no module equivalent
+  - fqcn[action-core]           # Ansible core modules don't need FQCN in modern versions
+  - key-order[task]             # Task key order is not critical for functionality
+  - no-handler                  # Handler validation tasks correctly use when: changed

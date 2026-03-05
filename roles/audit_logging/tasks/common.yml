@@ -1,19 +1,114 @@
 ---
-- name: common | Ensure auditd package present
-  ansible.builtin.package:
-    name: auditd
+- name: common | Update apt cache for auditd
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_facts["os_family"] == "Debian"
+  tags: [enforce]
+
+- name: common | Ensure auditd package present (Debian)
+  ansible.builtin.apt:
+    name: "{{ audit_logging_package }}"
     state: present
+  when: ansible_facts["os_family"] == "Debian"
+  tags: [enforce]
+
+- name: common | Ensure auditd package present (non-Debian)
+  ansible.builtin.package:
+    name: "{{ audit_logging_package }}"
+    state: present
+  when: ansible_facts["os_family"] != "Debian"
+  tags: [enforce]
+
+- name: common | Initialize effective audit rules
+  ansible.builtin.set_fact:
+    audit_logging_effective_rules: []
+    audit_logging_rules_combined: "{{ audit_logging_rules + audit_logging_syscall_rules }}"
+  tags: [enforce]
+
+- name: common | Detect container environment
+  ansible.builtin.set_fact:
+    audit_logging_in_container: >-
+      {{
+        ansible_facts.virtualization_type | default('') in ['docker', 'podman', 'container', 'lxc']
+      }}
+  tags: [enforce]
+
+- name: common | Stat audit watch paths
+  ansible.builtin.stat:
+    path: "{{ item | regex_search('^-w\\s+(\\S+)', '\\1') }}"
+  register: audit_logging_watch_stats
+  loop: "{{ audit_logging_rules_combined }}"
+  when: item is match('^-w\\s+\\S+')
+  tags: [enforce]
+
+- name: common | Add existing watch rules
+  ansible.builtin.set_fact:
+    audit_logging_effective_rules: "{{ audit_logging_effective_rules + [item.item] }}"
+  loop: "{{ audit_logging_watch_stats.results | default([]) }}"
+  when: item.stat.exists | default(false)
+  tags: [enforce]
+
+- name: common | Add non-watch rules
+  ansible.builtin.set_fact:
+    audit_logging_effective_rules: "{{ audit_logging_effective_rules + [item] }}"
+  loop: "{{ audit_logging_rules_combined }}"
+  when: item is not match('^-w\\s+\\S+')
   tags: [enforce]
 
 - name: common | Deploy audit rules
   ansible.builtin.copy:
     dest: "{{ audit_logging_rules_path }}"
     content: |
-      {{ audit_logging_rules | join('\n') }}
+      {{ (audit_logging_effective_rules | default(audit_logging_rules)) | join('\n') }}
     owner: root
     group: root
     mode: "0640"
   notify: Restart auditd
+  tags: [enforce]
+
+- name: common | Ensure audit rules are loaded
+  ansible.builtin.command: augenrules --load
+  register: audit_rules_load
+  changed_when: false
+  failed_when: >-
+    audit_rules_load.rc != 0
+    and 'No change' not in (audit_rules_load.stdout | default(''))
+    and not audit_logging_in_container | default(false)
+  when: not ansible_check_mode
+  tags: [enforce]
+
+- name: common | Check if audit subsystem is available
+  ansible.builtin.command: auditctl -l
+  register: auditctl_check
+  failed_when: false
+  changed_when: false
+  tags: [enforce]
+
+- name: common | Verify audit watch rules are loaded
+  ansible.builtin.assert:
+    that:
+      - auditctl_check.stdout is search(item)
+    fail_msg: "Audit rule not loaded: {{ item }}"
+  loop: "{{ audit_logging_effective_rules | select('match', '^-w\\s+') | list }}"
+  when:
+    - auditctl_check.rc == 0
+    - audit_logging_verify_rules | default(true)
+    - not audit_logging_in_container | default(false)
+    - not ansible_check_mode
+  tags: [enforce]
+
+- name: common | Verify audit syscall rules are loaded
+  ansible.builtin.assert:
+    that:
+      - auditctl_check.stdout is search(item)
+    fail_msg: "Audit syscall rule not loaded: {{ item }}"
+  loop: "{{ audit_logging_syscall_rules }}"
+  when:
+    - auditctl_check.rc == 0
+    - audit_logging_verify_syscalls | default(true)
+    - not audit_logging_in_container | default(false)
+    - not ansible_check_mode
   tags: [enforce]
 
 - name: common | Ensure auditd service running
@@ -21,4 +116,7 @@
     name: "{{ audit_logging_service }}"
     state: started
     enabled: true
+  when:
+    - auditctl_check.rc == 0
+    - not ansible_check_mode
   tags: [enforce]

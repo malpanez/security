@@ -14,8 +14,15 @@
 - name: Capabilities | Determine SSH package name
   ansible.builtin.set_fact:
     security_capabilities_pkg_name: >-
-      {{ security_capabilities_pkg_names.get(ansible_distribution | lower, security_capabilities_pkg_names.get(ansible_os_family
-      | lower, 'openssh-server')) }}
+      {{
+        security_capabilities_pkg_names.get(
+          ansible_facts['distribution'] | lower,
+          security_capabilities_pkg_names.get(
+            ansible_facts['os_family'] | lower,
+            'openssh-server'
+          )
+        )
+      }}
 
 - name: Capabilities | Extract OpenSSH version
   ansible.builtin.set_fact:
@@ -30,11 +37,10 @@
   ansible.builtin.set_fact:
     security_capabilities_version_major_minor: >-
       {{
-        security_capabilities_detected_version
-        | regex_replace('^\\d+:','')
-        | regex_replace('p\\d+.*','')
-        | regex_search('^(\\d+\\.\\d+)')
-        | default('0.0')
+        (security_capabilities_detected_version
+          | string
+          | regex_replace('^.*?([0-9]+\\.[0-9]+).*$', '\\1'))
+          | default('0.0', true)
       }}
 
 - name: Capabilities | Compute capability flags
@@ -43,20 +49,25 @@
       openssh_version_detected: "{{ security_capabilities_detected_version }}"
       openssh_version_major_minor: "{{ security_capabilities_version_major_minor }}"
       openssh_supports_sk_keys: >-
-        {{
-          (
-            security_capabilities_force_openssh_version | length > 0
-            and (security_capabilities_force_openssh_version is regex('^8\\.[2-9]|^9\\.|^1[0-9]'))
-          )
-          or (
-            security_capabilities_force_openssh_version | length == 0
-            and (security_capabilities_version_major_minor | float >= 8.2)
-          )
-        }}
-      supports_sshd_include_d: "{{ security_capabilities_version_major_minor | float >= 8.2 }}"
+        {{ security_capabilities_version_major_minor is version('8.2', '>=') }}
+      supports_sshd_include_d: "{{ security_capabilities_version_major_minor is version('8.2', '>=') }}"
       pam_u2f_available: "{{ ('libpam-u2f' in ansible_facts.packages) or ('pam_u2f' in ansible_facts.packages) }}"
       pam_fido2_available: "{{ ('libpam-fido2' in ansible_facts.packages) or ('pam_fido2' in ansible_facts.packages) }}"
-      selinux_available: "{{ ansible_os_family == 'RedHat' }}"
+      selinux_available: "{{ ansible_facts['os_family'] == 'RedHat' }}"
+      mfa_capable: >-
+        {{
+          ('libpam-u2f' in ansible_facts.packages)
+          or ('pam_u2f' in ansible_facts.packages)
+          or ('libpam-fido2' in ansible_facts.packages)
+          or ('pam_fido2' in ansible_facts.packages)
+        }}
+      yubikey_available: >-
+        {{
+          ('libpam-u2f' in ansible_facts.packages)
+          or ('pam_u2f' in ansible_facts.packages)
+          or ('libpam-fido2' in ansible_facts.packages)
+          or ('pam_fido2' in ansible_facts.packages)
+        }}
 
 - name: Capabilities | Select auth mode
   ansible.builtin.set_fact:
@@ -78,8 +89,15 @@
               )
           )
       }}
-    # Backward-compatible alias, will be removed in future.
+
+- name: Capabilities | Set backward-compatible alias
+  ansible.builtin.set_fact:
     security_selected_auth_mode: "{{ security_capabilities_selected_auth_mode }}"
+
+- name: Capabilities | Set playbook convenience flags
+  ansible.builtin.set_fact:
+    security_capabilities_mfa_capable: "{{ security_capabilities.mfa_capable }}"
+    security_capabilities_yubikey_available: "{{ security_capabilities.yubikey_available }}"
 
 - name: Capabilities | Summary
   ansible.builtin.debug:

@@ -26,8 +26,8 @@ This project adheres to a code of conduct that promotes a welcoming and inclusiv
 
 ### Prerequisites
 
-- Ansible Core >= 2.16
-- Python >= 3.12
+- Ansible Core >= 2.19
+- Python >= 3.11
 - Docker (for Molecule testing)
 - Git
 
@@ -58,7 +58,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 
 # Install dependencies
-pip install -r requirements-dev.txt
+pip install -e ".[dev]"
 
 # Install pre-commit hooks
 pre-commit install --install-hooks

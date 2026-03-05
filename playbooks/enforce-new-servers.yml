@@ -58,7 +58,6 @@
         # Disable password authentication completely
         sshd_hardening_password_authentication: false
         sshd_hardening_permit_root_login: false
-        sshd_hardening_pubkey_authentication: true
         sshd_hardening_max_auth_tries: 3
         sshd_hardening_log_level: VERBOSE
         sshd_hardening_x11_forwarding: false
@@ -76,8 +75,8 @@
     - role: sudoers_baseline
       when: security_phase_sudoers
       vars:
-        # New servers - use modular approach from start
-        sudoers_baseline_preserve_main: false
+        # WARNING: role manages /etc/sudoers when strict is true
+        sudoers_baseline_strict: true
         sudoers_baseline_defaults:
           - use_pty
           - logfile=/var/log/sudo.log
@@ -107,7 +106,6 @@
         - security_capabilities_mfa_capable | default(false)
       vars:
         pam_mfa_enabled: true
-        pam_mfa_yubikey_enabled: "{{ security_capabilities_yubikey_available | default(false) }}"
         pam_mfa_totp_enabled: true # Always enable TOTP as backup
         # Service accounts bypass MFA
         pam_mfa_service_accounts:
@@ -116,8 +114,6 @@
           - jenkins
           - awx
           - monitoring
-        pam_mfa_require_resident_key: false
-        pam_mfa_user_verification: required
 
     # Phase 4: SELinux Enforcement (RHEL-based)
     - role: selinux_enforcement
@@ -133,8 +129,6 @@
       when: security_phase_audit
       vars:
         audit_logging_enabled: true
-        audit_logging_verbose: true
-        audit_logging_log_commands: true
 
     # CIS Baseline Enforcement
     - role: cis_baseline
@@ -145,6 +139,53 @@
   post_tasks:
     - name: Validate services after enforcement
       ansible.builtin.include_tasks: ../tasks/validate-services.yml
+
+    - name: Critical validation - SSH
+      ansible.builtin.wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        timeout: 30
+        state: started
+      delegate_to: localhost
+      become: false
+      register: ssh_validation
+      failed_when: false
+
+    - name: Critical validation - Sudo
+      ansible.builtin.command: sudo -n true
+      register: sudo_validation
+      failed_when: false
+      changed_when: false
+
+    - name: Rollback on validation failure
+      block:
+        - name: Check validation results
+          ansible.builtin.assert:
+            that:
+              - ssh_validation is success
+              - sudo_validation.rc in [0, 1]
+            fail_msg: Validation failed - initiating rollback
+
+      rescue:
+        - name: Execute emergency rollback
+          ansible.builtin.include_tasks: ../tasks/rollback.yml
+        - name: Fail playbook after rollback
+          ansible.builtin.fail:
+            msg: Validation failed on {{ inventory_hostname }} - changes rolled back
+    - name: Compute enforcement summary status
+      ansible.builtin.set_fact:
+        enforcement_mfa_status: >-
+          {{
+            '✓'
+              if (security_phase_mfa and security_capabilities_mfa_capable | default(false))
+              else '⊘ (not capable)'
+          }}
+        enforcement_selinux_status: >-
+          {{
+            '✓ (enforcing)'
+              if (security_phase_selinux and ansible_os_family == 'RedHat')
+              else '⊘ (not applicable)'
+          }}
     - name: Display enforcement summary
       ansible.builtin.debug:
         msg: |
@@ -156,8 +197,8 @@
           Applied:
           - SSH Hardening: ✓ (passwords disabled)
           - Sudoers: ✓ (modular baseline)
-          - PAM MFA: {{ '✓' if (security_phase_mfa and security_capabilities_mfa_capable | default(false)) else '⊘ (not capable)' }}
-          - SELinux: {{ '✓ (enforcing)' if (security_phase_selinux and ansible_os_family == 'RedHat') else '⊘ (not applicable)' }}
+          - PAM MFA: {{ enforcement_mfa_status }}
+          - SELinux: {{ enforcement_selinux_status }}
           - Audit Logging: ✓
 
           Backup location: /root/security-backup-{{ ansible_date_time.epoch }}

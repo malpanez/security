@@ -7,7 +7,7 @@
 #   ansible-playbook playbooks/audit-only.yml -i inventory
 #
 # Output:
-#   /tmp/security-review/ - Contains current state, proposed state, and diffs
+#   /tmp/security-review/ - Contains current state and evidence files
 
 - name: Security Audit - Review Mode Only
   hosts: all
@@ -30,8 +30,8 @@
           ========================================
           This playbook will:
           - Analyze current security configuration
-          - Compare against security baseline
-          - Generate diff reports
+          - Collect current security configuration
+          - Generate evidence files
 
           This playbook will NOT:
           - Modify any configuration files
@@ -48,60 +48,14 @@
         mode: "0750"
 
   roles:
-    # Phase 0: Capability Detection
     - role: security_capabilities
-      vars:
-        security_capabilities_output_path: "{{ security_review_output }}/capabilities.json"
-
-    # Phase 0: Compliance Evidence Collection
     - role: compliance_evidence
       vars:
-        compliance_evidence_output_path: "{{ security_review_output }}/compliance"
-        compliance_evidence_frameworks:
-          - soc2
-          - pci-dss
-          - hipaa
-
-    # Phase 1: SSH Hardening Review
-    - role: sshd_hardening
-      vars:
-        sshd_hardening_review_mode: true
-        sshd_hardening_review_output: "{{ security_review_output }}/sshd"
-
-    # Phase 2: Sudoers Review
-    - role: sudoers_baseline
-      vars:
-        sudoers_baseline_review_mode: true
-        sudoers_baseline_review_output: "{{ security_review_output }}/sudoers"
-
-    # Phase 3: PAM MFA Review (if applicable)
-    - role: pam_mfa
-      when: security_capabilities_mfa_capable | default(false)
-      vars:
-        pam_mfa_enabled: false # Don't enable in review
-        pam_mfa_review_mode: true
-        pam_mfa_review_output: "{{ security_review_output }}/pam"
-
-    # Phase 4: SELinux Review (RHEL-based only)
-    - role: selinux_enforcement
-      when: ansible_os_family == 'RedHat'
-      vars:
-        selinux_enforcement_enabled: false # Don't change in review
-        selinux_enforcement_review_mode: true
-        selinux_enforcement_review_output: "{{ security_review_output }}/selinux"
-
-    # Phase 5: Audit Logging Review
-    - role: audit_logging
-      vars:
-        audit_logging_review_mode: true
-        audit_logging_review_output: "{{ security_review_output }}/audit"
-
-    # CIS Baseline Review
+        compliance_evidence_output_dir: "{{ security_review_output }}/compliance"
     - role: cis_baseline
       vars:
         cis_baseline_enabled: true
-        cis_baseline_mode: review # Review only
-        cis_baseline_output: "{{ security_review_output }}/cis-baseline"
+        cis_baseline_mode: review
 
   post_tasks:
     - name: Display review summary
@@ -132,12 +86,9 @@
           OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
 
           Audit Scope:
-          - SSH Hardening
-          - Sudoers Configuration
-          - PAM MFA (if capable)
-          - SELinux (RHEL-based)
-          - Audit Logging
-          - CIS Baseline Compliance
+          - Capabilities detection
+          - Evidence collection
+          - CIS Baseline review
 
           Review Output Directory: {{ security_review_output }}
 

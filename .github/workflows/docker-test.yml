@@ -2,42 +2,44 @@ name: Docker Platform Testing
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop]
   pull_request:
-    branches: [main]
+    branches: [develop]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
 
 jobs:
   test-platforms:
-    name: Test on ${{ matrix.platform }}
+    name: Test on ${{ matrix.platform.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         platform:
-          - name: "RHEL 9"
-            image: "redhat/ubi9:latest"
-            init: "/usr/sbin/init"
-          - name: "RHEL 8"
-            image: "redhat/ubi8:latest"
-            init: "/usr/sbin/init"
-          - name: "Rocky Linux 9"
-            image: "rockylinux:9"
-            init: "/usr/sbin/init"
-          - name: "Rocky Linux 8"
-            image: "rockylinux:8"
-            init: "/usr/sbin/init"
           - name: "Ubuntu 22.04"
-            image: "ubuntu:22.04"
+            image: "geerlingguy/docker-ubuntu2204-ansible@sha256:2744f5aca5e33c01a682ff1ea201dc3841b0eaaa1f5c448e6bd9a6156a831638"
             init: "/lib/systemd/systemd"
           - name: "Ubuntu 20.04"
-            image: "ubuntu:20.04"
+            image: "geerlingguy/docker-ubuntu2004-ansible@sha256:532fb09e9f152e9f85ae348befa9ef09a9d0d23ca6c3361714d041f5a998c826"
+            init: "/lib/systemd/systemd"
+          - name: "Debian 13"
+            image: "geerlingguy/docker-debian13-ansible@sha256:afb2e84b6787fb89c687c8df557ebf465cc9ef2302aed4324bc6c7f3c65f07b5"
             init: "/lib/systemd/systemd"
           - name: "Debian 12"
-            image: "debian:12"
+            image: "geerlingguy/docker-debian12-ansible@sha256:f69527a18970386befd62a36f68d5c39422a7ad15e4005133670566dd3b0da7f"
             init: "/lib/systemd/systemd"
           - name: "Debian 11"
-            image: "debian:11"
+            image: "geerlingguy/docker-debian11-ansible@sha256:877c2660bfe9921190f975cc750987c0905300f54bd4879af2697ba12436153b"
+            init: "/lib/systemd/systemd"
+          - name: "Rocky Linux 9"
+            image: "geerlingguy/docker-rockylinux9-ansible@sha256:09c1074489a704687b2b1f3d16a4f537b211b49b64eb7a5b6e4d6d1eae5b8ba9"
+            init: "/lib/systemd/systemd"
+          - name: "Rocky Linux 8"
+            image: "geerlingguy/docker-rockylinux8-ansible@sha256:4ec20ce51385c96a566c4141430ae2254f57c822e9e472abe70123987591f456"
             init: "/lib/systemd/systemd"
 
     env:
@@ -45,20 +47,23 @@ jobs:
       PYTHONUNBUFFERED: "1"
       PY_COLORS: "1"
       ANSIBLE_FORCE_COLOR: "1"
+      ANSIBLE_CONFIG: ansible.cfg
+      ANSIBLE_STDOUT_CALLBACK: default
+      ANSIBLE_RESULT_FORMAT: yaml
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Install Ansible and dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install -e ".[dev]"
 
       - name: Install Ansible Galaxy collections
         run: ansible-galaxy collection install -r requirements.yml
@@ -79,20 +84,39 @@ jobs:
           docker run -d \
             --name test-container \
             --privileged \
-            --volume /sys/fs/cgroup:/sys/fs/cgroup:ro \
+            --cgroupns=host \
+            --volume /sys/fs/cgroup:/sys/fs/cgroup:rw \
             --tmpfs /run \
             --tmpfs /run/lock \
+            --tmpfs /tmp \
             ${{ matrix.platform.image }} \
             ${{ matrix.platform.init }}
 
           # Wait for systemd to be ready
-          sleep 5
+          for i in $(seq 1 10); do
+            if docker ps --format '{{.Names}}' | grep -qx test-container; then
+              break
+            fi
+            docker logs test-container || true
+            sleep 2
+          done
+
+          if ! docker ps --format '{{.Names}}' | grep -qx test-container; then
+            echo "Container failed to stay running"
+            docker logs test-container || true
+            exit 1
+          fi
 
       - name: Install required packages in container
         run: |
-          if [[ "${{ matrix.platform.image }}" =~ "ubuntu" ]] || [[ "${{ matrix.platform.image }}" =~ "debian" ]]; then
+          if [[ "${{ matrix.platform.image }}" =~ "debian" ]]; then
+            docker exec test-container bash -lc 'apt-get update -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true'
+            docker exec test-container bash -lc 'apt-get install -y --no-install-recommends --allow-unauthenticated debian-archive-keyring gnupg ca-certificates'
+            docker exec test-container bash -lc 'apt-get update'
+            docker exec test-container apt-get install -y python3 sudo openssh-server
+          elif [[ "${{ matrix.platform.image }}" =~ "ubuntu" ]]; then
             docker exec test-container apt-get update
-            docker exec test-container apt-get install -y python3 sudo openssh-server systemd
+            docker exec test-container apt-get install -y python3 sudo openssh-server
           else
             docker exec test-container dnf install -y python3 sudo openssh-server
           fi
@@ -141,17 +165,17 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Install Ansible
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install -e ".[dev]"
 
       - name: Install Ansible Galaxy collections
         run: ansible-galaxy collection install -r requirements.yml
@@ -174,7 +198,7 @@ jobs:
 
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: compliance-test-output
           path: /tmp/compliance-reports/
@@ -187,10 +211,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -198,7 +222,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'

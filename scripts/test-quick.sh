@@ -1,15 +1,16 @@
 #!/bin/bash
 # Quick single-platform test
-# Default: Ubuntu 22.04 (most common)
+# Default: Ubuntu 22.04 (pinned)
 
-set -e
+set -euo pipefail
 
-PLATFORM=${1:-ubuntu:22.04}
+PLATFORM=${1:-geerlingguy/docker-ubuntu2204-ansible@sha256:2744f5aca5e33c01a682ff1ea201dc3841b0eaaa1f5c448e6bd9a6156a831638}
 CONTAINER_NAME="security-quick-test"
+SEPARATOR="=========================================="
 
-echo "=========================================="
+echo "${SEPARATOR}"
 echo "Quick Security Test"
-echo "=========================================="
+echo "${SEPARATOR}"
 echo "Platform: ${PLATFORM}"
 echo "Container: ${CONTAINER_NAME}"
 echo ""
@@ -35,7 +36,7 @@ docker run -d \
     --tmpfs /run \
     --tmpfs /run/lock \
     "${PLATFORM}" \
-    ${INIT}
+    "${INIT}"
 
 sleep 3
 
@@ -45,11 +46,16 @@ if [[ "${PKG_MGR}" == "apt-get" ]]; then
     docker exec "${CONTAINER_NAME}" apt-get update -qq
     docker exec "${CONTAINER_NAME}" apt-get install -y -qq python3 sudo openssh-server systemd
 else
-    docker exec "${CONTAINER_NAME}" ${PKG_MGR} install -y -q python3 sudo openssh-server
+    docker exec "${CONTAINER_NAME}" "${PKG_MGR}" install -y -q python3 sudo openssh-server
 fi
 
 # Create inventory
-cat > /tmp/quick-test-inventory.yml <<EOF
+inventory_file=$(mktemp -t quick-test-inventory.XXXXXX.yml)
+cleanup() {
+    rm -f "${inventory_file}"
+}
+trap cleanup EXIT
+cat > "${inventory_file}" <<EOF
 all:
   hosts:
     test:
@@ -63,21 +69,21 @@ echo ""
 
 # Test 1: Preflight
 echo "1. Preflight check..."
-ansible-playbook -i /tmp/quick-test-inventory.yml \
+ansible-playbook -i "${inventory_file}" \
     playbooks/preflight-check.yml || echo "  (Warnings expected in Docker)"
 
 echo ""
 
 # Test 2: Audit
 echo "2. Audit-only playbook..."
-ansible-playbook -i /tmp/quick-test-inventory.yml \
+ansible-playbook -i "${inventory_file}" \
     playbooks/audit-only.yml
 
 echo ""
 
 # Test 3: Dry-run
 echo "3. Dry-run playbook..."
-ansible-playbook -i /tmp/quick-test-inventory.yml \
+ansible-playbook -i "${inventory_file}" \
     playbooks/dry-run.yml \
     --check --diff
 
@@ -85,7 +91,7 @@ echo ""
 
 # Test 4: SSH hardening
 echo "4. SSH hardening role..."
-ansible-playbook -i /tmp/quick-test-inventory.yml \
+ansible-playbook -i "${inventory_file}" \
     playbooks/site.yml \
     --tags sshd_hardening
 
@@ -97,9 +103,9 @@ docker exec "${CONTAINER_NAME}" sshd -t
 echo "  ✓ SSH config is valid"
 
 echo ""
-echo "=========================================="
+echo "${SEPARATOR}"
 echo "✓ All tests passed!"
-echo "=========================================="
+echo "${SEPARATOR}"
 echo ""
 echo "Container is still running: ${CONTAINER_NAME}"
 echo ""

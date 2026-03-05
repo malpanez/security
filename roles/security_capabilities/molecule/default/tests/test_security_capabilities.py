@@ -19,4 +19,4 @@ def test_openssh_version_detectable(host):
     cmd = host.run("/usr/sbin/sshd -V")
     assert cmd.rc == 0
     # expect OpenSSH_X.Y in stderr
-    assert re.search(r"OpenSSH_[0-9]+\\.[0-9]+", cmd.stderr)
+    assert re.search(r"OpenSSH_\\d+\\.\\d+", cmd.stderr)

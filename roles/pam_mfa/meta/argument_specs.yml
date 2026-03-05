@@ -43,6 +43,17 @@ argument_specs:
           - ci
           - sftp
           - rsync
+      pam_mfa_required_group:
+        description:
+          - Group required to complete TOTP MFA for sudo (Debian 13 stack)
+        type: str
+        default: mfa-required
+      pam_mfa_required_users:
+        description:
+          - Users to add to the required MFA group (Debian 13 stack)
+        type: list
+        elements: str
+        default: []
 
       pam_mfa_method_primary:
         description:
@@ -61,6 +72,26 @@ argument_specs:
         default: totp
         choices:
           - totp
+      pam_mfa_primary_module:
+        description:
+          - Primary PAM module selection
+          - C(auto) prefers pam_fido2 if present, otherwise pam_u2f
+        type: str
+        default: auto
+        choices:
+          - auto
+          - u2f
+          - fido2
+      pam_mfa_use_debian13_stack:
+        description:
+          - Use the Debian 13 sudo-only TOTP stack (substack file + include)
+        type: bool
+        default: false
+      pam_mfa_enable_su:
+        description:
+          - Apply the sudo-only TOTP stack to su as well (Debian 13 mode)
+        type: bool
+        default: false
 
       pam_mfa_pam_module_u2f:
         description:
@@ -82,6 +113,13 @@ argument_specs:
           - Auto-detected per OS
         type: str
         default: /lib/security/pam_google_authenticator.so
+
+      pam_mfa_succeed_if_module_path:
+        description:
+          - Path to pam_succeed_if.so module
+          - Auto-detected per OS
+        type: str
+        default: /lib/security/pam_succeed_if.so
 
       pam_mfa_service_bypass_group:
         description:
@@ -122,6 +160,36 @@ argument_specs:
           - Enable rate limiting for TOTP attempts
         type: bool
         default: true
+      pam_mfa_totp_rate_limit_count:
+        description:
+          - Maximum TOTP attempts per rate limit window
+        type: int
+        default: 3
+      pam_mfa_totp_secret_base:
+        description:
+          - Base directory for per-user TOTP secrets (Debian 13 stack)
+        type: str
+        default: /var/lib/pam-google-authenticator
+      pam_mfa_totp_secret_file:
+        description:
+          - TOTP secret path template for pam_google_authenticator (Debian 13 stack)
+        type: str
+        default: /var/lib/pam-google-authenticator/%u/.google_authenticator
+      pam_mfa_totp_allowed_perm:
+        description:
+          - File permission mode for TOTP secrets (Debian 13 stack)
+        type: str
+        default: "0400"
+      pam_mfa_totp_owner:
+        description:
+          - Owner for TOTP secret files/directories (Debian 13 stack)
+        type: str
+        default: root
+      pam_mfa_totp_group:
+        description:
+          - Group for TOTP secret files/directories (Debian 13 stack)
+        type: str
+        default: root
 
       pam_mfa_service_bypass_allow_from:
         description:
@@ -147,3 +215,33 @@ argument_specs:
           - Directory for TOTP secrets
         type: str
         default: /etc/google-authenticator.d
+      pam_mfa_sudo_substack_name:
+        description:
+          - PAM substack file name for sudo MFA (Debian 13 stack)
+        type: str
+        default: mfa-totp
+      pam_mfa_enable_faillock:
+        description:
+          - Enable pam_faillock via pam-auth-update (Debian 13 stack)
+        type: bool
+        default: false
+      pam_mfa_faillock_profile_name:
+        description:
+          - Profile name used when creating a local faillock pam-config
+        type: str
+        default: zz-local-faillock
+      pam_mfa_faillock_deny:
+        description:
+          - Number of failed attempts before lockout
+        type: int
+        default: 5
+      pam_mfa_faillock_unlock_time:
+        description:
+          - Lockout time in seconds
+        type: int
+        default: 900
+      pam_mfa_faillock_fail_interval:
+        description:
+          - Interval in seconds for counting failures
+        type: int
+        default: 900

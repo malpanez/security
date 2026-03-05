@@ -5,10 +5,109 @@
     state: present
   tags: [enforce]
 
-- name: common | Set SELinux mode
+- name: common | Check if SELinux config exists
+  ansible.builtin.stat:
+    path: /etc/selinux/config
+  register: selinux_config_file
+  tags: [enforce]
+
+- name: common | Check if SELinux is available
+  ansible.builtin.command: getenforce
+  register: selinux_status
+  failed_when: false
+  changed_when: false
+  when: selinux_config_file.stat.exists
+  tags: [enforce]
+
+- name: common | Check for SELinux denials before enforcing
+  ansible.builtin.shell: |
+    set -o pipefail
+    ausearch -m avc -ts recent 2>/dev/null | grep -i denied || true
+  args:
+    executable: /bin/bash
+  register: selinux_denials_check
+  changed_when: false
+  failed_when: false
+  when:
+    - selinux_config_file.stat.exists
+    - selinux_status.rc == 0
+    - selinux_enforcement_mode == 'enforcing'
+    - selinux_enforcement_check_denials
+  tags: [enforce]
+
+- name: common | Fail if denials detected and enforcing mode requested
+  ansible.builtin.fail:
+    msg: |
+      CRITICAL: SELinux denials detected. Cannot safely enable enforcing mode.
+
+      Recent denials:
+      {{ selinux_denials_check.stdout }}
+
+      Recommended actions:
+      1. Review denials: ausearch -m avc -ts recent
+      2. Fix contexts: semanage fcontext, restorecon
+      3. Create custom policy if needed
+      4. Re-run with selinux_enforcement_mode: permissive
+      5. Monitor for {{ selinux_enforcement_monitoring_period_hours }}h in permissive
+      6. Only then set selinux_enforcement_mode: enforcing
+
+      To bypass this check (NOT RECOMMENDED):
+        selinux_enforcement_force_enforcing: true
+  when:
+    - selinux_config_file.stat.exists
+    - selinux_status.rc == 0
+    - selinux_enforcement_mode == 'enforcing'
+    - selinux_enforcement_check_denials
+    - not selinux_enforcement_force_enforcing
+    - selinux_denials_check.stdout | length > 0
+  tags: [enforce]
+
+- name: common | Set SELinux to permissive first (safe mode)
+  ansible.posix.selinux:
+    policy: targeted
+    state: permissive
+  when:
+    - selinux_config_file.stat.exists
+    - selinux_status.rc == 0
+    - selinux_enforcement_mode == 'enforcing'
+    - not selinux_enforcement_force_enforcing
+  tags: [enforce]
+
+- name: common | Display SELinux monitoring guidance
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      SELinux PERMISSIVE Mode Enabled
+      ========================================
+
+      SELinux is now in PERMISSIVE mode (logging denials but not blocking).
+
+      NEXT STEPS:
+      1. Run workload normally for {{ selinux_enforcement_monitoring_period_hours }} hours
+      2. Monitor denials: ausearch -m avc -ts -{{ selinux_enforcement_monitoring_period_hours }}h
+      3. If denials = 0, set selinux_enforcement_mode: enforcing
+      4. If denials > 0, fix contexts/booleans first
+
+      Current status: {{ selinux_status.stdout }}
+      ========================================
+  when:
+    - selinux_config_file.stat.exists
+    - selinux_status.rc == 0
+    - selinux_enforcement_mode == 'enforcing'
+    - not selinux_enforcement_force_enforcing
+  tags: [enforce]
+
+- name: common | Set SELinux mode to target (permissive or enforcing)
   ansible.posix.selinux:
     policy: targeted
     state: "{{ selinux_enforcement_mode }}"
+  when:
+    - selinux_config_file.stat.exists
+    - selinux_status.rc == 0
+    - >-
+      selinux_enforcement_mode != 'enforcing'
+      or selinux_enforcement_force_enforcing
+      or (selinux_denials_check.stdout | default('') | length == 0)
   tags: [enforce]
 
 - name: common | Set SELinux booleans
@@ -17,7 +116,10 @@
     state: "{{ item.state | default('yes') }}"
     persistent: true
   loop: "{{ selinux_enforcement_booleans }}"
-  when: selinux_enforcement_booleans | length > 0
+  when:
+    - selinux_config_file.stat.exists
+    - selinux_status.rc == 0
+    - selinux_enforcement_booleans | length > 0
   tags: [enforce]
 
 - name: common | Manage SELinux contexts
@@ -26,12 +128,19 @@
     setype: "{{ item.setype }}"
     state: present
   loop: "{{ selinux_enforcement_contexts }}"
-  when: selinux_enforcement_contexts | length > 0
+  when:
+    - selinux_config_file.stat.exists
+    - selinux_status.rc == 0
+    - selinux_enforcement_contexts | length > 0
   tags: [enforce]
 
 - name: common | Restorecon managed paths
   ansible.builtin.command: restorecon -Rv {{ item.target }}
   loop: "{{ selinux_enforcement_contexts }}"
-  when: selinux_enforcement_restorecon and selinux_enforcement_contexts | length > 0
+  when:
+    - selinux_config_file.stat.exists
+    - selinux_status.rc == 0
+    - selinux_enforcement_restorecon
+    - selinux_enforcement_contexts | length > 0
   changed_when: false
   tags: [enforce]

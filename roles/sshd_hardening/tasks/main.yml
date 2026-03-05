@@ -16,6 +16,18 @@
         )
       }}
 
+- name: Check platform-specific task file
+  ansible.builtin.stat:
+    path: "{{ sshd_hardening_platform_task }}"
+  register: sshd_hardening_platform_task_stat
+  when:
+    - sshd_hardening_platform_task is not none
+    - sshd_hardening_platform_task | length > 0
+
 - name: Platform-specific sshd hardening tasks
   ansible.builtin.include_tasks: "{{ sshd_hardening_platform_task }}"
-  when: sshd_hardening_platform_task is not none
+  when:
+    - sshd_hardening_platform_task_stat is defined
+    - sshd_hardening_platform_task_stat.stat is defined
+    - sshd_hardening_platform_task_stat.stat.exists
+    - sshd_hardening_platform_task_stat.stat.isreg

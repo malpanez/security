@@ -7,3 +7,12 @@
     state: present
   when: security_mode | default('enforce') == 'enforce'
   tags: [enforce]
+
+- name: Debian | Ensure FIDO2 package installed when requested
+  ansible.builtin.package:
+    name: "{{ pam_mfa_package_fido2 }}"
+    state: present
+  when:
+    - security_mode | default('enforce') == 'enforce'
+    - pam_mfa_primary_module == 'fido2'
+  tags: [enforce]

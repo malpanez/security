@@ -1,0 +1,10 @@
+Name: Local faillock policy
+Default: no
+Priority: 900
+Auth-Type: Primary
+Auth:
+    [default=die] pam_faillock.so preauth silent deny={{ pam_mfa_faillock_deny }} unlock_time={{ pam_mfa_faillock_unlock_time }} fail_interval={{ pam_mfa_faillock_fail_interval }}
+    [default=die] pam_faillock.so authfail deny={{ pam_mfa_faillock_deny }} unlock_time={{ pam_mfa_faillock_unlock_time }} fail_interval={{ pam_mfa_faillock_fail_interval }}
+Account-Type: Primary
+Account:
+    required pam_faillock.so

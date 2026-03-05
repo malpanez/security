@@ -13,13 +13,13 @@ repos:
       - id: mixed-line-ending
 
   - repo: https://github.com/ansible/ansible-lint
-    rev: v24.7.0
+    rev: v24.12.2
     hooks:
       - id: ansible-lint
-        args: [--fix, --offline]
+        args: [--offline]
         files: \.(yaml|yml)$
         additional_dependencies:
-          - ansible-core==2.17.3
+          - ansible-core==2.18.6
 
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.37.1
@@ -29,6 +29,16 @@ repos:
         files: \.(yaml|yml)$
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.23.1
+    rev: v8.26.0
     hooks:
       - id: gitleaks
+        args: [--config=.gitleaks.toml, --redact]
+
+  - repo: local
+    hooks:
+      - id: validate-no-log
+        name: Validate no_log on sensitive tasks
+        entry: python3 scripts/validate-no-log.py
+        language: system
+        pass_filenames: false
+        always_run: true

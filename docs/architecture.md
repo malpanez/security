@@ -1,16 +1,16 @@
-# Arquitectura de hardening y control de acceso
+# Hardening and Access Control Architecture
 
-## Componentes
-- ssh_hardening: configura sshd con CA, algoritmos seguros y restricciones por rol.
-- pam_mfa: MFA con YubiKey (FIDO2/U2F) y TOTP de contingencia.
-- sudoers_baseline: mínimos privilegios, defaults auditables.
-- selinux_enforcement: habilita SELinux y aplica booleans/contexts.
-- service_accounts_transfer: cuentas de servicio con comandos forzados y restricciones.
-- audit_logging: reglas de auditd para SSH/sudo/config.
-- compliance_evidence: recogida de artefactos y outputs de control.
+## Components
+- ssh_hardening: configures sshd with CA, secure algorithms and role-based restrictions.
+- pam_mfa: MFA with YubiKey (FIDO2/U2F) and fallback TOTP.
+- sudoers_baseline: least privilege, auditable defaults.
+- selinux_enforcement: enables SELinux and applies booleans/contexts.
+- service_accounts_transfer: service accounts with forced commands and restrictions.
+- audit_logging: auditd rules for SSH/sudo/config.
+- compliance_evidence: collection of artifacts and control outputs.
 
-## Flujos
-- Acceso humano: sshd confía en CA, exige MFA (pam_mfa) y aplica sudoers según grupo.
-- Cuentas de servicio: certificados/keys con restricciones, ForceCommand y AllowUsers/AllowGroups según rol.
-- SELinux: modo configurable, booleans/context definidos.
-- Evidencias: se almacenan en `reports/` (configurable) para trazabilidad.
+## Flows
+- Human access: sshd trusts CA, requires MFA (pam_mfa) and applies sudoers by group.
+- Service accounts: certificates/keys with restrictions, ForceCommand and AllowUsers/AllowGroups by role.
+- SELinux: configurable mode, defined booleans/contexts.
+- Evidence: stored in `compliance_evidence_output_dir` (default: `/var/log/compliance`).

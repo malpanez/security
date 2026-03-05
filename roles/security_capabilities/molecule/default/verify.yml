@@ -3,6 +3,11 @@
   hosts: all
   gather_facts: false
   tasks:
+    - name: Verify | Recalculate capabilities with forced OpenSSH version
+      ansible.builtin.include_role:
+        name: security_capabilities
+      vars:
+        security_capabilities_force_openssh_version: "8.4"
     - name: Verify | Assert selected mode is sk_keys (forced version)
       ansible.builtin.assert:
         that:

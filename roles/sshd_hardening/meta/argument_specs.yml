@@ -20,6 +20,10 @@ argument_specs:
         type: bool
         default: false
         description: Enable challenge-response (keyboard-interactive) authentication.
+      sshd_hardening_kbd_interactive_authentication:
+        type: bool
+        default: null
+        description: Explicitly enable/disable KbdInteractiveAuthentication when supported (null leaves unset).
       sshd_hardening_use_pam:
         type: bool
         default: true
@@ -72,6 +76,11 @@ argument_specs:
         type: str
         default: VERBOSE
         description: Log verbosity.
+      sshd_hardening_authentication_methods:
+        type: list
+        elements: str
+        default: []
+        description: AuthenticationMethods directive values (empty leaves unset).
       sshd_hardening_allow_users:
         type: list
         elements: str
@@ -92,6 +101,26 @@ argument_specs:
         elements: str
         default: []
         description: Groups for service accounts restricted to publickey and limited forwarding/TTY.
+      sshd_hardening_human_allow_users:
+        type: list
+        elements: str
+        default: []
+        description: AllowUsers applied inside the human Match Group block.
+      sshd_hardening_human_allow_groups:
+        type: list
+        elements: str
+        default: []
+        description: AllowGroups applied inside the human Match Group block.
+      sshd_hardening_service_allow_users:
+        type: list
+        elements: str
+        default: []
+        description: AllowUsers applied inside the service Match Group block.
+      sshd_hardening_service_allow_groups:
+        type: list
+        elements: str
+        default: []
+        description: AllowGroups applied inside the service Match Group block.
       sshd_hardening_trusted_ca_key:
         type: str
         default: ""
@@ -100,23 +129,31 @@ argument_specs:
         type: str
         default: /etc/ssh/trusted_user_ca_keys
         description: Path to write the trusted CA public key.
-      sshd_config_path:
+      sshd_hardening_config_path:
         type: str
         default: /etc/ssh/sshd_config
         description: Destination path for the managed sshd_config.
-      sshd_config_dir:
+      sshd_hardening_config_dir:
         type: str
         default: /etc/ssh/sshd_config.d
         description: Directory for drop-in SSHD configuration files.
-      sshd_service_name:
+      sshd_hardening_use_dropin:
+        type: bool
+        default: false
+        description: Write a drop-in file in sshd_config.d instead of replacing sshd_config.
+      sshd_hardening_dropin_path:
+        type: str
+        default: /etc/ssh/sshd_config.d/20-auth-hardening.conf
+        description: Path for the sshd drop-in file when sshd_hardening_use_dropin is true.
+      sshd_hardening_service_name:
         type: str
         default: sshd
         description: Preferred SSH service name on the target platform.
-      sshd_binary_path:
+      sshd_hardening_binary_path:
         type: str
         default: /usr/sbin/sshd
         description: Path to the sshd binary used for validation/version checks.
-      ssh_auth_log:
+      sshd_hardening_auth_log:
         type: str
         default: /var/log/auth.log
         description: Primary SSH authentication log file path for evidence collection.
@@ -175,10 +212,21 @@ argument_specs:
         elements: dict
         default: []
         description: "List of Match blocks for service accounts (keys: group/match, options)."
-      sshd_hardening_service_name:
-        type: str
-        default: sshd
-        description: Service name to manage for the SSH daemon.
+      sshd_hardening_pubkey_accepted_algorithms:
+        type: list
+        elements: str
+        default: []
+        description: Allowed PubkeyAcceptedAlgorithms list (empty leaves unset).
+      sshd_hardening_human_pubkey_accepted_algorithms:
+        type: list
+        elements: str
+        default: []
+        description: PubkeyAcceptedAlgorithms applied inside the human Match Group block.
+      sshd_hardening_service_pubkey_accepted_algorithms:
+        type: list
+        elements: str
+        default: []
+        description: PubkeyAcceptedAlgorithms applied inside the service Match Group block.
       sshd_hardening_package_name:
         type: str
         default: openssh-server

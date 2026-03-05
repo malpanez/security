@@ -1,6 +1,7 @@
 ---
 cis_baseline_enabled: false
 cis_baseline_mode: enforce # enforce|review
+cis_baseline_review_fail_on_violation: false
 cis_baseline_controls:
   sshd:
     - No PasswordAuthentication
@@ -11,5 +12,6 @@ cis_baseline_controls:
     - logfile configured
     - no NOPASSWD:ALL
 cis_baseline_sshd_config_path: /etc/ssh/sshd_config
+cis_baseline_sshd_service_name: "{{ 'ssh' if ansible_facts['os_family'] == 'Debian' else 'sshd' }}"
 cis_baseline_sudoers_path: /etc/sudoers
 cis_baseline_sudoers_dir: /etc/sudoers.d

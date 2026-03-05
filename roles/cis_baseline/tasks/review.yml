@@ -4,12 +4,14 @@
   register: cis_baseline_sshd_passwordauth
   changed_when: false
   failed_when: false
+  no_log: true
 
 - name: Cis Review | Assert PasswordAuthentication no
   ansible.builtin.assert:
     that:
       - "'passwordauthentication no' in cis_baseline_sshd_passwordauth.stdout | lower"
     fail_msg: "CIS: PasswordAuthentication should be no"
+  failed_when: cis_baseline_review_fail_on_violation | bool
   tags: [cis_review]
 
 - name: Cis Review | Check sudoers use_pty
@@ -17,10 +19,12 @@
   register: cis_baseline_sudo_use_pty
   changed_when: false
   failed_when: false
+  no_log: true
 
 - name: Cis Review | Assert sudo use_pty configured
   ansible.builtin.assert:
     that:
       - cis_baseline_sudo_use_pty.rc == 0
     fail_msg: "CIS: Defaults use_pty not found"
+  failed_when: cis_baseline_review_fail_on_violation | bool
   tags: [cis_review]

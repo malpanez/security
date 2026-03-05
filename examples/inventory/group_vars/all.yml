@@ -26,7 +26,6 @@ rollout_max_fail_percentage: 5
 # ============================================
 sshd_hardening_permit_root_login: false
 sshd_hardening_password_authentication: false
-sshd_hardening_pubkey_authentication: true
 sshd_hardening_max_auth_tries: 4
 sshd_hardening_log_level: VERBOSE
 sshd_hardening_x11_forwarding: false
@@ -50,9 +49,8 @@ sshd_hardening_kex_algorithms:
 # SUDOERS BASELINE (Phase 2)
 # ============================================
 
-# CRITICAL: Never touch main sudoers in production
-sudoers_baseline_preserve_main: true
-sudoers_baseline_manage_main_file: false
+# WARNING: role manages /etc/sudoers when strict is true
+sudoers_baseline_strict: false
 
 # Sudo defaults
 sudoers_baseline_defaults:
@@ -81,8 +79,7 @@ sudoers_baseline_groups:
 # Disabled by default - enable per environment
 pam_mfa_enabled: false
 
-# When enabled, use both YubiKey and TOTP
-pam_mfa_yubikey_enabled: auto
+# When enabled, use both YubiKey/FIDO2 and TOTP
 pam_mfa_totp_enabled: true
 
 # CRITICAL: Service accounts that bypass MFA
@@ -118,15 +115,12 @@ selinux_enforcement_mode: permissive # Start permissive
 
 # Disabled by default
 audit_logging_enabled: false
-audit_logging_verbose: false
 
 # ============================================
 # COMPLIANCE EVIDENCE
 # ============================================
 
-compliance_evidence_output_path: /var/log/security-compliance
-compliance_evidence_frameworks:
-  - soc2
+compliance_evidence_output_dir: /var/log/security-compliance
 
 # ============================================
 # CIS BASELINE

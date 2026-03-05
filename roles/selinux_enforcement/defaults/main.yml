@@ -1,6 +1,13 @@
 ---
 selinux_enforcement_enabled: false
-selinux_enforcement_mode: enforcing
+
+# SELinux mode: permissive (safe default), enforcing (after validation)
+# CRITICAL: Start with permissive, monitor for denials, then enable enforcing
+selinux_enforcement_mode: permissive
+selinux_enforcement_force_enforcing: false  # Set true to skip denial validation (NOT recommended)
+selinux_enforcement_monitoring_period_hours: 48  # Recommended monitoring before enforcing
+selinux_enforcement_check_denials: true  # Fail if denials detected when moving to enforcing
+
 selinux_enforcement_booleans: []
 selinux_enforcement_contexts: []
 selinux_enforcement_packages:

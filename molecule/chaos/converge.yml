@@ -1,0 +1,52 @@
+---
+- name: Chaos rollback safety test (sshd + sudoers)
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    security_phase_ssh_hardening: true
+    security_phase_sudoers: true
+
+  pre_tasks:
+    - name: Backup current configurations
+      ansible.builtin.include_tasks: ../../tasks/backup-configs.yml
+
+  roles:
+    - role: sshd_hardening
+    - role: sudoers_baseline
+
+  tasks:
+    - name: Inject invalid sshd_config line
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        line: InvalidOption chaos-test
+        insertafter: EOF
+
+    - name: Confirm sshd config is invalid (expected)
+      ansible.builtin.command: sshd -t
+      register: sshd_invalid_check
+      failed_when: false
+      changed_when: false
+
+    - name: Execute rollback after simulated failure
+      ansible.builtin.include_tasks: ../../tasks/rollback.yml
+
+    - name: Validate restored sshd configuration
+      ansible.builtin.command: sshd -t
+      register: sshd_validation
+      changed_when: false
+
+    - name: Validate restored sudoers configuration
+      ansible.builtin.command: visudo -cf /etc/sudoers
+      register: sudoers_validation
+      changed_when: false
+
+    - name: Assert rollback succeeded
+      ansible.builtin.assert:
+        that:
+          - sshd_invalid_check.rc != 0
+          - sshd_validation.rc == 0
+          - sudoers_validation.rc == 0
+        fail_msg: Rollback failed to restore valid configs
+        success_msg: Rollback restored valid sshd/sudoers configs

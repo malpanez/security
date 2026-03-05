@@ -56,3 +56,11 @@ def test_sshd_config_hardened(host):
     assert re.search(r"macs\\s+.+", output)
     assert re.search(r"kexalgorithms\\s+.+", output)
     assert re.search(r"hostkeyalgorithms\\s+.+", output)
+
+
+def test_sshd_human_match_pubkey_algorithms(host):
+    cfg = host.file("/etc/ssh/sshd_config")
+    assert cfg.exists
+    content = cfg.content_string
+    pattern = r"Match Group humans[\\s\\S]*?PubkeyAcceptedAlgorithms\\s+sk-ssh-ed25519@openssh.com"
+    assert re.search(pattern, content), "Match block should constrain human PubkeyAcceptedAlgorithms"

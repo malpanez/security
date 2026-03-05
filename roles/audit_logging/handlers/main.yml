@@ -3,3 +3,5 @@
   ansible.builtin.service:
     name: "{{ audit_logging_service }}"
     state: restarted
+  when: auditctl_check.rc == 0
+  failed_when: false

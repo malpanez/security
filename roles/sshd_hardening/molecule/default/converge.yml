@@ -2,5 +2,17 @@
 - name: Converge
   hosts: all
   become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Ensure remote tmp directory
+      ansible.builtin.raw: mkdir -p /tmp/ansible-tmp
+      changed_when: false
+    - name: Gather facts
+      ansible.builtin.setup:
   roles:
     - role: sshd_hardening
+      vars:
+        sshd_hardening_human_groups:
+          - humans
+        sshd_hardening_human_pubkey_accepted_algorithms:
+          - sk-ssh-ed25519@openssh.com

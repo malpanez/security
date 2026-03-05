@@ -2,7 +2,7 @@
 # Comprehensive validation script
 # Runs all checks: syntax, linting, secrets scanning
 
-set -e
+set -euo pipefail
 
 # Colors
 RED='\033[0;31m'
@@ -15,6 +15,12 @@ ERRORS=0
 WARNINGS=0
 PASSED=0
 
+tmp_dir=$(mktemp -d -t validate-all.XXXXXX)
+cleanup() {
+    rm -rf "${tmp_dir}"
+}
+trap cleanup EXIT
+
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}Comprehensive Validation${NC}"
 echo -e "${BLUE}========================================${NC}"
@@ -22,18 +28,24 @@ echo ""
 
 # Function to log results
 log_pass() {
-    echo -e "${GREEN}✓ $1${NC}"
+    local msg="$1"
+    echo -e "${GREEN}✓ ${msg}${NC}"
     PASSED=$((PASSED + 1))
+    return 0
 }
 
 log_warn() {
-    echo -e "${YELLOW}⚠ $1${NC}"
+    local msg="$1"
+    echo -e "${YELLOW}⚠ ${msg}${NC}"
     WARNINGS=$((WARNINGS + 1))
+    return 0
 }
 
 log_error() {
-    echo -e "${RED}✗ $1${NC}"
+    local msg="$1"
+    echo -e "${RED}✗ ${msg}${NC}"
     ERRORS=$((ERRORS + 1))
+    return 0
 }
 
 # 1. Ansible Configuration Syntax
@@ -47,11 +59,11 @@ fi
 # 2. Playbook Syntax Check
 echo -e "\n${BLUE}2. Validating playbook syntax...${NC}"
 for playbook in playbooks/*.yml; do
-    if [ -f "$playbook" ]; then
+    if [[ -f "$playbook" ]]; then
         if ansible-playbook "$playbook" --syntax-check > /dev/null 2>&1; then
-            log_pass "$(basename $playbook) syntax valid"
+            log_pass "$(basename "$playbook") syntax valid"
         else
-            log_error "$(basename $playbook) syntax error"
+            log_error "$(basename "$playbook") syntax error"
             ansible-playbook "$playbook" --syntax-check
         fi
     fi
@@ -60,11 +72,12 @@ done
 # 3. YAML Lint
 echo -e "\n${BLUE}3. Running yamllint...${NC}"
 if command -v yamllint &> /dev/null; then
-    if yamllint -c .yamllint.yml . > /tmp/yamllint.log 2>&1; then
+    yamllint_log="${tmp_dir}/yamllint.log"
+    if yamllint -c .yamllint.yml . > "${yamllint_log}" 2>&1; then
         log_pass "yamllint passed"
     else
         log_warn "yamllint found issues"
-        cat /tmp/yamllint.log
+        cat "${yamllint_log}"
     fi
 else
     log_warn "yamllint not installed (pip install yamllint)"
@@ -73,11 +86,12 @@ fi
 # 4. Ansible Lint
 echo -e "\n${BLUE}4. Running ansible-lint...${NC}"
 if command -v ansible-lint &> /dev/null; then
-    if ansible-lint --profile production > /tmp/ansible-lint.log 2>&1; then
+    ansible_lint_log="${tmp_dir}/ansible-lint.log"
+    if ansible-lint --profile production > "${ansible_lint_log}" 2>&1; then
         log_pass "ansible-lint passed"
     else
         log_warn "ansible-lint found issues"
-        cat /tmp/ansible-lint.log
+        cat "${ansible_lint_log}"
     fi
 else
     log_warn "ansible-lint not installed (pip install ansible-lint)"
@@ -85,6 +99,19 @@ fi
 
 # 5. Secret Scanning
 echo -e "\n${BLUE}5. Scanning for secrets/credentials...${NC}"
+
+# Check with gitleaks if installed
+if command -v gitleaks &> /dev/null; then
+    gitleaks_log="${tmp_dir}/gitleaks.log"
+    if gitleaks detect --source . --no-git --config .gitleaks.toml > "${gitleaks_log}" 2>&1; then
+        log_pass "gitleaks passed"
+    else
+        log_error "gitleaks found potential secrets"
+        cat "${gitleaks_log}"
+    fi
+else
+    log_warn "gitleaks not installed"
+fi
 
 # Check for hardcoded passwords
 if grep -r -i "password\s*:\s*['\"]" playbooks/ roles/ 2>/dev/null | grep -v "no_log\|example\|CHANGEME"; then
@@ -132,17 +159,21 @@ else
 fi
 
 # Check for no_log on sensitive tasks
-if grep -r "password\|secret\|token" roles/ playbooks/ 2>/dev/null | grep -v "no_log: true" | grep -v "#" | grep -v "\.bak" | head -5; then
-    log_warn "Found sensitive tasks without no_log (showing first 5)"
+if command -v python3 &> /dev/null; then
+    if python3 scripts/validate-no-log.py > /dev/null 2>&1; then
+        log_pass "Sensitive tasks have no_log"
+    else
+        log_warn "Found sensitive tasks without no_log"
+    fi
 else
-    log_pass "Sensitive tasks have no_log"
+    log_warn "python3 not installed (required for scripts/validate-no-log.py)"
 fi
 
 # 7. Variable Naming Convention
 echo -e "\n${BLUE}7. Checking variable naming...${NC}"
 for role in roles/*/defaults/main.yml; do
-    if [ -f "$role" ]; then
-        role_name=$(basename $(dirname $(dirname "$role")))
+    if [[ -f "$role" ]]; then
+        role_name=$(basename "$(dirname "$(dirname "$role")")")
         # Check if variables are prefixed with role name
         if grep -E "^[a-z_]+:" "$role" | grep -v "^${role_name}_" | grep -v "^#" > /dev/null 2>&1; then
             log_warn "Variables in $role_name should be prefixed with ${role_name}_"
@@ -167,7 +198,7 @@ required_files=(
 )
 
 for file in "${required_files[@]}"; do
-    if [ -f "$file" ]; then
+    if [[ -f "$file" ]]; then
         log_pass "$file exists"
     else
         log_error "$file missing"
@@ -178,7 +209,7 @@ done
 echo -e "\n${BLUE}9. Checking molecule tests...${NC}"
 for role in roles/*/; do
     role_name=$(basename "$role")
-    if [ -d "${role}molecule/default/" ]; then
+    if [[ -d "${role}molecule/default/" ]]; then
         log_pass "$role_name has molecule tests"
     else
         log_warn "$role_name missing molecule tests"
@@ -189,7 +220,7 @@ done
 echo -e "\n${BLUE}10. Checking argument_specs.yml...${NC}"
 for role in roles/*/; do
     role_name=$(basename "$role")
-    if [ -f "${role}meta/argument_specs.yml" ]; then
+    if [[ -f "${role}meta/argument_specs.yml" ]]; then
         log_pass "$role_name has argument_specs.yml"
     else
         log_error "$role_name missing argument_specs.yml"
@@ -200,7 +231,7 @@ done
 echo -e "\n${BLUE}11. Checking documentation...${NC}"
 for role in roles/*/; do
     role_name=$(basename "$role")
-    if [ -f "${role}README.md" ]; then
+    if [[ -f "${role}README.md" ]]; then
         log_pass "$role_name has README.md"
     else
         log_warn "$role_name missing README.md"
@@ -211,7 +242,7 @@ done
 echo -e "\n${BLUE}12. Checking task organization...${NC}"
 for role in roles/*/; do
     role_name=$(basename "$role")
-    if [ -f "${role}tasks/main.yml" ]; then
+    if [[ -f "${role}tasks/main.yml" ]]; then
         log_pass "$role_name has tasks/main.yml"
     else
         log_error "$role_name missing tasks/main.yml"
@@ -236,7 +267,7 @@ fi
 
 # 15. Version Consistency
 echo -e "\n${BLUE}15. Checking version format...${NC}"
-if [ -f galaxy.yml ]; then
+if [[ -f galaxy.yml ]]; then
     version=$(grep "^version:" galaxy.yml | awk '{print $2}')
     if echo "$version" | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" > /dev/null; then
         log_pass "Version $version follows semver"
@@ -255,9 +286,9 @@ echo -e "${YELLOW}Warnings: $WARNINGS${NC}"
 echo -e "${RED}Errors: $ERRORS${NC}"
 echo ""
 
-if [ $ERRORS -eq 0 ]; then
+if [[ $ERRORS -eq 0 ]]; then
     echo -e "${GREEN}✓ ALL CRITICAL CHECKS PASSED${NC}"
-    if [ $WARNINGS -gt 0 ]; then
+    if [[ $WARNINGS -gt 0 ]]; then
         echo -e "${YELLOW}⚠ $WARNINGS warnings should be addressed${NC}"
     fi
     exit 0

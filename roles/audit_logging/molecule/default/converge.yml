@@ -2,11 +2,20 @@
 - name: Converge
   hosts: all
   become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Ensure remote tmp directory
+      ansible.builtin.raw: mkdir -p /tmp/ansible-tmp
+      changed_when: false
+    - name: Gather facts
+      ansible.builtin.setup:
   roles:
     - role: audit_logging
       vars:
         audit_logging_rules:
-          - -w /etc/ssh/sshd_config -p wa -k sshd-config
+          - -w /etc/ssh/sshd_config -p wa -k sshd_config
           - -w /etc/sudoers -p wa -k sudoers
           - -w /etc/sudoers.d -p wa -k sudoers
-          - -w /var/log/secure -p wa -k secure-log
+          - -w /etc/pam.d/sshd -p wa -k pam_sshd
+          - -w /etc/pam.d/sudo -p wa -k pam_sudo
+          - -w /var/log/secure -p wa -k secure_log

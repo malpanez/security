@@ -1,19 +1,21 @@
 # Renovate Bot Configuration
 
+**Status**: requires installing the Renovate app on GitHub. CI workflows are in `.github/workflows/`.
+
 ## Overview
 
-Este repositorio usa [Renovate Bot](https://github.com/renovatebot/renovate) para gestión automática de dependencias.
+This repository uses [Renovate Bot](https://github.com/renovatebot/renovate) for automatic dependency management.
 
-## Configuración
+## Configuration
 
-- **Archivo**: [`renovate.json`](../renovate.json)
-- **Rama base**: `develop` (siguiendo GitFlow)
-- **Horario**: Fines de semana (Europe/Madrid)
-- **Auto-merge**: Habilitado para minor/patch updates
+- **File**: [`renovate.json`](../renovate.json)
+- **Base branch**: `develop` (following GitFlow)
+- **Schedule**: Weekends (Europe/Madrid)
+- **Auto-merge**: Enabled for minor/patch updates
 
-## Features Habilitadas
+## Enabled Features
 
-### 1. Auto-merge Inteligente ✅
+### 1. Smart Auto-merge ✅
 
 ```json
 {
@@ -23,161 +25,161 @@ Este repositorio usa [Renovate Bot](https://github.com/renovatebot/renovate) par
 }
 ```
 
-- ✅ **Minor/Patch**: Auto-merge automático si todos los checks pasan
-- ⚠️ **Major**: Requiere aprobación manual
-- 🔒 **Pre-release (0.x.x)**: Requiere aprobación manual
+- ✅ **Minor/Patch**: Automatic auto-merge if all checks pass
+- ⚠️ **Major**: Requires manual approval
+- 🔒 **Pre-release (0.x.x)**: Requires manual approval
 
-### 2. Agrupación de PRs 📦
+### 2. PR Grouping 📦
 
-**GitHub Actions**: Todas las actualizaciones de GitHub Actions en un solo PR
+**GitHub Actions**: All GitHub Actions updates in a single PR
 ```
 chore(deps): update GitHub Actions (actions/checkout, actions/upload-artifact, etc.)
 ```
 
-**Ansible**: Todas las dependencias de Ansible en un solo PR
+**Ansible**: All Ansible dependencies in a single PR
 ```
 chore(deps): update Ansible (ansible-core, ansible-lint, molecule)
 ```
 
 ### 3. Dependency Dashboard 📊
 
-Renovate crea un Issue centralizado con todas las actualizaciones pendientes:
-- 🔍 Ver todas las dependencias desactualizadas
-- ⏸️ Pausar actualizaciones específicas
-- 🔄 Forzar actualización de paquetes específicos
+Renovate creates a centralised Issue with all pending updates:
+- 🔍 View all outdated dependencies
+- ⏸️ Pause specific updates
+- 🔄 Force update of specific packages
 
 **Link**: [Dependency Dashboard](https://github.com/malpanez/security/issues)
 
-### 4. Seguridad 🔒
+### 4. Security 🔒
 
-- ✅ **Pin digests**: GitHub Actions se pinean con SHA digest para seguridad
-- ✅ **Vulnerability alerts**: Actualizaciones de seguridad se priorizan
-- ✅ **Stability days**: Espera 3 días antes de actualizar (evita versiones problemáticas)
+- ✅ **Pin digests**: GitHub Actions are pinned with SHA digest for security
+- ✅ **Vulnerability alerts**: Security updates are prioritised
+- ✅ **Stability days**: Waits 3 days before updating (avoids problematic versions)
 
 ### 5. GitFlow Integration 🌿
 
 ```
-Renovate → PR a develop → CI checks → Auto-merge
-                             ↓
-                         (si pasan)
-                             ↓
-                          develop
+Renovate → PR to develop → CI checks → Auto-merge
+                               ↓
+                           (if passing)
+                               ↓
+                            develop
 ```
 
-## Reglas de Auto-merge
+## Auto-merge Rules
 
-| Tipo Update | Auto-merge | Requiere Checks | Agrupado |
-|-------------|-----------|-----------------|----------|
-| **Patch** (1.0.x) | ✅ Sí | ✅ Todos | ✅ Sí |
-| **Minor** (1.x.0) | ✅ Sí | ✅ Todos | ✅ Sí |
-| **Major** (x.0.0) | ❌ No | ✅ Todos | ❌ No |
-| **Pre-release** (0.x.x) | ❌ No | ✅ Todos | ❌ No |
-| **Security** | ❌ No | ✅ Todos | ❌ No |
+| Update Type | Auto-merge | Requires Checks | Grouped |
+|-------------|-----------|-----------------|---------|
+| **Patch** (1.0.x) | ✅ Yes | ✅ All | ✅ Yes |
+| **Minor** (1.x.0) | ✅ Yes | ✅ All | ✅ Yes |
+| **Major** (x.0.0) | ❌ No | ✅ All | ❌ No |
+| **Pre-release** (0.x.x) | ❌ No | ✅ All | ❌ No |
+| **Security** | ❌ No | ✅ All | ❌ No |
 
-## Instalación
+## Installation
 
-### 1. Instalar Renovate GitHub App
+### 1. Install Renovate GitHub App
 
-1. Ve a: https://github.com/apps/renovate
-2. Click en **"Install"**
-3. Selecciona el repositorio `malpanez/security`
-4. Autoriza la app
+1. Go to: https://github.com/apps/renovate
+2. Click **"Install"**
+3. Select the `malpanez/security` repository
+4. Authorise the app
 
-### 2. Configuración Automática
+### 2. Automatic Configuration
 
-Renovate detectará automáticamente `renovate.json` en la raíz del repo y aplicará la configuración.
+Renovate will automatically detect `renovate.json` in the repo root and apply the configuration.
 
-### 3. Verificación
+### 3. Verification
 
-Dentro de ~1 hora, Renovate creará:
-- ✅ Un "Dependency Dashboard" Issue
-- ✅ PRs iniciales con actualizaciones pendientes (si las hay)
+Within ~1 hour, Renovate will create:
+- ✅ A "Dependency Dashboard" Issue
+- ✅ Initial PRs with pending updates (if any)
 
-## Comandos en PRs
+## Commands in PRs
 
-Puedes controlar Renovate comentando en los PRs:
+You can control Renovate by commenting on PRs:
 
-| Comando | Descripción |
+| Command | Description |
 |---------|-------------|
-| `@renovate rebase` | Forzar rebase del PR |
-| `@renovate recreate` | Recrear el PR desde cero |
-| `@renovate retry` | Reintentar crear el PR |
+| `@renovate rebase` | Force rebase of the PR |
+| `@renovate recreate` | Recreate the PR from scratch |
+| `@renovate retry` | Retry creating the PR |
 
-## Desactivar Temporalmente
+## Temporarily Disabling
 
-Para pausar Renovate temporalmente:
+To pause Renovate temporarily:
 
-1. Ve al Dependency Dashboard Issue
-2. Marca el checkbox "Pause all updates"
-3. O edita `renovate.json` y añade: `"enabled": false`
+1. Go to the Dependency Dashboard Issue
+2. Check the "Pause all updates" checkbox
+3. Or edit `renovate.json` and add: `"enabled": false`
 
 ## Monitoring
 
-### Ver todas las actualizaciones
+### View all updates
 
 ```bash
-# Ver PRs de Renovate abiertos
+# View open Renovate PRs
 gh pr list --label "renovate"
 
-# Ver el dashboard
+# View the dashboard
 gh issue list --label "renovate"
 ```
 
-### Ver logs de Renovate
+### View Renovate logs
 
-Los logs están disponibles en:
-- GitHub Actions runs (si usas self-hosted)
+Logs are available in:
+- GitHub Actions runs (if using self-hosted)
 - Renovate Dashboard: https://app.renovatebot.com/dashboard
 
 ## Troubleshooting
 
-### Renovate no crea PRs
+### Renovate does not create PRs
 
-1. Verifica que la app esté instalada: https://github.com/apps/renovate
-2. Revisa el Dependency Dashboard para errores
-3. Verifica que `renovate.json` sea JSON válido:
+1. Verify the app is installed: https://github.com/apps/renovate
+2. Check the Dependency Dashboard for errors
+3. Verify `renovate.json` is valid JSON:
    ```bash
    python3 -c "import json; json.load(open('renovate.json'))"
    ```
 
-### PRs no se auto-mergean
+### PRs do not auto-merge
 
-1. Verifica que **todos** los checks pasen (incluyendo required checks)
-2. Revisa que `platformAutomerge: true` esté habilitado
-3. Verifica permisos de la Renovate app en el repo
+1. Verify that **all** checks pass (including required checks)
+2. Check that `platformAutomerge: true` is enabled
+3. Verify Renovate app permissions on the repo
 
-### Demasiados PRs
+### Too many PRs
 
-Ajusta en `renovate.json`:
+Adjust in `renovate.json`:
 ```json
 {
-  "prConcurrentLimit": 3,  // Máximo 3 PRs abiertos a la vez
-  "schedule": ["on monday"]  // Solo lunes
+  "prConcurrentLimit": 3,  // Maximum 3 open PRs at a time
+  "schedule": ["on monday"]  // Mondays only
 }
 ```
 
-## Comparación con Dependabot
+## Comparison with Dependabot
 
 | Feature | Dependabot | Renovate |
 |---------|-----------|----------|
-| Auto-merge nativo | ❌ | ✅ |
-| Agrupación avanzada | ⚠️ | ✅ |
+| Native auto-merge | ❌ | ✅ |
+| Advanced grouping | ⚠️ | ✅ |
 | Dependency Dashboard | ❌ | ✅ |
 | GitFlow support | ⚠️ | ✅ |
-| Configuración | Limitada | Muy flexible |
+| Configuration | Limited | Very flexible |
 | Pin digests | ❌ | ✅ |
 | Stability days | ❌ | ✅ |
 
-## Recursos
+## Resources
 
 - [Renovate Docs](https://docs.renovatebot.com/)
 - [Configuration Options](https://docs.renovatebot.com/configuration-options/)
-- [Presets](https://docs.renovatebot.com/presets/)
+- [Presets](https://docs.renovatebot.com/config-presets/)
 - [GitHub App](https://github.com/apps/renovate)
 
-## Migración desde Dependabot
+## Migration from Dependabot
 
-✅ **Completada**
-- Dependabot desactivado: `.github/dependabot.yml` → `.github/dependabot.yml.disabled`
-- Renovate configurado: `renovate.json`
-- GitFlow respetado: PRs a `develop`
+✅ **Completed**
+- Dependabot disabled: `.github/dependabot.yml` → `.github/dependabot.yml.disabled`
+- Renovate configured: `renovate.json`
+- GitFlow respected: PRs to `develop`

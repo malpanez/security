@@ -11,6 +11,7 @@
   vars:
     compliance_output_dir: "{{ playbook_dir }}/../compliance-reports"
     compliance_timestamp: "{{ ansible_date_time.epoch }}"
+    compliance_hash_manifest_name: compliance-report.sha256
     compliance_frameworks:
       - soc2
       - pci-dss
@@ -44,14 +45,20 @@
       ansible.builtin.slurp:
         src: /etc/ssh/sshd_config
       register: sshd_config_content
+      no_log: true
 
     - name: Test SSH configuration
       ansible.builtin.command: sshd -T
       register: sshd_test_config
       changed_when: false
+      no_log: true
 
     - name: Get SSH daemon version
-      ansible.builtin.shell: ssh -V 2>&1
+      ansible.builtin.shell: |
+        set -o pipefail
+        ssh -V 2>&1
+      args:
+        executable: /bin/bash
       register: ssh_version
       changed_when: false
 
@@ -62,6 +69,7 @@
       ansible.builtin.command: visudo -c
       register: sudoers_validation
       changed_when: false
+      no_log: true
 
     - name: List sudoers.d files
       ansible.builtin.find:
@@ -77,11 +85,17 @@
         src: /etc/pam.d/sshd
       register: pam_sshd_config
       failed_when: false
+      no_log: true
 
     - name: Check for MFA modules
-      ansible.builtin.shell: grep -E "pam_u2f|pam_google_authenticator" /etc/pam.d/sshd || echo "none"
+      ansible.builtin.shell: |
+        set -o pipefail
+        grep -E "pam_u2f|pam_google_authenticator" /etc/pam.d/sshd || echo "none"
+      args:
+        executable: /bin/bash
       register: pam_mfa_check
       changed_when: false
+      no_log: true
 
     # ============================================
     # Collect SELinux Evidence (RHEL)
@@ -92,12 +106,18 @@
       changed_when: false
       failed_when: false
       when: ansible_os_family == 'RedHat'
+      no_log: true
 
     - name: Get SELinux denials (last 100)
-      ansible.builtin.shell: ausearch -m avc -ts recent 2>/dev/null | tail -100 || echo "none"
+      ansible.builtin.shell: |
+        set -o pipefail
+        ausearch -m avc -ts recent 2>/dev/null | tail -100 || echo "none"
+      args:
+        executable: /bin/bash
       register: selinux_denials
       changed_when: false
       when: ansible_os_family == 'RedHat'
+      no_log: true
 
     # ============================================
     # Collect Audit Log Evidence
@@ -107,41 +127,58 @@
       register: auditd_status
       changed_when: false
       failed_when: false
+      no_log: true
 
     - name: Get loaded audit rules
       ansible.builtin.command: auditctl -l
       register: audit_rules
       changed_when: false
       failed_when: false
+      no_log: true
 
     # ============================================
     # Collect User/Group Evidence
     # ============================================
     - name: List users with UID >= 1000
       ansible.builtin.shell: |
+        set -o pipefail
         getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 {print $1":"$3":"$6":"$7}'
+      args:
+        executable: /bin/bash
       register: user_list
       changed_when: false
+      no_log: true
 
     - name: List sudo-capable users
       ansible.builtin.shell: |
+        set -o pipefail
         getent group sudo wheel 2>/dev/null | cut -d: -f4 | tr ',' '\n' | sort -u
+      args:
+        executable: /bin/bash
       register: sudo_users
       changed_when: false
+      no_log: true
 
     # ============================================
     # Collect Network Configuration Evidence
     # ============================================
     - name: Get listening ports
-      ansible.builtin.shell: ss -tuln | grep LISTEN
+      ansible.builtin.shell: |
+        set -o pipefail
+        ss -tuln | grep LISTEN
+      args:
+        executable: /bin/bash
       register: listening_ports
       changed_when: false
+      no_log: true
 
     - name: Get firewall status
-      ansible.builtin.command: "{{ 'firewall-cmd --list-all' if ansible_os_family == 'RedHat' else 'ufw status verbose' }}"
+      ansible.builtin.command: >-
+        {{ 'firewall-cmd --list-all' if ansible_os_family == 'RedHat' else 'ufw status verbose' }}
       register: firewall_status
       changed_when: false
       failed_when: false
+      no_log: true
 
     # ============================================
     # Collect Package Evidence
@@ -153,7 +190,11 @@
     - name: Extract security packages
       ansible.builtin.set_fact:
         security_packages:
-          openssh: "{{ packages['openssh-server'] | default(packages['openssh'] | default({'version': 'not installed'})) }}"
+          openssh: >-
+            {{
+              packages['openssh-server']
+                | default(packages['openssh'] | default({'version': 'not installed'}))
+            }}
           sudo: "{{ packages['sudo'] | default({'version': 'not installed'}) }}"
           auditd: "{{ packages['audit'] | default(packages['auditd'] | default({'version': 'not installed'})) }}"
           selinux: "{{ packages['selinux-policy'] | default({'version': 'N/A'}) }}"
@@ -162,6 +203,34 @@
     # ============================================
     # Generate JSON Report
     # ============================================
+    - name: Compute compliance report flags
+      ansible.builtin.set_fact:
+        compliance_password_auth_enabled: >-
+          {{ 'PasswordAuthentication yes' in (sshd_config_content['content'] | b64decode) }}
+        compliance_root_login_enabled: >-
+          {{ 'PermitRootLogin yes' in (sshd_config_content['content'] | b64decode) }}
+        compliance_pubkey_auth_enabled: >-
+          {{
+            'PubkeyAuthentication yes' in (sshd_config_content['content'] | b64decode)
+            or 'PubkeyAuthentication' not in (sshd_config_content['content'] | b64decode)
+          }}
+        compliance_mfa_enabled: >-
+          {{ 'pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout }}
+        compliance_password_auth_status: >-
+          {{ '⚠️  Enabled' if compliance_password_auth_enabled else '✗ Disabled' }}
+        compliance_root_login_status: >-
+          {{ '⚠️  Enabled' if compliance_root_login_enabled else '✗ Disabled' }}
+        compliance_pubkey_auth_status: >-
+          {{ '✓ Enabled' if compliance_pubkey_auth_enabled else '✗ Disabled' }}
+        compliance_password_auth_disabled: "{{ not compliance_password_auth_enabled }}"
+        compliance_root_login_disabled: "{{ not compliance_root_login_enabled }}"
+        compliance_selinux_available: "{{ ansible_os_family == 'RedHat' }}"
+        compliance_selinux_denials_count: >-
+          {{ selinux_denials.stdout_lines | length if ansible_os_family == 'RedHat' else 0 }}
+        compliance_audit_enabled: "{{ audit_rules.rc == 0 }}"
+        compliance_audit_rules_count: >-
+          {{ audit_rules.stdout_lines | length if audit_rules.rc == 0 else 0 }}
+
     - name: Generate JSON compliance report
       ansible.builtin.copy:
         dest: "{{ compliance_output_dir }}/{{ inventory_hostname }}-{{ compliance_timestamp }}.json"
@@ -184,9 +253,9 @@
             "ssh": {
               "version": "{{ ssh_version.stdout | default('unknown') }}",
               "config_valid": {{ sshd_test_config.rc == 0 }},
-              "password_auth": {{ 'PasswordAuthentication yes' in sshd_config_content['content'] | b64decode }},
-              "root_login": {{ 'PermitRootLogin yes' in sshd_config_content['content'] | b64decode }},
-              "pubkey_auth": {{ 'PubkeyAuthentication yes' in sshd_config_content['content'] | b64decode | default(true) }}
+              "password_auth": {{ compliance_password_auth_enabled }},
+              "root_login": {{ compliance_root_login_enabled }},
+              "pubkey_auth": {{ compliance_pubkey_auth_enabled }}
             },
             "sudo": {
               "config_valid": {{ sudoers_validation.rc == 0 }},
@@ -195,17 +264,17 @@
               "sudo_users": {{ sudo_users.stdout_lines | to_json }}
             },
             "mfa": {
-              "enabled": {{ 'pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout }},
+              "enabled": {{ compliance_mfa_enabled }},
               "methods": "{{ pam_mfa_check.stdout }}"
             },
             "selinux": {
-              "available": {{ ansible_os_family == 'RedHat' }},
+              "available": {{ compliance_selinux_available }},
               "status": "{{ selinux_status.stdout | default('N/A') }}",
-              "recent_denials": {{ selinux_denials.stdout_lines | length if ansible_os_family == 'RedHat' else 0 }}
+              "recent_denials": {{ compliance_selinux_denials_count }}
             },
             "audit": {
-              "enabled": {{ audit_rules.rc == 0 }},
-              "rules_count": {{ audit_rules.stdout_lines | length if audit_rules.rc == 0 else 0 }}
+              "enabled": {{ compliance_audit_enabled }},
+              "rules_count": {{ compliance_audit_rules_count }}
             },
             "users": {
               "human_users": {{ user_list.stdout_lines | length }},
@@ -248,9 +317,9 @@
           |---------|--------|---------|
           | SSH Version | {{ ssh_version.stdout | default('unknown') }} | - |
           | Config Valid | {{ '✓ Pass' if sshd_test_config.rc == 0 else '✗ Fail' }} | - |
-          | Password Auth | {{ '✗ Disabled' if 'PasswordAuthentication no' in sshd_config_content['content'] | b64decode else '⚠️  Enabled' }} | PCI-DSS 8.2.1 |
-          | Root Login | {{ '✗ Disabled' if 'PermitRootLogin no' in sshd_config_content['content'] | b64decode else '⚠️  Enabled' }} | CIS 5.2.10 |
-          | Pubkey Auth | {{ '✓ Enabled' if 'PubkeyAuthentication yes' in sshd_config_content['content'] | b64decode or 'PubkeyAuthentication' not in sshd_config_content['content'] | b64decode else '✗ Disabled' }} | PCI-DSS 8.3 |
+          | Password Auth | {{ compliance_password_auth_status }} | PCI-DSS 8.2.1 |
+          | Root Login | {{ compliance_root_login_status }} | CIS 5.2.10 |
+          | Pubkey Auth | {{ compliance_pubkey_auth_status }} | PCI-DSS 8.3 |
 
           ## Sudo Configuration
 
@@ -264,7 +333,7 @@
 
           | Control | Status | Details |
           |---------|--------|---------|
-          | MFA Enabled | {{ '✓ Yes' if ('pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout) else '○ No' }} | PCI-DSS 8.3, SOC2 CC6.1 |
+          | MFA Enabled | {{ '✓ Yes' if compliance_mfa_enabled else '○ No' }} | PCI-DSS 8.3, SOC2 CC6.1 |
           | Methods | {{ pam_mfa_check.stdout if pam_mfa_check.stdout != 'none' else 'None configured' }} | - |
 
           {% if ansible_os_family == 'RedHat' %}
@@ -280,8 +349,8 @@
 
           | Control | Status | Details |
           |---------|--------|---------|
-          | Auditd Enabled | {{ '✓ Yes' if audit_rules.rc == 0 else '○ No' }} | PCI-DSS 10.2, SOC2 CC7.2 |
-          | Active Rules | {{ audit_rules.stdout_lines | length if audit_rules.rc == 0 else 0 }} | - |
+          | Auditd Enabled | {{ '✓ Yes' if compliance_audit_enabled else '○ No' }} | PCI-DSS 10.2, SOC2 CC7.2 |
+          | Active Rules | {{ compliance_audit_rules_count }} | - |
 
           ## User Management
 
@@ -307,20 +376,20 @@
 
           ### SOC 2 Type II
 
-          - **CC6.1** (Logical Access) - MFA: {{ '✓' if ('pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout) else '✗' }}
-          - **CC6.2** (Access Removal) - Audit: {{ '✓' if audit_rules.rc == 0 else '✗' }}
-          - **CC7.2** (Logging) - Auditd: {{ '✓' if audit_rules.rc == 0 else '✗' }}
+          - **CC6.1** (Logical Access) - MFA: {{ '✓' if compliance_mfa_enabled else '✗' }}
+          - **CC6.2** (Access Removal) - Audit: {{ '✓' if compliance_audit_enabled else '✗' }}
+          - **CC7.2** (Logging) - Auditd: {{ '✓' if compliance_audit_enabled else '✗' }}
 
           ### PCI-DSS v4.0
 
-          - **8.2.1** (MFA for admin) - MFA: {{ '✓' if ('pam_u2f' in pam_mfa_check.stdout or 'pam_google_authenticator' in pam_mfa_check.stdout) else '✗' }}
-          - **8.3** (Strong cryptography) - SSH keys: {{ '✓' if 'PasswordAuthentication no' in sshd_config_content['content'] | b64decode else '✗' }}
-          - **10.2** (Audit trails) - Auditd: {{ '✓' if audit_rules.rc == 0 else '✗' }}
+          - **8.2.1** (MFA for admin) - MFA: {{ '✓' if compliance_mfa_enabled else '✗' }}
+          - **8.3** (Strong cryptography) - SSH keys: {{ '✓' if not compliance_password_auth_enabled else '✗' }}
+          - **10.2** (Audit trails) - Auditd: {{ '✓' if compliance_audit_enabled else '✗' }}
 
           ### CIS Benchmark
 
-          - **5.2.10** (Disable root login) - {{ '✓' if 'PermitRootLogin no' in sshd_config_content['content'] | b64decode else '✗' }}
-          - **5.2.4** (Disable password auth) - {{ '✓' if 'PasswordAuthentication no' in sshd_config_content['content'] | b64decode else '✗' }}
+          - **5.2.10** (Disable root login) - {{ '✓' if compliance_root_login_disabled else '✗' }}
+          - **5.2.4** (Disable password auth) - {{ '✓' if compliance_password_auth_disabled else '✗' }}
 
           ---
 
@@ -328,6 +397,19 @@
           **Generated at**: {{ ansible_date_time.iso8601 }}
         mode: "0640"
       delegate_to: localhost
+
+    - name: Generate compliance report hash manifest
+      ansible.builtin.shell: |
+        set -euo pipefail
+        find "{{ compliance_output_dir }}" -type f \
+          -name "{{ inventory_hostname }}-{{ compliance_timestamp }}.*" \
+          -print0 \
+          | sort -z \
+          | xargs -0 sha256sum > "{{ compliance_output_dir }}/{{ compliance_hash_manifest_name }}"
+      args:
+        executable: /bin/bash
+      delegate_to: localhost
+      changed_when: false
 
     - name: Display completion summary
       ansible.builtin.debug:
@@ -339,6 +421,7 @@
           Reports created:
           - JSON: {{ compliance_output_dir }}/{{ inventory_hostname }}-{{ compliance_timestamp }}.json
           - Markdown: {{ compliance_output_dir }}/{{ inventory_hostname }}-{{ compliance_timestamp }}.md
+          - Hashes: {{ compliance_output_dir }}/{{ compliance_hash_manifest_name }}
 
           Frameworks covered:
           {{ compliance_frameworks | join('\n          ') }}

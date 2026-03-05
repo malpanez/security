@@ -18,6 +18,7 @@
   ansible.builtin.include_tasks: common.yml
   when:
     - pam_mfa_should_configure
+    - not pam_mfa_use_debian13_stack
     - security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
@@ -33,11 +34,34 @@
       }}
   tags: [enforce]
 
+- name: Check platform-specific MFA task file
+  ansible.builtin.stat:
+    path: "{{ pam_mfa_platform_task }}"
+  register: pam_mfa_platform_task_stat
+  when:
+    - pam_mfa_platform_task is not none
+    - pam_mfa_platform_task | length > 0
+  tags: [enforce]
+
 - name: Include platform-specific MFA tasks
   ansible.builtin.include_tasks: "{{ pam_mfa_platform_task }}"
   when:
     - pam_mfa_should_configure
-    - pam_mfa_platform_task is not none
+    - not pam_mfa_use_debian13_stack
+    - pam_mfa_platform_task_stat is defined
+    - pam_mfa_platform_task_stat.stat is defined
+    - pam_mfa_platform_task_stat.stat.exists
+    - pam_mfa_platform_task_stat.stat.isreg
+    - security_mode | default('enforce') == 'enforce'
+  tags: [enforce]
+
+- name: Include Debian 13 MFA stack
+  ansible.builtin.include_tasks: debian13.yml
+  when:
+    - pam_mfa_should_configure
+    - pam_mfa_use_debian13_stack
+    - ansible_facts['distribution'] == 'Debian'
+    - ansible_facts['distribution_major_version'] | int >= 13
     - security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
@@ -45,5 +69,6 @@
   ansible.builtin.include_tasks: common_mfa_config.yml
   when:
     - pam_mfa_should_configure
+    - not pam_mfa_use_debian13_stack
     - security_mode | default('enforce') == 'enforce'
   tags: [enforce]

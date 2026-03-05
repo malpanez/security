@@ -1,0 +1,13 @@
+title = "malpanez/security gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore common non-secret placeholders"
+regexes = [
+  "CHANGEME",
+  "example",
+  "EXAMPLE",
+  "placeholder",
+]

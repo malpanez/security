@@ -1,7 +1,26 @@
 ---
 audit_logging_enabled: true
-audit_logging_rules: []
+audit_logging_package: auditd
+audit_logging_rules:
+  - "-w /etc/ssh/sshd_config -p wa -k sshd_config"
+  - "-w /etc/ssh/sshd_config.d -p wa -k sshd_config_d"
+  - "-w /etc/sudoers -p wa -k sudoers"
+  - "-w /etc/sudoers.d -p wa -k sudoers_d"
+  - "-w /etc/pam.d/sshd -p wa -k pam_sshd"
+  - "-w /etc/pam.d/sudo -p wa -k pam_sudo"
+  - "-w /etc/pam.d/mfa-totp -p wa -k pam_mfa_substack"
+  - "-w /etc/pam.d/common-auth -p wa -k pam_common_auth"
+  - "-w /etc/pam.d/system-auth -p wa -k pam_system_auth"
+  - "-w /etc/passwd -p wa -k identity"
+  - "-w /etc/group -p wa -k identity"
+  - "-w /etc/shadow -p wa -k identity"
+  - "-w /etc/gshadow -p wa -k identity"
+audit_logging_syscall_rules:
+  - "-a always,exit -F arch=b64 -S execve -k exec"
+  - "-a always,exit -F arch=b32 -S execve -k exec"
 audit_logging_service: auditd
 audit_logging_rules_path: /etc/audit/rules.d/99-security.rules
 audit_logging_auth_log: /var/log/auth.log
 audit_logging_secure_log: /var/log/secure
+audit_logging_verify_rules: true
+audit_logging_verify_syscalls: true

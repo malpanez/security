@@ -1,5 +1,32 @@
 ---
 - name: Restart sshd
   ansible.builtin.service:
-    name: "{{ sshd_hardening_resolved_service_name | default(sshd_service_name | default(sshd_hardening_service_name)) }}"
+    name: >-
+      {{
+        sshd_hardening_resolved_service_name
+          | default(sshd_hardening_service_name | default(sshd_hardening_service_name))
+      }}
     state: restarted
+  register: sshd_restart_result
+
+- name: Wait for sshd port to be available
+  ansible.builtin.wait_for:
+    port: "{{ sshd_hardening_port | default(22) }}"
+    host: "{{ ansible_host | default('127.0.0.1') }}"
+    timeout: 30
+    delay: 2
+  when: sshd_restart_result.changed
+
+- name: Verify sshd is running after restart
+  ansible.builtin.service_facts:
+  when: sshd_restart_result.changed
+
+- name: Assert sshd service is active
+  ansible.builtin.assert:
+    that:
+      - >-
+        ansible_facts.services[sshd_hardening_resolved_service_name ~ '.service'].state == 'running'
+        or ansible_facts.services['ssh.service'].state == 'running'
+    fail_msg: "CRITICAL: sshd failed to start after restart. Check journalctl -xe"
+    success_msg: "sshd restarted successfully"
+  when: sshd_restart_result.changed

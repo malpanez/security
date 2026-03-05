@@ -1,8 +1,10 @@
-ARG BASE_IMAGE=ghcr.io/malpanez/devcontainer-ansible:latest
+ARG BASE_IMAGE=ghcr.io/malpanez/devcontainer-ansible@sha256:b75bb9bf5fb8f6ad9e472e571f4dcc9dff522b1a7da04a2d960664a295534057
 ARG UV_VERSION=0.4.20
 ARG UV_CHECKSUM=sha256:UNSET
 ARG SYFT_VERSION=v1.7.0
+ARG SYFT_CHECKSUM=7e8e5b37c5332bc9bc19c95a42a8893f35c27ccbb8ae9b1f62e941c6e0e0f6ae
 ARG GITLEAKS_VERSION=v8.23.1
+ARG GITLEAKS_CHECKSUM=sha256:UNSET
 
 FROM ${BASE_IMAGE}
 
@@ -31,12 +33,25 @@ RUN if [ "${UV_CHECKSUM}" != "sha256:UNSET" ]; then \
       echo "[compliance-devcontainer] UV_CHECKSUM unset; skipping uv install"; \
     fi
 
-# Install syft for SBOM generation
-RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin ${SYFT_VERSION}
+# Install syft for SBOM generation (with checksum verification)
+RUN curl -sSfL https://github.com/anchore/syft/releases/download/${SYFT_VERSION}/syft_${SYFT_VERSION#v}_linux_amd64.tar.gz -o /tmp/syft.tar.gz && \
+    echo "${SYFT_CHECKSUM}  /tmp/syft.tar.gz" | sha256sum -c - && \
+    tar -xzf /tmp/syft.tar.gz -C /usr/local/bin syft && \
+    chmod +x /usr/local/bin/syft && \
+    rm /tmp/syft.tar.gz
 
-# Install gitleaks for secret scanning
-RUN curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz \
-  | tar -xz -C /usr/local/bin gitleaks
+# Install gitleaks for secret scanning (checksum required)
+RUN if [ "${GITLEAKS_CHECKSUM}" = "sha256:UNSET" ]; then \
+      echo "[compliance-devcontainer] GITLEAKS_CHECKSUM unset; aborting to avoid unverified download"; \
+      exit 1; \
+    fi && \
+    curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz -o /tmp/gitleaks.tar.gz && \
+    echo "${GITLEAKS_CHECKSUM}  /tmp/gitleaks.tar.gz" | sha256sum -c - && \
+    tar -xz -C /usr/local/bin gitleaks -f /tmp/gitleaks.tar.gz && \
+    rm /tmp/gitleaks.tar.gz
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD sh -c "ansible --version >/dev/null 2>&1"
 
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 COPY scripts/*.sh /usr/local/bin/

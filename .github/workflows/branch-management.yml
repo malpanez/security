@@ -17,7 +17,7 @@ jobs:
   # ============================================
   auto-merge-to-develop:
     name: Auto-merge to Develop
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: |
       github.event_name == 'push' &&
       (startsWith(github.ref, 'refs/heads/feature/') ||
@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -78,14 +78,14 @@ jobs:
   # ============================================
   auto-promote-to-main:
     name: Auto-promote to Main
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: |
       github.event_name == 'push' &&
       github.ref == 'refs/heads/develop'
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -146,14 +146,14 @@ jobs:
   # ============================================
   backmerge-main-to-develop:
     name: Sync Main → Develop
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: |
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}

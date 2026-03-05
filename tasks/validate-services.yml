@@ -103,8 +103,8 @@
   when: security_phase_mfa | default(false)
 
 - name: Validate PAM sshd has required entries
-  shell: |
-    grep -q "pam_u2f\|pam_google_authenticator" /etc/pam.d/sshd
+  ansible.builtin.command: >-
+    grep -Eq "pam_(u2f|fido2|google_authenticator)" /etc/pam.d/sshd
   register: pam_mfa_check
   failed_when: false
   changed_when: false
@@ -113,8 +113,8 @@
     - pam_mfa_enabled | default(false)
 
 - name: Verify PAM service account bypass exists
-  shell: |
-    grep -q "pam_succeed_if.*mfa-bypass" /etc/pam.d/sshd
+  ansible.builtin.command: >-
+    grep -Eq "pam_succeed_if.*{{ pam_mfa_service_bypass_group | default('mfa-bypass') }}" /etc/pam.d/sshd
   register: pam_bypass_check
   failed_when: false
   changed_when: false
@@ -133,7 +133,7 @@
   when:
     - security_phase_mfa | default(false)
     - pam_mfa_enabled | default(false)
-  ignore_errors: true
+  failed_when: false
 
 # SELinux Validation (RHEL-based only)
 - name: Check SELinux status
@@ -154,10 +154,11 @@
   when:
     - security_phase_selinux | default(false)
     - ansible_os_family == 'RedHat'
-  ignore_errors: true
+  failed_when: false
 
 - name: Check for SELinux denials (last 100 entries)
   shell: |
+    set -o pipefail
     ausearch -m avc -ts recent 2>/dev/null | tail -100 || echo "No recent denials"
   register: selinux_denials
   failed_when: false
@@ -204,7 +205,7 @@
     fail_msg: "WARNING: Audit service may not be fully functional"
     success_msg: ✓ Audit service is functional
   when: security_phase_audit | default(false)
-  ignore_errors: true
+  failed_when: false
 
 # Service Account Validation (if MFA enabled)
 - name: Test service account SSH access (if configured)
@@ -235,6 +236,17 @@
   when:
     - security_phase_mfa | default(false)
     - pam_mfa_enabled | default(false)
+
+- name: Compute validation status summary
+  ansible.builtin.set_fact:
+    validation_ssh_ok: "{{ sshd_status is success and ssh_port_test is success }}"
+    validation_sudo_ok: "{{ sudo_test.rc in [0, 1] }}"
+    validation_overall_status: >-
+      {{
+        'PASS'
+          if (sshd_status is success and ssh_port_test is success)
+          else 'FAIL - CRITICAL ISSUES'
+      }}
 
 # Generate validation report
 - name: Create validation report
@@ -279,10 +291,10 @@
       - Audit rules loaded: {{ 'PASS' if audit_rules.rc == 0 else 'FAIL' }}
       {% endif %}
 
-      Overall Status: {{ 'PASS' if (sshd_status is success and ssh_port_test is success) else 'FAIL - CRITICAL ISSUES' }}
+      Overall Status: {{ validation_overall_status }}
 
       Recommendations:
-      {% if not (sshd_status is success and ssh_port_test is success) %}
+      {% if not validation_ssh_ok %}
       - CRITICAL: SSH service issues detected - investigate immediately
       {% endif %}
       {% if security_phase_sudoers | default(false) and sudo_test.rc not in [0, 1] %}
@@ -301,8 +313,8 @@
       ========================================
 
       Critical Services:
-      - SSH: {{ '✓ PASS' if (sshd_status is success and ssh_port_test is success) else '✗ FAIL' }}
-      - Sudo: {{ '✓ PASS' if sudo_test.rc in [0, 1] else '✗ FAIL' }}
+      - SSH: {{ '✓ PASS' if validation_ssh_ok else '✗ FAIL' }}
+      - Sudo: {{ '✓ PASS' if validation_sudo_ok else '✗ FAIL' }}
       {% if security_phase_mfa | default(false) %}
       - PAM MFA: {{ '✓ Configured' if pam_mfa_check.rc == 0 else '⚠ Check manually' }}
       {% endif %}
