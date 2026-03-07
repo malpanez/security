@@ -1,11 +1,9 @@
 ---
+# RHEL / Rocky Linux / AlmaLinux / CentOS platform-specific values.
+# audit_logging_rules is defined in defaults/main.yml — do NOT override here.
+
 audit_logging_package: audit
-audit_logging_rules:
-  - -w /etc/sudoers -p wa -k scope
-  - -w /etc/sudoers.d/ -p wa -k scope
-  - -w /etc/ssh/sshd_config -p wa -k sshd
-  - -w {{ audit_logging_secure_log }} -p wa -k secure
-audit_logging_rules_path: /etc/audit/rules.d/99-security.rules
 audit_logging_service: auditd
+audit_logging_rules_path: /etc/audit/rules.d/99-security.rules
 audit_logging_auth_log: /var/log/secure
 audit_logging_secure_log: /var/log/secure

@@ -1,5 +1,6 @@
 ---
-- hosts: localhost
+- name: Test kernel_hardening role
+  hosts: localhost
   remote_user: root
   roles:
-    - roles/kernel_hardening
+    - role: malpanez.security.kernel_hardening

@@ -1,38 +1,102 @@
-Role Name
-=========
+# apparmor
 
-A brief description of the role goes here.
+Installs and enables AppArmor (Mandatory Access Control) on Debian, Ubuntu, and SUSE systems. Gracefully skips on RedHat family (use the `selinux_enforcement` role instead).
 
-Requirements
-------------
+Supports **review** mode (read-only posture report) and **enforce** mode (enables AppArmor and sets profile modes).
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+## Platform Behaviour
 
-Role Variables
---------------
+| OS Family | Behaviour | MAC System |
+|-----------|-----------|------------|
+| Debian / Ubuntu | Installs apparmor + apparmor-utils, enables service | AppArmor |
+| SUSE / openSUSE | Installs apparmor + apparmor-utils, enables service | AppArmor |
+| RedHat / Rocky / Alma | Skips (`meta: end_host`) — use `selinux_enforcement` | SELinux |
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+## Modes
 
-Dependencies
-------------
+| Mode | Behaviour |
+|------|-----------|
+| `review` (default) | Runs `aa-status`, reports loaded profiles and deny count |
+| `enforce` | Enables AppArmor service, sets profiles to enforce or complain |
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+## Profile Progression
 
-Example Playbook
-----------------
+AppArmor profiles move through two stages:
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+1. **Complain** (`aa-complain`) — logs violations but does not block; use initially to validate no false positives
+2. **Enforce** (`aa-enforce`) — blocks violations; use once complain mode produces no unexpected denials
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+```
+complain → [ validate logs ] → enforce
+```
 
-License
--------
+## Key Variables
 
-BSD
+```yaml
+# Gate variables
+security_mode: enforce
+apparmor_enabled: true
 
-Author Information
-------------------
+# Profile mode (enforce or complain)
+apparmor_profile_mode: enforce    # Default: enforce for all profiles
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+# Set all loaded profiles to enforce mode
+apparmor_enforce_all: true
+
+# Specific profiles to set (empty = all)
+apparmor_enforce_profiles: []
+
+# Complain mode profiles (lower-trust services during rollout)
+apparmor_complain_profiles: []
+```
+
+## Quick Start
+
+```yaml
+# Review mode — safe, read-only
+- hosts: all
+  roles:
+    - role: malpanez.security.apparmor
+
+# Enforce mode
+- hosts: ubuntu_servers
+  vars:
+    security_mode: enforce
+    apparmor_enabled: true
+  roles:
+    - role: malpanez.security.apparmor
+```
+
+## Integration with site.yml
+
+The `site.yml` playbook applies this role only on supported platforms:
+
+```yaml
+- role: apparmor
+  when: ansible_os_family in ['Debian', 'Suse']
+- role: selinux_enforcement
+  when: ansible_os_family == 'RedHat'
+```
+
+## Testing with Molecule
+
+```bash
+cd roles/apparmor
+molecule test
+```
+
+Tests verify: `apparmor` and `apparmor-utils` packages installed, AppArmor service enabled, `aa-status` command available.
+
+> **Container note**: AppArmor kernel support is reported but not asserted in containers — the verify playbook uses `ignore_errors: true` for the service state and kernel module checks.
+
+## Compliance Mapping
+
+| Control | Framework |
+|---------|-----------|
+| Mandatory Access Control | CIS 1.7, STIG, NIS2 Art.21 |
+| Least privilege enforcement | HIPAA §164.312(a), ISO 27001 A.9 |
+| MAC profile coverage | PCI-DSS 2.2.3, SOC2 CC6.1 |
+
+## License
+
+Apache-2.0

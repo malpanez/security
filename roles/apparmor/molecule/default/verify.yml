@@ -44,7 +44,7 @@
           - ansible_facts.services['apparmor.service'].status == 'enabled'
         fail_msg: "AppArmor service not enabled"
         success_msg: "✓ AppArmor service enabled"
-      ignore_errors: true  # Containers may not support AppArmor service
+      failed_when: false  # Containers may not support AppArmor service
 
     - name: Verify aa-status command is available
       ansible.builtin.command:
@@ -69,6 +69,6 @@
       ansible.builtin.debug:
         msg: "{{ _aa_status_output.stdout | default('(aa-status not available)') }}"
 
-    - name: apparmor verification complete
+    - name: AppArmor verification complete
       ansible.builtin.debug:
         msg: "✓ apparmor molecule verification complete"

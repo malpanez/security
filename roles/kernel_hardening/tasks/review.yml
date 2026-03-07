@@ -32,7 +32,8 @@
 
 - name: "[review] Check loaded kernel modules against disabled list"
   ansible.builtin.shell:
-    cmd: "lsmod | awk 'NR>1 {print $1}'"
+    executable: /bin/bash
+    cmd: "set -o pipefail && lsmod | awk 'NR>1 {print $1}'"
   register: _kh_loaded_modules
   changed_when: false
   failed_when: false

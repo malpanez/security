@@ -11,7 +11,7 @@
     group: root
     mode: "0640"
   when: kernel_hardening_sysctl_enabled | bool
-  notify: reload sysctl
+  notify: Reload sysctl
   tags: [kernel_hardening, enforce]
 
 - name: "[enforce] Apply sysctl parameters immediately (runtime)"

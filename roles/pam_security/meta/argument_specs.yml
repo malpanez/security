@@ -131,7 +131,7 @@ argument_specs:
         type: list
         elements: str
         default: []
-        description: List of PAM access rules (format "permission : user : origin").
+        description: 'List of PAM access rules (format "permission : user : origin").'
       pam_security_limits_enabled:
         type: bool
         default: true

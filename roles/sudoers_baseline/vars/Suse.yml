@@ -1,0 +1,6 @@
+---
+# SUSE Linux Enterprise / openSUSE Leap platform-specific values.
+# Paths are identical to Debian/RedHat — SUSE follows the standard.
+
+sudoers_baseline_sudoers_path: /etc/sudoers
+sudoers_baseline_files_path: /etc/sudoers.d

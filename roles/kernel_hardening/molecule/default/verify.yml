@@ -47,7 +47,7 @@
         fail_msg: "kernel.randomize_va_space not 2 at runtime (got: {{ _aslr_runtime.stdout | trim }})"
         success_msg: "✓ ASLR enabled at runtime (randomize_va_space=2)"
       when: _aslr_runtime.rc == 0
-      ignore_errors: true  # Containers may restrict this
+      failed_when: false  # Containers may restrict this
 
     - name: Verify modprobe disabled file exists
       ansible.builtin.stat:
@@ -93,6 +93,6 @@
       loop_control:
         label: "{{ item.item }}"
 
-    - name: kernel_hardening verification complete
+    - name: Kernel hardening verification complete
       ansible.builtin.debug:
         msg: "✓ kernel_hardening molecule verification complete"
