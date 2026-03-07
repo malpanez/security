@@ -85,10 +85,58 @@ kernel_hardening_sysctl_params:
   # ── Network — SYN flood protection ───────────────────────────────────────
   net.ipv4.tcp_syncookies: 1
 
+  # ── Network — TCP hardening ───────────────────────────────────────────────
+  # TCP timestamps can be used for OS fingerprinting — disable (CIS 3.3.9)
+  net.ipv4.tcp_timestamps: 0
+
+  # TIME-WAIT assassination prevention (RFC 1337)
+  net.ipv4.tcp_rfc1337: 1
+
+  # ── Network — ARP hardening ───────────────────────────────────────────────
+  # Respond only to ARP requests for addresses on the received interface
+  net.ipv4.conf.all.arp_ignore: 1
+
+  # Always use the best local address for ARP announcements
+  net.ipv4.conf.all.arp_announce: 2
+
+  # ── Network — ICMP ────────────────────────────────────────────────────────
+  # Rate-limit ICMP error messages (prevents ICMP flood abuse)
+  net.ipv4.icmp_ratelimit: 100
+  net.ipv4.icmp_ratemask: 88089
+
   # ── Network — IPv6 ───────────────────────────────────────────────────────
   # Disable router advertisements if not needed
   net.ipv6.conf.all.accept_ra: 0
   net.ipv6.conf.default.accept_ra: 0
+
+  # Disable IPv6 auto-configuration and router solicitations
+  net.ipv6.conf.all.autoconf: 0
+  net.ipv6.conf.default.autoconf: 0
+  net.ipv6.conf.default.router_solicitations: 0
+  net.ipv6.conf.default.dad_transmits: 0
+
+  # ── Kernel — additional restrictions ──────────────────────────────────────
+  # Prevent loading a new kernel image (kexec can bypass secure boot)
+  kernel.kexec_load_disabled: 1
+
+  # Disable magic SysRq key (prevents physical console attacks)
+  kernel.sysrq: 0
+
+  # Append PID to core dump filenames (prevents collision, eases forensics)
+  kernel.core_uses_pid: 1
+
+  # Restrict ptrace to parent processes (prevents lateral process inspection)
+  # Note: SUSE kernels may not have Yama enabled — ignoreerrors handles this
+  kernel.yama.ptrace_scope: 1
+
+  # ── Virtual memory ────────────────────────────────────────────────────────
+  # Minimum virtual address for mmap (prevents null pointer dereference exploits)
+  vm.mmap_min_addr: 65536
+
+  # Entropy bits for ASLR mmap randomisation (64-bit / 32-bit compat)
+  # Lower this if you see kernel errors about invalid values on older kernels
+  vm.mmap_rnd_bits: 32
+  vm.mmap_rnd_compat_bits: 16
 
 # ---------------------------------------------------------------------------
 # Kernel module restrictions

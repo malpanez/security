@@ -9,7 +9,7 @@ namespace: malpanez
 name: security
 
 # The version of the collection. Must be compatible with semantic versioning
-version: 1.0.0
+version: 1.1.0
 
 # The path to the Markdown (.md) readme file. This path is relative to the root of the collection
 readme: README.md
@@ -22,10 +22,11 @@ authors:
 ### OPTIONAL but strongly recommended
 # A short summary description of the collection
 description: >-
-  Comprehensive Linux security hardening collection: SSH, PAM MFA, sudoers,
-  kernel hardening, AppArmor, SELinux, audit logging, and compliance evidence
-  for NIS2, SOC2, PCI-DSS, HIPAA, and CIS Benchmark. Supports Debian/Ubuntu,
-  RHEL/Rocky/Alma, and SUSE/openSUSE.
+  Enterprise Linux security hardening collection: SSH (drop-in), PAM MFA (YubiKey/TOTP),
+  sudoers, kernel hardening (50+ sysctl), system hardening (mounts/hidepid/SUID),
+  AppArmor, SELinux, Nginx, Apache, MySQL/MariaDB, Tomcat/JBoss, audit logging (30+ rules),
+  and compliance evidence for NIS2, SOC2, PCI-DSS, HIPAA, CIS Benchmark.
+  Supports Debian/Ubuntu, RHEL/Rocky/Alma, and SUSE/openSUSE.
 
 # Either a single license or a list of licenses for content inside of a collection. Ansible Galaxy currently only
 # accepts L(SPDX,https://spdx.org/licenses/) licenses. This key is mutually exclusive with 'license_file'
@@ -48,6 +49,10 @@ tags:
   - pci_dss
   - hipaa
   - soc2
+  - nginx
+  - apache
+  - mysql
+  - tomcat
 
 # Collections that this collection requires to be installed for it to be usable. The key of the dict is the
 # collection label 'namespace.name'. The value is a version range

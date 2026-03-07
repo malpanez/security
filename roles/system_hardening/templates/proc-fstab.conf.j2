@@ -1,0 +1,15 @@
+# /etc/systemd/system/proc.mount — managed by Ansible (system_hardening role)
+# Mounts /proc with hidepid to restrict process visibility. CIS: 1.1.x
+[Unit]
+Description=Proc filesystem with hidepid
+DefaultDependencies=no
+Before=sysinit.target
+
+[Mount]
+What=proc
+Where=/proc
+Type=proc
+Options=nosuid,nodev,noexec,hidepid={{ system_hardening_hidepid_value }},gid={{ system_hardening_proc_group }}
+
+[Install]
+WantedBy=sysinit.target

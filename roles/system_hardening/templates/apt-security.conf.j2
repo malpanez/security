@@ -1,0 +1,6 @@
+# /etc/apt/apt.conf.d/99-security-hardening — managed by Ansible (system_hardening role)
+# Enforce GPG package verification. CIS Benchmark: 1.2.x
+APT::Get::AllowUnauthenticated "{{ 'true' if system_hardening_apt_allow_unauthenticated else 'false' }}";
+APT::Periodic::AutocleanInterval "7";
+Acquire::AllowInsecureRepositories "false";
+Acquire::AllowWeakRepositories "false";

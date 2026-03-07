@@ -1,0 +1,101 @@
+---
+# ---------------------------------------------------------------------------
+# mysql_hardening — Harden MySQL / MariaDB database server
+# Compliance: CIS MySQL Benchmark, PCI-DSS 6.x, 8.x
+# Supports: MySQL 5.7/8.x, MariaDB 10.x, all platforms
+# ---------------------------------------------------------------------------
+
+mysql_hardening_enabled: false
+
+# ---------------------------------------------------------------------------
+# Service and config paths (overridden in platform vars)
+# ---------------------------------------------------------------------------
+mysql_hardening_service_name: mysql
+
+# ---------------------------------------------------------------------------
+# Connection hardening
+# ---------------------------------------------------------------------------
+# Remove remote root login
+mysql_hardening_remove_remote_root: true
+
+# Remove anonymous users
+mysql_hardening_remove_anonymous_users: true
+
+# Remove test database
+mysql_hardening_remove_test_db: true
+
+# Disable remote root login completely
+mysql_hardening_disallow_remote_root: true
+
+# Bind to localhost only (set to false if replication needed)
+mysql_hardening_bind_address: "127.0.0.1"
+
+# ---------------------------------------------------------------------------
+# Authentication and accounts
+# ---------------------------------------------------------------------------
+# Ensure all accounts have passwords
+mysql_hardening_require_passwords: true
+
+# Expire passwords for accounts without expiry
+mysql_hardening_password_expiry_days: 90
+
+# ---------------------------------------------------------------------------
+# MySQL configuration (my.cnf / mariadb.conf.d)
+# ---------------------------------------------------------------------------
+# Disable local_infile (prevents reading local files via LOAD DATA LOCAL)
+mysql_hardening_local_infile: false
+
+# Disable loading plugins from arbitrary paths
+mysql_hardening_allow_suspicious_udfs: false
+
+# Do not skip grant tables
+mysql_hardening_skip_grant_tables: false
+
+# Disable automatic privilege expansion for stored procedures
+mysql_hardening_automatic_sp_privileges: false
+
+# Use safe user creation
+mysql_hardening_safe_user_create: true
+
+# Restrict file operations to secure directory
+mysql_hardening_secure_file_priv: /tmp
+
+# Disable symbolic links (prevents privilege escalation via symlinks)
+mysql_hardening_symbolic_links: false
+
+# Skip default database schema exposure
+mysql_hardening_skip_show_database: false
+
+# Disable deprecated secure_auth (MariaDB specific)
+mysql_hardening_secure_auth: true
+
+# Log warnings
+mysql_hardening_log_warnings: 2
+
+# ---------------------------------------------------------------------------
+# TLS/SSL for connections
+# ---------------------------------------------------------------------------
+mysql_hardening_ssl_enabled: false          # Enable when certs are available
+mysql_hardening_ssl_cert: /etc/mysql/ssl/server-cert.pem
+mysql_hardening_ssl_key: /etc/mysql/ssl/server-key.pem
+mysql_hardening_ssl_ca: /etc/mysql/ssl/ca-cert.pem
+mysql_hardening_require_ssl: false          # Force SSL for all connections
+
+# ---------------------------------------------------------------------------
+# Audit logging (MariaDB audit plugin / MySQL Enterprise Audit)
+# ---------------------------------------------------------------------------
+mysql_hardening_audit_enabled: false
+mysql_hardening_audit_log_file: /var/log/mysql/audit.log
+
+# ---------------------------------------------------------------------------
+# File permissions hardening
+# ---------------------------------------------------------------------------
+mysql_hardening_datadir_owner: mysql
+mysql_hardening_datadir_group: mysql
+mysql_hardening_datadir_mode: "0750"
+mysql_hardening_error_log_mode: "0640"
+
+# ---------------------------------------------------------------------------
+# Process user
+# ---------------------------------------------------------------------------
+mysql_hardening_user: mysql

@@ -1,0 +1,7 @@
+---
+_apache_service_name: apache2
+_apache_package: apache2
+_apache_binary: apache2ctl
+_apache_conf_dir: /etc/apache2
+_apache_main_conf: /etc/apache2/apache2.conf
+_apache_security_conf: /etc/apache2/conf-available/99-security-hardening.conf

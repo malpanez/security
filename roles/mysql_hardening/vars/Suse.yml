@@ -1,0 +1,9 @@
+---
+_mysql_service_name: mysql
+_mysql_packages:
+  - mysql-server
+_mysql_conf_dir: /etc/mysql/conf.d
+_mysql_security_conf: /etc/mysql/conf.d/99-security-hardening.cnf
+_mysql_datadir: /var/lib/mysql
+_mysql_error_log: /var/log/mysql/mysqld.log
+_mysql_binary: mysql

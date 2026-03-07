@@ -1,0 +1,95 @@
+---
+# ---------------------------------------------------------------------------
+# apache_hardening — Harden Apache httpd / Apache2 web server
+# Compliance: CIS Apache Benchmark, PCI-DSS 6.6, OWASP Top 10
+# Supports: RHEL (httpd), Debian/Ubuntu (apache2), SUSE (apache2)
+# ---------------------------------------------------------------------------
+
+apache_hardening_enabled: false
+
+# ---------------------------------------------------------------------------
+# TLS configuration
+# ---------------------------------------------------------------------------
+apache_hardening_tls_enabled: true
+apache_hardening_ssl_protocol: "all -SSLv3 -TLSv1 -TLSv1.1"
+apache_hardening_ssl_cipher_suite: >-
+  ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:
+  ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:
+  ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:
+  DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
+apache_hardening_ssl_honor_cipher_order: "On"
+apache_hardening_ssl_session_tickets: "Off"
+apache_hardening_ssl_stapling: "On"
+apache_hardening_ssl_stapling_verify: "On"
+apache_hardening_ssl_use_stapling_cache: "SSLStaplingCache shmcb:/var/run/ocsp(128000)"
+apache_hardening_ssl_compression: "Off"
+
+# ---------------------------------------------------------------------------
+# Server information disclosure
+# ---------------------------------------------------------------------------
+apache_hardening_server_tokens: "Prod"       # Only show 'Apache'
+apache_hardening_server_signature: "Off"     # Hide version in error pages
+apache_hardening_trace_enable: "Off"         # Disable TRACE method
+apache_hardening_server_admin: "webmaster@localhost"
+
+# ---------------------------------------------------------------------------
+# Security headers
+# ---------------------------------------------------------------------------
+apache_hardening_headers_enabled: true
+apache_hardening_hsts_enabled: true
+apache_hardening_hsts_max_age: 31536000
+apache_hardening_hsts_include_subdomains: true
+apache_hardening_x_frame_options: "SAMEORIGIN"
+apache_hardening_x_content_type_options: "nosniff"
+apache_hardening_x_xss_protection: "1; mode=block"
+apache_hardening_referrer_policy: "strict-origin-when-cross-origin"
+apache_hardening_csp: >-
+  default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;
+  frame-ancestors 'self'; form-action 'self'
+
+# ---------------------------------------------------------------------------
+# Directory hardening
+# ---------------------------------------------------------------------------
+apache_hardening_options_none: true           # Disable Options Indexes
+apache_hardening_follow_symlinks: false       # Disable FollowSymLinks
+apache_hardening_server_side_includes: false  # Disable SSI
+apache_hardening_cgi_enabled: false           # Disable CGI by default
+apache_hardening_override_none: true          # AllowOverride None (no .htaccess)
+
+# ---------------------------------------------------------------------------
+# Request limits
+# ---------------------------------------------------------------------------
+apache_hardening_limit_request_body: 10485760    # 10MB
+apache_hardening_limit_request_fields: 100
+apache_hardening_limit_request_line: 8190
+apache_hardening_timeout: 60
+apache_hardening_keep_alive: "On"
+apache_hardening_keep_alive_timeout: 5
+apache_hardening_max_keep_alive_requests: 100
+
+# ---------------------------------------------------------------------------
+# Modules to disable (reduces attack surface)
+# ---------------------------------------------------------------------------
+apache_hardening_modules_disable:
+  - autoindex     # Directory listing
+  - status        # Server status page
+  - info          # Server info page
+  - userdir       # ~user directories
+  - cgi           # CGI support (if not needed)
+  - cgid          # CGI daemon
+  - dav           # WebDAV
+  - dav_fs        # WebDAV filesystem
+  - dav_lock      # WebDAV locking
+  - negotiation   # Content negotiation
+
+# Modules to enable
+apache_hardening_modules_enable:
+  - headers       # Security headers
+  - ssl           # TLS
+  - rewrite       # URL rewriting (needed for HTTPS redirect)
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+apache_hardening_log_level: warn
+apache_hardening_access_log_format: combined

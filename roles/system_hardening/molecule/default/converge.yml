@@ -1,0 +1,14 @@
+---
+- name: Converge system_hardening
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    security_mode: enforce
+    system_hardening_enabled: true
+    system_hardening_suid_remove_unlisted: false   # Safe for CI
+    system_hardening_rhosts_remove: true
+
+  roles:
+    - role: malpanez.security.system_hardening

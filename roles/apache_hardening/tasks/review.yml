@@ -1,0 +1,46 @@
+---
+- name: "[review] Check ServerTokens"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && grep -r 'ServerTokens' {{ _apache_conf_dir }} {{ _apache_main_conf }} 2>/dev/null | grep -v '#' || echo 'not set'"
+  register: _ap_server_tokens
+  changed_when: false
+  failed_when: false
+  tags: [apache_hardening, review]
+
+- name: "[review] Check ServerSignature"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && grep -r 'ServerSignature' {{ _apache_conf_dir }} {{ _apache_main_conf }} 2>/dev/null | grep -v '#' || echo 'not set'"
+  register: _ap_server_sig
+  changed_when: false
+  failed_when: false
+  tags: [apache_hardening, review]
+
+- name: "[review] Check TraceEnable"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && grep -r 'TraceEnable' {{ _apache_conf_dir }} {{ _apache_main_conf }} 2>/dev/null | grep -v '#' || echo 'not set'"
+  register: _ap_trace
+  changed_when: false
+  failed_when: false
+  tags: [apache_hardening, review]
+
+- name: "[review] Check SSL protocols"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && grep -r 'SSLProtocol' {{ _apache_conf_dir }} {{ _apache_main_conf }} 2>/dev/null | grep -v '#' || echo 'not configured'"
+  register: _ap_ssl
+  changed_when: false
+  failed_when: false
+  tags: [apache_hardening, review]
+
+- name: "[review] Report Apache posture"
+  ansible.builtin.debug:
+    msg: |
+      Apache security review:
+        ServerTokens   : {{ _ap_server_tokens.stdout | trim }}
+        ServerSignature: {{ _ap_server_sig.stdout | trim }}
+        TraceEnable    : {{ _ap_trace.stdout | trim }}
+        SSLProtocol    : {{ _ap_ssl.stdout | trim }}
+  tags: [apache_hardening, review]

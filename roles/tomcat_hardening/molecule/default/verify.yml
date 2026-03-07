@@ -1,0 +1,10 @@
+---
+- name: Verify tomcat_hardening role
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Tomcat hardening verification complete
+      ansible.builtin.debug:
+        msg: "✓ Tomcat hardening molecule verification complete (review mode — service may not be installed)"

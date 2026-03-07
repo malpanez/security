@@ -1,0 +1,142 @@
+---
+# ---------------------------------------------------------------------------
+# Review mode — read-only checks, report findings, never make changes
+# ---------------------------------------------------------------------------
+
+- name: "[review] Check /tmp mount options"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && findmnt -n -o OPTIONS /tmp 2>/dev/null || echo 'not mounted'"
+  register: _sh_tmp_opts
+  changed_when: false
+  failed_when: false
+  tags: [system_hardening, review]
+
+- name: "[review] Check /dev/shm mount options"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && findmnt -n -o OPTIONS /dev/shm 2>/dev/null || echo 'not mounted'"
+  register: _sh_devshm_opts
+  changed_when: false
+  failed_when: false
+  tags: [system_hardening, review]
+
+- name: "[review] Check /home mount options"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && findmnt -n -o OPTIONS /home 2>/dev/null || echo 'separate partition not found'"
+  register: _sh_home_opts
+  changed_when: false
+  failed_when: false
+  tags: [system_hardening, review]
+
+- name: "[review] Report mount options"
+  ansible.builtin.debug:
+    msg: |
+      Mount hardening review:
+        /tmp options    : {{ _sh_tmp_opts.stdout | default('unknown') | trim }}
+        /dev/shm options: {{ _sh_devshm_opts.stdout | default('unknown') | trim }}
+        /home options   : {{ _sh_home_opts.stdout | default('unknown') | trim }}
+      Expected: nodev,nosuid,noexec on /tmp and /dev/shm
+  tags: [system_hardening, review]
+
+- name: "[review] Check hidepid on /proc"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && findmnt -n -o OPTIONS /proc 2>/dev/null | grep -o 'hidepid=[0-9]*' || echo 'hidepid not set'"
+  register: _sh_hidepid
+  changed_when: false
+  failed_when: false
+  tags: [system_hardening, review]
+
+- name: "[review] Report hidepid status"
+  ansible.builtin.debug:
+    msg: "hidepid on /proc: {{ _sh_hidepid.stdout | trim }} (expected: hidepid={{ system_hardening_hidepid_value }})"
+  tags: [system_hardening, review]
+
+- name: "[review] Check Ctrl+Alt+Del target"
+  ansible.builtin.command:
+    cmd: systemctl is-enabled ctrl-alt-del.target
+  register: _sh_ctrlaltdel
+  changed_when: false
+  failed_when: false
+  tags: [system_hardening, review]
+
+- name: "[review] Report Ctrl+Alt+Del status"
+  ansible.builtin.debug:
+    msg: "ctrl-alt-del.target: {{ _sh_ctrlaltdel.stdout | trim }} (expected: masked)"
+  tags: [system_hardening, review]
+
+- name: "[review] Find system accounts with interactive shells"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: >-
+      set -o pipefail &&
+      awk -F: '
+        $3 < {{ system_hardening_uid_min }} &&
+        $1 !~ /^({{ system_hardening_accounts_shell_whitelist | join("|") }})$/ &&
+        $7 !~ /(nologin|false|halt|sync|shutdown)$/ {print $1 ":" $7}
+      ' /etc/passwd
+  register: _sh_interactive_sysaccts
+  changed_when: false
+  failed_when: false
+  tags: [system_hardening, review]
+
+- name: "[review] Report system accounts with shells"
+  ansible.builtin.debug:
+    msg: >-
+      System accounts with interactive shells:
+      {{ _sh_interactive_sysaccts.stdout_lines | default([]) | join(', ') | default('none found') }}
+  tags: [system_hardening, review]
+
+- name: "[review] Find SUID/SGID binaries"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && find / -xdev -type f \\( -perm -4000 -o -perm -2000 \\) -print 2>/dev/null | sort"
+  register: _sh_suid_files
+  changed_when: false
+  failed_when: false
+  when: system_hardening_suid_report | bool
+  tags: [system_hardening, review]
+
+- name: "[review] Identify unexpected SUID/SGID files"
+  ansible.builtin.set_fact:
+    _sh_unexpected_suid: >-
+      {{ _sh_suid_files.stdout_lines | default([]) |
+         difference(system_hardening_suid_whitelist) }}
+  when: system_hardening_suid_report | bool
+  tags: [system_hardening, review]
+
+- name: "[review] Report SUID/SGID findings"
+  ansible.builtin.debug:
+    msg: |
+      SUID/SGID report:
+        Total found   : {{ _sh_suid_files.stdout_lines | default([]) | length }}
+        Whitelisted   : {{ ((_sh_suid_files.stdout_lines | default([])) | intersect(system_hardening_suid_whitelist)) | length }}
+        Unexpected    : {{ _sh_unexpected_suid | default([]) | length }}
+        Unexpected list: {{ _sh_unexpected_suid | default([]) | join(', ') | default('none') }}
+  when: system_hardening_suid_report | bool
+  tags: [system_hardening, review]
+
+- name: "[review] Find .rhosts and .netrc files"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: 'set -o pipefail && find /home /root -xdev \( -name .rhosts -o -name .netrc \) 2>/dev/null | sort'
+  register: _sh_trust_files
+  changed_when: false
+  failed_when: false
+  when: system_hardening_rhosts_enabled | bool
+  tags: [system_hardening, review]
+
+- name: "[review] Report trust file findings"
+  ansible.builtin.debug:
+    msg: >-
+      Legacy trust files (.rhosts/.netrc):
+      {{ _sh_trust_files.stdout_lines | default([]) | join(', ') | default('none found') }}
+  when: system_hardening_rhosts_enabled | bool
+  tags: [system_hardening, review]
+
+- name: "[review] system_hardening review complete"
+  ansible.builtin.debug:
+    msg: "system_hardening review complete on {{ inventory_hostname }}"
+  tags: [system_hardening, review]

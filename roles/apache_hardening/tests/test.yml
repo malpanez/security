@@ -1,0 +1,6 @@
+---
+- name: Test apache_hardening role
+  hosts: localhost
+  remote_user: root
+  roles:
+    - role: malpanez.security.apache_hardening

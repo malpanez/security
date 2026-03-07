@@ -1,0 +1,97 @@
+---
+# ---------------------------------------------------------------------------
+# nginx_hardening — Harden Nginx web server configuration
+# Compliance: CIS Nginx Benchmark, PCI-DSS 6.6, OWASP Top 10
+# ---------------------------------------------------------------------------
+
+nginx_hardening_enabled: false
+
+# Nginx config file and directory
+nginx_hardening_config_path: /etc/nginx/nginx.conf
+nginx_hardening_conf_d_path: /etc/nginx/conf.d
+nginx_hardening_security_conf: /etc/nginx/conf.d/99-security-hardening.conf
+
+# ---------------------------------------------------------------------------
+# Server information disclosure
+# ---------------------------------------------------------------------------
+nginx_hardening_server_tokens: "off"           # Hide Nginx version
+nginx_hardening_server_name_in_redirect: "off" # Don't use server_name in redirects
+
+# ---------------------------------------------------------------------------
+# TLS configuration
+# ---------------------------------------------------------------------------
+nginx_hardening_tls_enabled: true
+nginx_hardening_ssl_protocols: "TLSv1.2 TLSv1.3"
+nginx_hardening_ssl_ciphers: >-
+  ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:
+  ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:
+  ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:
+  DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
+nginx_hardening_ssl_prefer_server_ciphers: "on"
+nginx_hardening_ssl_session_cache: "shared:SSL:10m"
+nginx_hardening_ssl_session_timeout: "10m"
+nginx_hardening_ssl_session_tickets: "off"       # Disable TLS session tickets
+nginx_hardening_ssl_stapling: "on"               # OCSP stapling
+nginx_hardening_ssl_stapling_verify: "on"
+nginx_hardening_ssl_dhparam: /etc/nginx/dhparam.pem
+nginx_hardening_generate_dhparam: true
+nginx_hardening_dhparam_bits: 2048
+
+# ---------------------------------------------------------------------------
+# Security headers (HTTP Strict Transport Security, etc.)
+# ---------------------------------------------------------------------------
+nginx_hardening_headers_enabled: true
+nginx_hardening_hsts_enabled: true
+nginx_hardening_hsts_max_age: 31536000
+nginx_hardening_hsts_include_subdomains: true
+nginx_hardening_hsts_preload: false
+
+nginx_hardening_x_frame_options: "SAMEORIGIN"
+nginx_hardening_x_content_type_options: "nosniff"
+nginx_hardening_x_xss_protection: "1; mode=block"
+nginx_hardening_referrer_policy: "strict-origin-when-cross-origin"
+nginx_hardening_permissions_policy: "geolocation=(), microphone=(), camera=()"
+nginx_hardening_csp: >-
+  default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;
+  font-src 'self'; frame-ancestors 'self'; form-action 'self'
+
+# ---------------------------------------------------------------------------
+# Request limits and timeouts
+# ---------------------------------------------------------------------------
+nginx_hardening_client_max_body_size: "10m"
+nginx_hardening_client_body_timeout: "10s"
+nginx_hardening_client_header_timeout: "10s"
+nginx_hardening_send_timeout: "10s"
+nginx_hardening_keepalive_timeout: "65s"
+nginx_hardening_large_client_header_buffers: "2 1k"
+
+# ---------------------------------------------------------------------------
+# Connection limits and rate limiting
+# ---------------------------------------------------------------------------
+nginx_hardening_limit_conn_enabled: true
+nginx_hardening_limit_conn_zone: "binary_remote_addr zone=perip:10m"
+nginx_hardening_limit_conn_per_ip: 10
+nginx_hardening_limit_req_enabled: true
+nginx_hardening_limit_req_zone: "binary_remote_addr zone=ratelimit:10m rate=10r/s"
+nginx_hardening_limit_req_burst: 20
+
+# ---------------------------------------------------------------------------
+# Disable dangerous HTTP methods
+# ---------------------------------------------------------------------------
+nginx_hardening_allowed_methods: "GET POST HEAD"
+nginx_hardening_disable_trace: true
+
+# ---------------------------------------------------------------------------
+# Worker process security
+# ---------------------------------------------------------------------------
+nginx_hardening_worker_processes: auto
+nginx_hardening_worker_rlimit_nofile: 65536
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+nginx_hardening_access_log: /var/log/nginx/access.log
+nginx_hardening_error_log: /var/log/nginx/error.log
+nginx_hardening_log_format: >-
+  '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent
+  "$http_referer" "$http_user_agent" $request_time'

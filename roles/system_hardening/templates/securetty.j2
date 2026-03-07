@@ -1,0 +1,6 @@
+# /etc/securetty — managed by Ansible (system_hardening role)
+# Root login is restricted to the following TTYs.
+# CIS Benchmark: 5.5
+{% for tty in system_hardening_securetty_allowed_ttys %}
+{{ tty }}
+{% endfor %}

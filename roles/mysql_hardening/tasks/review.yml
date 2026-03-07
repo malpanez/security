@@ -1,0 +1,47 @@
+---
+- name: "[review] Check for anonymous users"
+  community.mysql.mysql_query:
+    query: "SELECT user, host FROM mysql.user WHERE user = ''"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  register: _my_anon_users
+  changed_when: false
+  failed_when: false
+  no_log: true
+  tags: [mysql_hardening, review]
+
+- name: "[review] Check for remote root accounts"
+  community.mysql.mysql_query:
+    query: "SELECT user, host FROM mysql.user WHERE user = 'root' AND host NOT IN ('localhost', '127.0.0.1', '::1')"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  register: _my_remote_root
+  changed_when: false
+  failed_when: false
+  no_log: true
+  tags: [mysql_hardening, review]
+
+- name: "[review] Check for test database"
+  community.mysql.mysql_query:
+    query: "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'test'"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  register: _my_test_db
+  changed_when: false
+  failed_when: false
+  no_log: true
+  tags: [mysql_hardening, review]
+
+- name: "[review] Check datadir permissions"
+  ansible.builtin.stat:
+    path: "{{ _mysql_datadir }}"
+  register: _my_datadir_stat
+  tags: [mysql_hardening, review]
+
+- name: "[review] Report MySQL posture"
+  ansible.builtin.debug:
+    msg: |
+      MySQL/MariaDB security review:
+        Anonymous users   : {{ (_my_anon_users.query_result[0] | default([])) | length }} found (expected: 0)
+        Remote root       : {{ (_my_remote_root.query_result[0] | default([])) | length }} found (expected: 0)
+        Test database     : {{ 'EXISTS - should be removed' if (_my_test_db.query_result[0] | default([])) | length > 0 else 'not found (good)' }}
+        Datadir owner     : {{ _my_datadir_stat.stat.pw_name | default('unknown') }}:{{ _my_datadir_stat.stat.gr_name | default('unknown') }}
+        Datadir mode      : {{ '%04o' | format(_my_datadir_stat.stat.mode | int(base=8)) if _my_datadir_stat.stat.exists else 'unknown' }}
+  tags: [mysql_hardening, review]

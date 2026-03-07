@@ -1,0 +1,36 @@
+---
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_os_family }}.yml"
+        - main.yml
+      paths: "{{ role_path }}/vars"
+  tags: [tomcat_hardening, always]
+
+- name: Check if Tomcat is installed
+  ansible.builtin.stat:
+    path: "{{ tomcat_hardening_conf_dir }}"
+  register: _tomcat_installed
+  tags: [tomcat_hardening, always]
+
+- name: Skip if Tomcat not installed
+  ansible.builtin.debug:
+    msg: "Tomcat not detected at {{ tomcat_hardening_conf_dir }} — skipping"
+  when: not _tomcat_installed.stat.exists
+  tags: [tomcat_hardening, always]
+
+- name: Run Tomcat hardening when installed
+  when: _tomcat_installed.stat.exists
+  tags: [tomcat_hardening]
+  block:
+    - name: Review mode — assess Tomcat posture
+      ansible.builtin.include_tasks: review.yml
+      tags: [tomcat_hardening, review]
+
+    - name: Enforce mode — apply Tomcat hardening
+      ansible.builtin.include_tasks: enforce.yml
+      when:
+        - tomcat_hardening_enabled | bool
+        - security_mode | default('review') == 'enforce'
+      tags: [tomcat_hardening, enforce]

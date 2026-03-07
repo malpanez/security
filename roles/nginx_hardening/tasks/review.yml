@@ -1,0 +1,36 @@
+---
+- name: "[review] Check server_tokens setting"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && nginx -T 2>/dev/null | grep -i 'server_tokens' || echo 'not configured'"
+  register: _ng_server_tokens
+  changed_when: false
+  failed_when: false
+  tags: [nginx_hardening, review]
+
+- name: "[review] Check Nginx TLS protocols"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && nginx -T 2>/dev/null | grep -i 'ssl_protocols' || echo 'not configured'"
+  register: _ng_ssl_protocols
+  changed_when: false
+  failed_when: false
+  tags: [nginx_hardening, review]
+
+- name: "[review] Check security headers config"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && nginx -T 2>/dev/null | grep -i 'add_header' | head -20 || echo 'none found'"
+  register: _ng_headers
+  changed_when: false
+  failed_when: false
+  tags: [nginx_hardening, review]
+
+- name: "[review] Report Nginx posture"
+  ansible.builtin.debug:
+    msg: |
+      Nginx security review:
+        server_tokens : {{ _ng_server_tokens.stdout | trim | default('unknown') }}
+        SSL protocols : {{ _ng_ssl_protocols.stdout | trim | default('unknown') }}
+        Security headers configured: {{ 'yes' if _ng_headers.stdout != 'none found' else 'NO - gaps found' }}
+  tags: [nginx_hardening, review]

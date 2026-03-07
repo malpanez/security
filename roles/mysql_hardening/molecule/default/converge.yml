@@ -1,0 +1,11 @@
+---
+- name: Converge mysql_hardening
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    security_mode: review   # Safe in CI — service likely not installed
+
+  roles:
+    - role: malpanez.security.mysql_hardening
