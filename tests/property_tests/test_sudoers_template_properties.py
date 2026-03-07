@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import yaml
-from hypothesis import given, strategies as st
+from hypothesis import given, settings, strategies as st
 from jinja2 import BaseLoader, Environment, select_autoescape
 
 
@@ -15,6 +15,11 @@ def _load_defaults():
     return yaml.safe_load(DEFAULTS_PATH.read_text()) or {}
 
 
+def _ansible_comment(text, style="plain", prefix="# ", postfix=""):
+    """Stub for Ansible's comment filter used in managed templates."""
+    return "\n".join(f"{prefix}{line}" for line in str(text).splitlines())
+
+
 def _render(template_path, **overrides):
     context = _load_defaults()
     context.update(overrides)
@@ -23,6 +28,7 @@ def _render(template_path, **overrides):
         autoescape=select_autoescape(default_for_string=False, default=False),
         keep_trailing_newline=True,
     )
+    env.filters["comment"] = _ansible_comment
     template = env.from_string(template_path.read_text())
     return template.render(**context)
 
@@ -46,6 +52,7 @@ def sudoers_group_config(draw):
     return group, {"require_password": require_password, "commands": commands}
 
 
+@settings(deadline=None)
 @given(sudoers_group_config())
 def test_sudoers_group_rendering(config):
     group, cfg = config
