@@ -11,43 +11,37 @@ driver:
   name: docker
 
 platforms:
-  # One representative from each family
+  # One representative from each family — systemd-enabled ansible images
   - name: ubuntu-2204-ci
-    image: ubuntu:22.04
+    image: "geerlingguy/docker-ubuntu2204-ansible@sha256:2744f5aca5e33c01a682ff1ea201dc3841b0eaaa1f5c448e6bd9a6156a831638"
+    command: ""
     privileged: true
-    command: /sbin/init
-    systemd: true
+    pre_build_image: true
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    tmpfs:
-      - /run
-      - /tmp
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
     networks:
       - name: molecule-network
 
   - name: debian-12-ci
-    image: debian:12
+    image: "geerlingguy/docker-debian12-ansible@sha256:f69527a18970386befd62a36f68d5c39422a7ad15e4005133670566dd3b0da7f"
+    command: ""
     privileged: true
-    command: /sbin/init
-    systemd: true
+    pre_build_image: true
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    tmpfs:
-      - /run
-      - /tmp
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
     networks:
       - name: molecule-network
 
   - name: rocky-9-ci
-    image: rockylinux:9
+    image: "geerlingguy/docker-rockylinux9-ansible@sha256:09c1074489a704687b2b1f3d16a4f537b211b49b64eb7a5b6e4d6d1eae5b8ba9"
+    command: ""
     privileged: true
-    command: /sbin/init
-    systemd: true
+    pre_build_image: true
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    tmpfs:
-      - /run
-      - /tmp
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
     networks:
       - name: molecule-network
 
