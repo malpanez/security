@@ -7,6 +7,9 @@ on:
     branches: [develop]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   pre-commit-checks:
     name: Pre-commit Hooks

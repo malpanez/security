@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
   actions: read
 
 jobs:
@@ -208,6 +207,9 @@ jobs:
   security-scan:
     name: Security Scanning
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
       - name: Checkout repository
