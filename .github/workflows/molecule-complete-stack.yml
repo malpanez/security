@@ -29,15 +29,15 @@ jobs:
       SCENARIO: ${{ github.event.inputs.scenario || 'complete_stack_ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Set up Python
-        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.12"
 
       - name: Install uv (with cache)
-        uses: astral-sh/setup-uv@afb3baf78d56a259980b76d3fc18fe1e99d867c2 # v7
+        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
         with:
           enable-cache: true
 
@@ -58,7 +58,11 @@ jobs:
       - name: Pre-pull common images to speed up Molecule
         run: |
           set -euo pipefail
-          for img in ubuntu:22.04 debian:12 rockylinux:9; do
+          for img in \
+            "geerlingguy/docker-ubuntu2204-ansible@sha256:2744f5aca5e33c01a682ff1ea201dc3841b0eaaa1f5c448e6bd9a6156a831638" \
+            "geerlingguy/docker-debian12-ansible@sha256:f69527a18970386befd62a36f68d5c39422a7ad15e4005133670566dd3b0da7f" \
+            "geerlingguy/docker-rockylinux9-ansible@sha256:09c1074489a704687b2b1f3d16a4f537b211b49b64eb7a5b6e4d6d1eae5b8ba9"
+          do
             echo "Pulling ${img}"
             docker pull "${img}"
           done

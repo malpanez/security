@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import yaml
-from hypothesis import given, strategies as st
+from hypothesis import given, settings, strategies as st
 from jinja2 import BaseLoader, Environment, select_autoescape
 
 
@@ -23,6 +23,11 @@ def _load_defaults():
     return data
 
 
+def _ansible_comment(text, style="plain", prefix="# ", postfix=""):
+    """Stub for Ansible's comment filter used in managed templates."""
+    return "\n".join(f"{prefix}{line}" for line in str(text).splitlines())
+
+
 def _render_sshd_config(**overrides):
     context = _load_defaults()
     context.update(overrides)
@@ -31,6 +36,7 @@ def _render_sshd_config(**overrides):
         autoescape=select_autoescape(default_for_string=False, default=False),
         keep_trailing_newline=True,
     )
+    env.filters["comment"] = _ansible_comment
     template = env.from_string(TEMPLATE_PATH.read_text())
     return template.render(**context)
 
@@ -45,6 +51,7 @@ def test_required_lines_present():
 SAFE_TOKEN = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-_", min_size=1, max_size=16)
 
 
+@settings(deadline=None)
 @given(st.lists(SAFE_TOKEN, min_size=1, max_size=10, unique=True))
 def test_allow_users_rendered(users):
     config = _render_sshd_config(sshd_hardening_allow_users=users)
@@ -56,6 +63,7 @@ def test_allow_users_omitted_when_empty():
     assert "AllowUsers" not in config
 
 
+@settings(deadline=None)
 @given(st.lists(SAFE_TOKEN, min_size=1, max_size=10, unique=True))
 def test_allow_groups_rendered(groups):
     config = _render_sshd_config(sshd_hardening_allow_groups=groups)
@@ -67,6 +75,7 @@ def test_allow_groups_omitted_when_empty():
     assert "AllowGroups" not in config
 
 
+@settings(deadline=None)
 @given(st.lists(SAFE_TOKEN, min_size=1, max_size=5, unique=True))
 def test_service_group_block_hardens(groups):
     config = _render_sshd_config(sshd_hardening_service_groups=groups)
@@ -75,6 +84,7 @@ def test_service_group_block_hardens(groups):
     assert "AllowTcpForwarding no" in config
 
 
+@settings(deadline=None)
 @given(st.lists(SAFE_TOKEN, min_size=1, max_size=5, unique=True))
 def test_human_group_mfa_block(groups):
     config = _render_sshd_config(

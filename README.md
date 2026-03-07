@@ -60,7 +60,7 @@ collections:
     version: ">=1.0.0"
 ```
 
-## Quick start
+## Usage
 
 ### 1. Review first (no changes applied)
 
@@ -92,6 +92,8 @@ Review the output in `/var/log/compliance`, then sign off.
 ```bash
 ansible-playbook playbook.yml -i inventory -e security_mode=enforce
 ```
+
+## Examples
 
 ### Key variables
 
