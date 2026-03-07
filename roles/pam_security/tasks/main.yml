@@ -1,0 +1,41 @@
+---
+# pam_security — entry point
+# Red Hat CoP pattern: load OS vars, then branch to review or enforce.
+
+- name: Load OS-family variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_os_family }}.yml"
+      paths:
+        - "{{ role_path }}/vars"
+  tags: [always]
+
+- name: Gather minimum facts if not already collected
+  ansible.builtin.setup:
+    gather_subset: [min]
+  when: ansible_facts == {}
+  tags: [always]
+
+- name: Assert supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ['Debian', 'RedHat', 'Suse']
+    fail_msg: >-
+      pam_security: unsupported OS family '{{ ansible_os_family }}'.
+      Supported: Debian, RedHat, Suse.
+    quiet: true
+  tags: [always]
+
+# ── Review (always runs, no changes) ─────────────────────────────────────────
+- name: Review current PAM security configuration
+  ansible.builtin.include_tasks: review.yml
+  tags: [pam_security, review]
+
+# ── Enforce (only when explicitly requested) ──────────────────────────────────
+- name: Enforce PAM security hardening
+  ansible.builtin.include_tasks: enforce.yml
+  when:
+    - pam_security_enabled | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [pam_security, enforce]

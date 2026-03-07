@@ -1,0 +1,32 @@
+---
+# kernel_hardening — entry point
+# Red Hat CoP pattern: assert OS, review always, enforce when requested.
+
+- name: Gather minimum facts if not already collected
+  ansible.builtin.setup:
+    gather_subset: [min]
+  when: ansible_facts == {}
+  tags: [always]
+
+- name: Assert supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ['Debian', 'RedHat', 'Suse']
+    fail_msg: >-
+      kernel_hardening: unsupported OS family '{{ ansible_os_family }}'.
+      Supported: Debian, RedHat, Suse.
+    quiet: true
+  tags: [always]
+
+# ── Review (always runs, no changes) ─────────────────────────────────────────
+- name: Review current kernel/sysctl configuration
+  ansible.builtin.include_tasks: review.yml
+  tags: [kernel_hardening, review]
+
+# ── Enforce (only when explicitly requested) ──────────────────────────────────
+- name: Enforce kernel hardening
+  ansible.builtin.include_tasks: enforce.yml
+  when:
+    - kernel_hardening_enabled | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [kernel_hardening, enforce]

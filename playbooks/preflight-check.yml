@@ -51,7 +51,7 @@
     - name: Check if platform is supported
       ansible.builtin.assert:
         that:
-          - ansible_os_family in ['Debian', 'RedHat']
+          - ansible_os_family in ['Debian', 'RedHat', 'Suse']
         fail_msg: "CRITICAL: Unsupported OS family: {{ ansible_os_family }}"
         success_msg: "✓ OS family supported: {{ ansible_os_family }}"
 
@@ -71,13 +71,21 @@
         success_msg: "✓ Ubuntu version: {{ ansible_distribution_version }}"
       when: ansible_distribution == 'Ubuntu'
 
-    - name: Check RHEL/CentOS version
+    - name: Check RHEL/CentOS/Rocky/AlmaLinux version
       ansible.builtin.assert:
         that:
           - ansible_distribution_major_version | int >= 7
         fail_msg: "CRITICAL: EL {{ ansible_distribution_major_version }} not supported. Need >= 7"
         success_msg: "✓ EL version: {{ ansible_distribution_major_version }}"
       when: ansible_os_family == 'RedHat'
+
+    - name: Check SUSE/openSUSE version
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution_version is version('15.0', '>=')
+        fail_msg: "CRITICAL: SUSE {{ ansible_distribution_version }} not supported. Need >= 15.0"
+        success_msg: "✓ SUSE version: {{ ansible_distribution_version }}"
+      when: ansible_os_family == 'Suse'
 
     # ============================================
     # CRITICAL: Check Python Version
@@ -263,9 +271,9 @@
           - PAM available: {{ 'yes' if ansible_os_family in ['Debian', 'RedHat'] else 'unknown' }}
 
     # ============================================
-    # WARNING: Check SELinux status (RHEL only)
+    # INFO: MAC status (SELinux or AppArmor)
     # ============================================
-    - name: Check SELinux status
+    - name: Check SELinux status (RHEL family)
       ansible.builtin.command: getenforce
       register: selinux_status
       changed_when: false
@@ -274,8 +282,20 @@
 
     - name: Display SELinux status
       ansible.builtin.debug:
-        msg: "SELinux status: {{ selinux_status.stdout | default('Not applicable') }}"
+        msg: "SELinux status: {{ selinux_status.stdout | default('N/A') }}"
       when: ansible_os_family == 'RedHat'
+
+    - name: Check AppArmor status (Debian/Ubuntu/SUSE)
+      ansible.builtin.command: aa-status --enabled
+      register: apparmor_status
+      changed_when: false
+      failed_when: false
+      when: ansible_os_family in ['Debian', 'Suse']
+
+    - name: Display AppArmor status
+      ansible.builtin.debug:
+        msg: "AppArmor status: {{ 'enabled' if apparmor_status.rc == 0 else 'disabled or not installed' }}"
+      when: ansible_os_family in ['Debian', 'Suse']
 
     # ============================================
     # CRITICAL: Check for conflicting configurations

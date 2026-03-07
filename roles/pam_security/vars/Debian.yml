@@ -1,0 +1,24 @@
+---
+# Debian / Ubuntu platform variables
+
+pam_security_pwquality_package: libpam-pwquality
+pam_security_pwquality_conf: /etc/security/pwquality.conf
+
+# faillock.conf available since libpam-modules 1.4 (Debian 11 / Ubuntu 20.04+)
+pam_security_faillock_conf: /etc/security/faillock.conf
+pam_security_faillock_package: libpam-modules
+
+pam_security_access_conf: /etc/security/access.conf
+pam_security_limits_conf: /etc/security/limits.conf
+pam_security_logindefs_path: /etc/login.defs
+
+# PAM files that need to include pam_pwquality and pam_faillock
+pam_security_pam_common_password: /etc/pam.d/common-password
+pam_security_pam_common_auth: /etc/pam.d/common-auth
+
+# Detect faillock.conf support (Debian 11+ / Ubuntu 20.04+)
+pam_security_faillock_conf_supported: >-
+  {{
+    (ansible_distribution == 'Debian' and ansible_distribution_major_version | int >= 11)
+    or (ansible_distribution == 'Ubuntu' and ansible_distribution_version is version('20.04', '>='))
+  }}

@@ -1,0 +1,41 @@
+{{ ansible_managed | comment }}
+# /etc/security/pwquality.conf
+# Managed by malpanez.security.pam_security role
+# Frameworks: CIS 5.4.1 / PCI-DSS 8.2.3 / HIPAA 164.312(a)(2)(i) / NIS2 baseline
+
+# Minimum acceptable password length
+minlen = {{ pam_security_pwquality_minlen }}
+
+# Credit values for character classes (negative = mandatory count)
+dcredit = {{ pam_security_pwquality_dcredit }}
+ucredit = {{ pam_security_pwquality_ucredit }}
+lcredit = {{ pam_security_pwquality_lcredit }}
+ocredit = {{ pam_security_pwquality_ocredit }}
+
+# Minimum number of required character classes (alternative to credit rules)
+{% if pam_security_pwquality_minclass > 0 %}
+minclass = {{ pam_security_pwquality_minclass }}
+{% endif %}
+
+# Maximum number of consecutive identical characters
+maxrepeat = {{ pam_security_pwquality_maxrepeat }}
+
+# Maximum length of monotonic character sequences (e.g. 1234, abcd)
+maxsequence = {{ pam_security_pwquality_maxsequence }}
+
+# Number of characters in the new password that must not be present in old password
+difok = {{ pam_security_pwquality_difok }}
+
+# Check the password against the GECOS (username/full name) field
+gecoscheck = {{ pam_security_pwquality_gecoscheck }}
+
+# Check the password against a dictionary via cracklib
+dictcheck = {{ pam_security_pwquality_dictcheck }}
+
+# Number of retries before returning an error to the application
+retry = {{ pam_security_pwquality_retry }}
+
+{% if pam_security_pwquality_badwords %}
+# Reject passwords containing these strings
+badwords = {{ pam_security_pwquality_badwords }}
+{% endif %}

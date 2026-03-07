@@ -1,0 +1,75 @@
+---
+# kernel_hardening — enforce tasks
+
+# ── sysctl ────────────────────────────────────────────────────────────────────
+
+- name: "[enforce] Deploy sysctl hardening configuration"
+  ansible.builtin.template:
+    src: sysctl-security.conf.j2
+    dest: "{{ kernel_hardening_sysctl_file }}"
+    owner: root
+    group: root
+    mode: "0640"
+  when: kernel_hardening_sysctl_enabled | bool
+  notify: reload sysctl
+  tags: [kernel_hardening, enforce]
+
+- name: "[enforce] Apply sysctl parameters immediately (runtime)"
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: false  # Batch reload via handler
+    sysctl_file: "{{ kernel_hardening_sysctl_file }}"
+    ignoreerrors: true  # Some params not available in containers
+  loop: "{{ kernel_hardening_sysctl_params | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: kernel_hardening_sysctl_enabled | bool
+  tags: [kernel_hardening, enforce]
+
+# ── Kernel modules — disable ─────────────────────────────────────────────────
+
+- name: "[enforce] Deploy modprobe blacklist for disabled modules"
+  ansible.builtin.template:
+    src: modprobe-disabled.conf.j2
+    dest: "{{ kernel_hardening_modprobe_dir }}/99-security-disabled.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  when: kernel_hardening_modules_enabled | bool
+  tags: [kernel_hardening, enforce]
+
+- name: "[enforce] Unload disabled modules that are currently active"
+  community.general.modprobe:
+    name: "{{ item.name }}"
+    state: absent
+  loop: "{{ kernel_hardening_disabled_modules + kernel_hardening_disabled_modules_extra }}"
+  loop_control:
+    label: "{{ item.name }}"
+  failed_when: false  # Module may not be loaded; that is acceptable
+  when: kernel_hardening_modules_enabled | bool
+  tags: [kernel_hardening, enforce]
+
+# ── Verify ────────────────────────────────────────────────────────────────────
+
+- name: "[enforce] Verify critical sysctl values applied"
+  ansible.builtin.command:
+    cmd: "sysctl {{ item.key }}"
+  register: _kh_verify
+  loop: "{{ kernel_hardening_sysctl_params | dict2items | selectattr('key', 'in', ['kernel.randomize_va_space', 'net.ipv4.tcp_syncookies', 'fs.suid_dumpable']) | list }}"
+  loop_control:
+    label: "{{ item.key }}"
+  changed_when: false
+  failed_when:
+    - _kh_verify.rc != 0
+  when: kernel_hardening_sysctl_enabled | bool
+  tags: [kernel_hardening, enforce]
+
+- name: "[enforce] Report enforcement complete"
+  ansible.builtin.debug:
+    msg: >-
+      kernel_hardening enforcement complete on {{ ansible_hostname }}.
+      sysctl file: {{ kernel_hardening_sysctl_file }}.
+      Disabled modules: {{ kernel_hardening_modprobe_dir }}/99-security-disabled.conf.
+  tags: [kernel_hardening, enforce]

@@ -1,0 +1,19 @@
+{{ ansible_managed | comment }}
+# /etc/modprobe.d/99-security-disabled.conf
+# Managed by malpanez.security.kernel_hardening role
+# Frameworks: CIS Benchmark 1.1.x / 3.4.x
+#
+# Each module is both blacklisted AND given an install stub of /bin/false
+# so it cannot be loaded even if explicitly requested (e.g. via modprobe).
+#
+# To reload a module after removing from this policy:
+#   1. Remove or comment out the relevant lines
+#   2. Run: depmod -a && modprobe <module>
+
+{% set all_disabled = kernel_hardening_disabled_modules + kernel_hardening_disabled_modules_extra %}
+{% for mod in all_disabled %}
+# {{ mod.comment | default(mod.name) }}
+blacklist {{ mod.name }}
+install {{ mod.name }} /bin/false
+
+{% endfor %}

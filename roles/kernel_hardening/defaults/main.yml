@@ -1,0 +1,139 @@
+---
+# Enable/disable this role entirely
+kernel_hardening_enabled: false
+
+# ---------------------------------------------------------------------------
+# sysctl parameters
+# CIS Benchmark: 3.x (network) / 1.5.x (kernel) / 1.6.x (filesystem)
+# PCI-DSS: 1.3 (network), 6.3 (patching)
+# NIS2: baseline hardening measures
+# ---------------------------------------------------------------------------
+kernel_hardening_sysctl_enabled: true
+
+# Path for the sysctl drop-in file (avoids modifying the main sysctl.conf)
+kernel_hardening_sysctl_file: /etc/sysctl.d/99-security.conf
+
+# Sysctl parameters to enforce.
+# Organized by category. Each key maps to a sysctl parameter name.
+kernel_hardening_sysctl_params:
+
+  # ── Kernel hardening ──────────────────────────────────────────────────────
+  # Restrict dmesg access to root (prevents info leakage)
+  kernel.dmesg_restrict: 1
+
+  # Restrict kernel pointer exposure in /proc and other interfaces
+  kernel.kptr_restrict: 2
+
+  # Restrict access to perf events (performance monitoring) to root
+  kernel.perf_event_paranoid: 3
+
+  # Address Space Layout Randomization — full randomization (CIS 1.5.3)
+  kernel.randomize_va_space: 2
+
+  # Disable core dumps for setuid programs (HIPAA: no sensitive data in dumps)
+  fs.suid_dumpable: 0
+
+  # Protect hard and symbolic links from privilege escalation
+  fs.protected_hardlinks: 1
+  fs.protected_symlinks: 1
+
+  # Restrict FIFO and regular file access in sticky directories
+  fs.protected_fifos: 1
+  fs.protected_regular: 2
+
+  # ── Network — general ─────────────────────────────────────────────────────
+  # Disable IP forwarding (router function — not needed on workstations/servers)
+  # WARNING: Set to 1 if this host is a router or runs containers/VMs
+  net.ipv4.ip_forward: 0
+
+  # Disable IPv6 forwarding
+  net.ipv6.conf.all.forwarding: 0
+
+  # ── Network — spoofing and redirect protection ────────────────────────────
+  # Do not send ICMP redirects (only routers should do this)
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.default.send_redirects: 0
+
+  # Do not accept ICMP redirects (protects against MITM routing attacks)
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv4.conf.all.secure_redirects: 0
+  net.ipv4.conf.default.secure_redirects: 0
+  net.ipv6.conf.all.accept_redirects: 0
+  net.ipv6.conf.default.accept_redirects: 0
+
+  # Do not accept source-routed packets (IP source routing is dangerous)
+  net.ipv4.conf.all.accept_source_route: 0
+  net.ipv4.conf.default.accept_source_route: 0
+  net.ipv6.conf.all.accept_source_route: 0
+  net.ipv6.conf.default.accept_source_route: 0
+
+  # Enable reverse path filtering (prevents IP spoofing — CIS 3.2.7)
+  net.ipv4.conf.all.rp_filter: 1
+  net.ipv4.conf.default.rp_filter: 1
+
+  # Log martian packets (IPs that shouldn't be routable)
+  net.ipv4.conf.all.log_martians: 1
+  net.ipv4.conf.default.log_martians: 1
+
+  # Ignore ICMP broadcast requests (Smurf amplification attack mitigation)
+  net.ipv4.icmp_echo_ignore_broadcasts: 1
+
+  # Ignore bogus ICMP responses (CIS 3.2.5)
+  net.ipv4.icmp_ignore_bogus_error_responses: 1
+
+  # ── Network — SYN flood protection ───────────────────────────────────────
+  net.ipv4.tcp_syncookies: 1
+
+  # ── Network — IPv6 ───────────────────────────────────────────────────────
+  # Disable router advertisements if not needed
+  net.ipv6.conf.all.accept_ra: 0
+  net.ipv6.conf.default.accept_ra: 0
+
+# ---------------------------------------------------------------------------
+# Kernel module restrictions
+# CIS: 3.4.x (network protocols) / 1.1.x (filesystems)
+# ---------------------------------------------------------------------------
+kernel_hardening_modules_enabled: true
+
+# Directory for modprobe blacklist/install-stub files
+kernel_hardening_modprobe_dir: /etc/modprobe.d
+
+# Kernel modules to disable (installed as modprobe blacklist + install /bin/false)
+# These are rarely needed in server environments and expand attack surface.
+kernel_hardening_disabled_modules:
+  # Uncommon/legacy network protocols
+  - name: dccp
+    comment: "DCCP protocol — rarely needed, CVE history (CIS 3.4.1)"
+  - name: sctp
+    comment: "SCTP protocol — rarely needed in enterprise, CVE history (CIS 3.4.2)"
+  - name: rds
+    comment: "RDS protocol — not needed on most servers (CIS 3.4.3)"
+  - name: tipc
+    comment: "TIPC protocol — cluster protocol, disable if not used (CIS 3.4.4)"
+
+  # Uncommon/legacy filesystems
+  - name: cramfs
+    comment: "Cramfs filesystem — not used on modern systems (CIS 1.1.1.1)"
+  - name: freevxfs
+    comment: "FreeVxFS filesystem — not used on modern systems (CIS 1.1.1.2)"
+  - name: jffs2
+    comment: "JFFS2 filesystem — embedded only (CIS 1.1.1.3)"
+  - name: hfs
+    comment: "HFS filesystem — macOS only (CIS 1.1.1.4)"
+  - name: hfsplus
+    comment: "HFS+ filesystem — macOS only (CIS 1.1.1.5)"
+  - name: squashfs
+    comment: "SquashFS — disable if snap/AppImage not used (CIS 1.1.1.6)"
+  - name: udf
+    comment: "UDF filesystem — optical media (CIS 1.1.1.7)"
+
+# Extra modules to disable beyond the defaults (use for site-specific needs)
+# kernel_hardening_disabled_modules_extra:
+#   - name: usb_storage
+#     comment: "Block USB mass storage — high-security environments"
+#   - name: bluetooth
+#     comment: "Bluetooth — if not used"
+#   - name: firewire_core
+#     comment: "FireWire — DMA-based physical access attacks"
+kernel_hardening_disabled_modules_extra: []

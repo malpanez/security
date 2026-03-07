@@ -1,0 +1,129 @@
+---
+# Enable/disable this role entirely
+pam_security_enabled: false
+
+# ---------------------------------------------------------------------------
+# pwquality — /etc/security/pwquality.conf
+# CIS Benchmark: 5.4.1 / PCI-DSS 8.2.3 / HIPAA 164.312(a)(2)(i)
+# ---------------------------------------------------------------------------
+pam_security_pwquality_enabled: true
+
+# Minimum password length (NIST 800-63B: ≥8; CIS/PCI-DSS: ≥12)
+pam_security_pwquality_minlen: 14
+
+# Required character classes (negative = mandatory, 0 = not required)
+pam_security_pwquality_dcredit: -1   # At least 1 digit
+pam_security_pwquality_ucredit: -1   # At least 1 uppercase
+pam_security_pwquality_lcredit: -1   # At least 1 lowercase
+pam_security_pwquality_ocredit: -1   # At least 1 special character
+
+# Maximum consecutive identical characters (CIS: ≤3)
+pam_security_pwquality_maxrepeat: 3
+
+# Maximum length of monotonic character sequences (e.g. 1234, abcd)
+pam_security_pwquality_maxsequence: 4
+
+# Minimum number of character classes required (0 = use credit rules above)
+pam_security_pwquality_minclass: 0
+
+# Check against GECOS field (username, full name, etc.)
+pam_security_pwquality_gecoscheck: 1
+
+# Dictionary check via cracklib (0 = disable)
+pam_security_pwquality_dictcheck: 1
+
+# Number of consecutive characters from old password rejected in new password
+pam_security_pwquality_difok: 8
+
+# Extra words to reject (space-separated)
+pam_security_pwquality_badwords: ""
+
+# Number of retries before returning an error
+pam_security_pwquality_retry: 3
+
+# ---------------------------------------------------------------------------
+# login.defs — /etc/login.defs
+# CIS: 5.5.1 / PCI-DSS: 8.2.4 / HIPAA: 164.312(a)
+# ---------------------------------------------------------------------------
+pam_security_logindefs_enabled: true
+
+# Password aging
+pam_security_logindefs_pass_max_days: 90    # CIS: ≤90
+pam_security_logindefs_pass_min_days: 7     # CIS: ≥7
+pam_security_logindefs_pass_warn_age: 14    # CIS: ≥7
+
+# Login controls
+pam_security_logindefs_login_retries: 5
+pam_security_logindefs_login_timeout: 60
+
+# Default umask for user home directories (027 = group read, no world access)
+pam_security_logindefs_umask: "027"
+
+# Password hashing algorithm
+pam_security_logindefs_encrypt_method: "SHA512"
+pam_security_logindefs_sha_crypt_min_rounds: 5000
+
+# Minimum and maximum UID/GID for new users
+pam_security_logindefs_uid_min: 1000
+pam_security_logindefs_gid_min: 1000
+
+# ---------------------------------------------------------------------------
+# faillock — /etc/security/faillock.conf (RHEL 8+/Debian 11+/SUSE 15.3+)
+# Falls back to PAM pam_tally2 on older systems.
+# CIS: 5.4.2 / PCI-DSS: 8.2.6 / NIS2: baseline lockout
+# ---------------------------------------------------------------------------
+pam_security_faillock_enabled: true
+
+# Number of failed logins before lockout
+pam_security_faillock_deny: 5
+
+# Time window for counting failures (seconds)
+pam_security_faillock_fail_interval: 900   # 15 minutes
+
+# Duration of lockout (seconds, 0 = until admin unlocks)
+pam_security_faillock_unlock_time: 600     # 10 minutes
+
+# Audit lockout events
+pam_security_faillock_audit: true
+
+# Log to syslog silently (no visible error to user)
+pam_security_faillock_silent: false
+
+# Root account is also subject to lockout (high security environments)
+pam_security_faillock_even_deny_root: false
+
+# ---------------------------------------------------------------------------
+# access.conf — /etc/security/access.conf
+# PAM access control: who can log in from where.
+# CIS: 5.5.x / HIPAA: 164.312(a)(2)(ii)
+# ---------------------------------------------------------------------------
+pam_security_access_enabled: false  # Disabled by default — requires site-specific config
+
+# List of access rules (applied top-down, first match wins).
+# Format: "permission : user/group : origin"
+#   + = allow, - = deny
+#   (group) = group membership check
+#   ALL = wildcard
+#   LOCAL = local logins (tty)
+# Example (uncomment and adjust to your environment):
+pam_security_access_rules: []
+# pam_security_access_rules:
+#   - "+ : root : LOCAL"                     # root only from console
+#   - "+ : (wheel) : ALL"                    # wheel group from anywhere
+#   - "+ : (sudo) : ALL"                     # sudo group from anywhere
+#   - "- : ALL : ALL"                        # deny everything else
+
+# ---------------------------------------------------------------------------
+# limits.conf — /etc/security/limits.conf
+# Resource limits to prevent abuse/DoS
+# CIS: 1.5.4 / HIPAA: 164.312(a)(2)(iv)
+# ---------------------------------------------------------------------------
+pam_security_limits_enabled: true
+
+# List of resource limits. Format: "domain type item value"
+pam_security_limits_rules:
+  - "* soft core 0"       # No core dumps (sensitive data exposure)
+  - "* hard core 0"
+  - "* hard nproc 65535"  # Max processes per user
+  - "* soft nofile 65536" # Open file descriptors (soft)
+  - "* hard nofile 65536" # Open file descriptors (hard)

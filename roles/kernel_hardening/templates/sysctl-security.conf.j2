@@ -1,0 +1,11 @@
+{{ ansible_managed | comment }}
+# /etc/sysctl.d/99-security.conf
+# Managed by malpanez.security.kernel_hardening role
+# Frameworks: CIS Benchmark 1.x/3.x / PCI-DSS 1.3/6.3 / NIS2 baseline hardening
+#
+# Apply immediately: sysctl --system
+# Verify a value:    sysctl kernel.randomize_va_space
+
+{% for key, value in kernel_hardening_sysctl_params.items() %}
+{{ key }} = {{ value }}
+{% endfor %}

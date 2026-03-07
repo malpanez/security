@@ -1,0 +1,13 @@
+{{ ansible_managed | comment }}
+# /etc/security/limits.d/99-pam-security.conf
+# Managed by malpanez.security.pam_security role
+# Frameworks: CIS 1.5.4 / HIPAA 164.312(a)(2)(iv)
+#
+# Format: <domain> <type> <item> <value>
+#   domain: username, @groupname, or * (all)
+#   type: soft (advisory), hard (kernel-enforced)
+#   item: core, nproc, nofile, stack, fsize, ...
+
+{% for rule in pam_security_limits_rules %}
+{{ rule }}
+{% endfor %}

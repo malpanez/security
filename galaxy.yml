@@ -21,7 +21,11 @@ authors:
 
 ### OPTIONAL but strongly recommended
 # A short summary description of the collection
-description: Harden hosts with SSH configuration best practices.
+description: >-
+  Comprehensive Linux security hardening collection: SSH, PAM MFA, sudoers,
+  kernel hardening, AppArmor, SELinux, audit logging, and compliance evidence
+  for NIS2, SOC2, PCI-DSS, HIPAA, and CIS Benchmark. Supports Debian/Ubuntu,
+  RHEL/Rocky/Alma, and SUSE/openSUSE.
 
 # Either a single license or a list of licenses for content inside of a collection. Ansible Galaxy currently only
 # accepts L(SPDX,https://spdx.org/licenses/) licenses. This key is mutually exclusive with 'license_file'
@@ -34,6 +38,16 @@ tags:
   - security
   - compliance
   - hardening
+  - pam
+  - ssh
+  - selinux
+  - apparmor
+  - kernel
+  - audit
+  - nis2
+  - pci_dss
+  - hipaa
+  - soc2
 
 # Collections that this collection requires to be installed for it to be usable. The key of the dict is the
 # collection label 'namespace.name'. The value is a version range

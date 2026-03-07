@@ -1,0 +1,42 @@
+---
+# apparmor — entry point
+# Parallel to selinux_enforcement: Debian/Ubuntu/SUSE only.
+# On RedHat family, this role skips gracefully (use selinux_enforcement instead).
+
+- name: Load OS-family variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_os_family }}.yml"
+      paths:
+        - "{{ role_path }}/vars"
+      skip: true
+  tags: [always]
+
+- name: Skip gracefully on RedHat family (use selinux_enforcement instead)
+  ansible.builtin.debug:
+    msg: >-
+      apparmor: RedHat family detected ({{ ansible_distribution }}).
+      AppArmor is not the default MAC on RHEL/Rocky/Alma.
+      Use the selinux_enforcement role instead.
+      Skipping.
+  when: ansible_os_family == 'RedHat'
+  tags: [always]
+
+- name: End play for RedHat (AppArmor not applicable)
+  ansible.builtin.meta: end_host
+  when: ansible_os_family == 'RedHat'
+  tags: [always]
+
+# ── Review (always runs, no changes) ─────────────────────────────────────────
+- name: Review current AppArmor status
+  ansible.builtin.include_tasks: review.yml
+  tags: [apparmor, review]
+
+# ── Enforce (only when explicitly requested) ──────────────────────────────────
+- name: Enforce AppArmor hardening
+  ansible.builtin.include_tasks: enforce.yml
+  when:
+    - apparmor_enabled | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [apparmor, enforce]

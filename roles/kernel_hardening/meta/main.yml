@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  author: Miguel Alpañez
+  description: >-
+    Harden kernel via sysctl parameters and disable dangerous kernel modules.
+    Covers network hardening, memory protection, and filesystem security.
+    Supports Debian/Ubuntu, RHEL/Rocky/Alma, and SUSE/openSUSE.
+  license: GPL-2.0-or-later
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - security
+    - compliance
+    - hardening
+    - kernel
+    - sysctl
+    - linux
+  platforms:
+    - name: Debian
+      versions: [buster, bullseye, bookworm, trixie]
+    - name: Ubuntu
+      versions: [bionic, focal, jammy, noble]
+    - name: EL
+      versions: ["7", "8", "9"]
+    - name: opensuse
+      versions: ["15.5", "all"]
+dependencies: []

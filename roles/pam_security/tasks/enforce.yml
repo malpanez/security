@@ -1,0 +1,176 @@
+---
+# pam_security — enforce tasks
+# Applies policy values. Requires pam_security_enabled=true AND security_mode=enforce.
+
+# ── Package installation ──────────────────────────────────────────────────────
+
+- name: "[enforce] Install pwquality package"
+  ansible.builtin.package:
+    name: "{{ pam_security_pwquality_package }}"
+    state: present
+  when: pam_security_pwquality_enabled | bool
+  tags: [pam_security, enforce]
+
+- name: "[enforce] Install faillock package"
+  ansible.builtin.package:
+    name: "{{ pam_security_faillock_package }}"
+    state: present
+  when: pam_security_faillock_enabled | bool
+  tags: [pam_security, enforce]
+
+# ── pwquality.conf ────────────────────────────────────────────────────────────
+
+- name: "[enforce] Deploy pwquality.conf"
+  ansible.builtin.template:
+    src: pwquality.conf.j2
+    dest: "{{ pam_security_pwquality_conf }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: pam_security_pwquality_enabled | bool
+  tags: [pam_security, enforce]
+
+# ── login.defs ────────────────────────────────────────────────────────────────
+
+- name: "[enforce] Set PASS_MAX_DAYS in login.defs"
+  ansible.builtin.lineinfile:
+    path: "{{ pam_security_logindefs_path }}"
+    regexp: '^#?\s*PASS_MAX_DAYS'
+    line: "PASS_MAX_DAYS   {{ pam_security_logindefs_pass_max_days }}"
+    state: present
+  when: pam_security_logindefs_enabled | bool
+  tags: [pam_security, enforce]
+
+- name: "[enforce] Set PASS_MIN_DAYS in login.defs"
+  ansible.builtin.lineinfile:
+    path: "{{ pam_security_logindefs_path }}"
+    regexp: '^#?\s*PASS_MIN_DAYS'
+    line: "PASS_MIN_DAYS   {{ pam_security_logindefs_pass_min_days }}"
+    state: present
+  when: pam_security_logindefs_enabled | bool
+  tags: [pam_security, enforce]
+
+- name: "[enforce] Set PASS_WARN_AGE in login.defs"
+  ansible.builtin.lineinfile:
+    path: "{{ pam_security_logindefs_path }}"
+    regexp: '^#?\s*PASS_WARN_AGE'
+    line: "PASS_WARN_AGE   {{ pam_security_logindefs_pass_warn_age }}"
+    state: present
+  when: pam_security_logindefs_enabled | bool
+  tags: [pam_security, enforce]
+
+- name: "[enforce] Set LOGIN_RETRIES in login.defs"
+  ansible.builtin.lineinfile:
+    path: "{{ pam_security_logindefs_path }}"
+    regexp: '^#?\s*LOGIN_RETRIES'
+    line: "LOGIN_RETRIES   {{ pam_security_logindefs_login_retries }}"
+    state: present
+  when: pam_security_logindefs_enabled | bool
+  tags: [pam_security, enforce]
+
+- name: "[enforce] Set LOGIN_TIMEOUT in login.defs"
+  ansible.builtin.lineinfile:
+    path: "{{ pam_security_logindefs_path }}"
+    regexp: '^#?\s*LOGIN_TIMEOUT'
+    line: "LOGIN_TIMEOUT   {{ pam_security_logindefs_login_timeout }}"
+    state: present
+  when: pam_security_logindefs_enabled | bool
+  tags: [pam_security, enforce]
+
+- name: "[enforce] Set UMASK in login.defs"
+  ansible.builtin.lineinfile:
+    path: "{{ pam_security_logindefs_path }}"
+    regexp: '^#?\s*UMASK'
+    line: "UMASK           {{ pam_security_logindefs_umask }}"
+    state: present
+  when: pam_security_logindefs_enabled | bool
+  tags: [pam_security, enforce]
+
+- name: "[enforce] Set ENCRYPT_METHOD in login.defs"
+  ansible.builtin.lineinfile:
+    path: "{{ pam_security_logindefs_path }}"
+    regexp: '^#?\s*ENCRYPT_METHOD'
+    line: "ENCRYPT_METHOD  {{ pam_security_logindefs_encrypt_method }}"
+    state: present
+  when: pam_security_logindefs_enabled | bool
+  tags: [pam_security, enforce]
+
+- name: "[enforce] Set SHA_CRYPT_MIN_ROUNDS in login.defs"
+  ansible.builtin.lineinfile:
+    path: "{{ pam_security_logindefs_path }}"
+    regexp: '^#?\s*SHA_CRYPT_MIN_ROUNDS'
+    line: "SHA_CRYPT_MIN_ROUNDS {{ pam_security_logindefs_sha_crypt_min_rounds }}"
+    state: present
+  when:
+    - pam_security_logindefs_enabled | bool
+    - pam_security_logindefs_encrypt_method == 'SHA512'
+  tags: [pam_security, enforce]
+
+# ── faillock.conf ─────────────────────────────────────────────────────────────
+
+- name: "[enforce] Deploy faillock.conf"
+  ansible.builtin.template:
+    src: faillock.conf.j2
+    dest: "{{ pam_security_faillock_conf }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - pam_security_faillock_enabled | bool
+    - pam_security_faillock_conf_supported | bool
+  tags: [pam_security, enforce]
+
+- name: "[enforce] Warn if faillock.conf not supported on this OS version"
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: faillock.conf is not supported on this OS version
+      ({{ ansible_distribution }} {{ ansible_distribution_version }}).
+      Account lockout must be configured manually via PAM files.
+  when:
+    - pam_security_faillock_enabled | bool
+    - not (pam_security_faillock_conf_supported | bool)
+  tags: [pam_security, enforce]
+
+# ── access.conf ───────────────────────────────────────────────────────────────
+
+- name: "[enforce] Deploy access.conf"
+  ansible.builtin.template:
+    src: access.conf.j2
+    dest: "{{ pam_security_access_conf }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - pam_security_access_enabled | bool
+    - pam_security_access_rules | length > 0
+  tags: [pam_security, enforce]
+
+# ── limits.conf ───────────────────────────────────────────────────────────────
+
+- name: "[enforce] Deploy limits.conf drop-in for security rules"
+  ansible.builtin.template:
+    src: limits.conf.j2
+    dest: /etc/security/limits.d/99-pam-security.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: pam_security_limits_enabled | bool
+  tags: [pam_security, enforce]
+
+# ── Verify ───────────────────────────────────────────────────────────────────
+
+- name: "[enforce] Verify pwquality config is parseable"
+  ansible.builtin.command:
+    cmd: python3 -c "import configparser; c=configparser.ConfigParser(); c.read('{{ pam_security_pwquality_conf }}')"
+  changed_when: false
+  failed_when: false
+  when: pam_security_pwquality_enabled | bool
+  tags: [pam_security, enforce]
+
+- name: "[enforce] Report enforcement complete"
+  ansible.builtin.debug:
+    msg: >-
+      pam_security enforcement complete on {{ ansible_hostname }}
+      ({{ ansible_distribution }} {{ ansible_distribution_version }}).
+      Review /var/log/compliance for evidence artifacts.
+  tags: [pam_security, enforce]

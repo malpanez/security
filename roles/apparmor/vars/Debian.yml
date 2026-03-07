@@ -1,0 +1,13 @@
+---
+apparmor_packages:
+  - apparmor
+  - apparmor-utils
+  - apparmor-profiles
+
+apparmor_status_cmd: aa-status
+apparmor_enforce_cmd: aa-enforce
+apparmor_complain_cmd: aa-complain
+apparmor_profiles_dir: /etc/apparmor.d
+
+# Service name differs by distro
+apparmor_service: apparmor

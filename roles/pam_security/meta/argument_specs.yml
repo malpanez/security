@@ -1,0 +1,148 @@
+---
+argument_specs:
+  main:
+    short_description: Harden PAM password quality, account access, login policies, and lockout.
+    options:
+      pam_security_enabled:
+        type: bool
+        default: false
+        description: Set to true to enable enforcement. Review always runs.
+      pam_security_pwquality_enabled:
+        type: bool
+        default: true
+        description: Manage /etc/security/pwquality.conf.
+      pam_security_pwquality_minlen:
+        type: int
+        default: 14
+        description: "Minimum password length (CIS: ≥12, PCI-DSS: ≥12)."
+      pam_security_pwquality_dcredit:
+        type: int
+        default: -1
+        description: Digit credit. Negative = mandatory count.
+      pam_security_pwquality_ucredit:
+        type: int
+        default: -1
+        description: Uppercase credit. Negative = mandatory count.
+      pam_security_pwquality_lcredit:
+        type: int
+        default: -1
+        description: Lowercase credit. Negative = mandatory count.
+      pam_security_pwquality_ocredit:
+        type: int
+        default: -1
+        description: Special character credit. Negative = mandatory count.
+      pam_security_pwquality_maxrepeat:
+        type: int
+        default: 3
+        description: Maximum consecutive identical characters.
+      pam_security_pwquality_maxsequence:
+        type: int
+        default: 4
+        description: Maximum monotonic character sequence length.
+      pam_security_pwquality_difok:
+        type: int
+        default: 8
+        description: Characters from old password that must not appear in new.
+      pam_security_pwquality_gecoscheck:
+        type: int
+        default: 1
+        description: Check against GECOS field (username, full name).
+      pam_security_pwquality_dictcheck:
+        type: int
+        default: 1
+        description: Check against cracklib dictionary.
+      pam_security_pwquality_retry:
+        type: int
+        default: 3
+        description: Retries before returning error.
+      pam_security_pwquality_badwords:
+        type: str
+        default: ""
+        description: Space-separated list of words to reject in passwords.
+      pam_security_logindefs_enabled:
+        type: bool
+        default: true
+        description: Manage /etc/login.defs settings via lineinfile.
+      pam_security_logindefs_pass_max_days:
+        type: int
+        default: 90
+        description: "Maximum password age in days (CIS: ≤90)."
+      pam_security_logindefs_pass_min_days:
+        type: int
+        default: 7
+        description: "Minimum password age in days (CIS: ≥7)."
+      pam_security_logindefs_pass_warn_age:
+        type: int
+        default: 14
+        description: "Days before expiry to warn user (CIS: ≥7)."
+      pam_security_logindefs_login_retries:
+        type: int
+        default: 5
+        description: Maximum login retry attempts.
+      pam_security_logindefs_login_timeout:
+        type: int
+        default: 60
+        description: Login timeout in seconds.
+      pam_security_logindefs_umask:
+        type: str
+        default: "027"
+        description: Default umask for user creation.
+      pam_security_logindefs_encrypt_method:
+        type: str
+        default: SHA512
+        description: Password hash algorithm (SHA512 recommended).
+      pam_security_logindefs_sha_crypt_min_rounds:
+        type: int
+        default: 5000
+        description: Minimum SHA-crypt rounds (higher = slower = more secure).
+      pam_security_faillock_enabled:
+        type: bool
+        default: true
+        description: Manage /etc/security/faillock.conf.
+      pam_security_faillock_deny:
+        type: int
+        default: 5
+        description: "Failed logins before lockout (PCI-DSS 8.2.6: ≤6)."
+      pam_security_faillock_fail_interval:
+        type: int
+        default: 900
+        description: Time window for failure counting (seconds).
+      pam_security_faillock_unlock_time:
+        type: int
+        default: 600
+        description: Lockout duration in seconds (0 = permanent until admin unlocks).
+      pam_security_faillock_audit:
+        type: bool
+        default: true
+        description: Record lockout events to audit subsystem.
+      pam_security_faillock_silent:
+        type: bool
+        default: false
+        description: Do not show lockout messages to users.
+      pam_security_faillock_even_deny_root:
+        type: bool
+        default: false
+        description: Apply lockout to root account (high-security environments).
+      pam_security_access_enabled:
+        type: bool
+        default: false
+        description: Manage /etc/security/access.conf. Requires pam_security_access_rules.
+      pam_security_access_rules:
+        type: list
+        elements: str
+        default: []
+        description: List of PAM access rules (format "permission : user : origin").
+      pam_security_limits_enabled:
+        type: bool
+        default: true
+        description: Deploy resource limits to /etc/security/limits.d/99-pam-security.conf.
+      pam_security_limits_rules:
+        type: list
+        elements: str
+        default:
+          - "* soft core 0"
+          - "* hard core 0"
+          - "* hard nproc 65535"
+          - "* soft nofile 65536"
+          - "* hard nofile 65536"
+        description: List of limits.conf rules.
