@@ -156,7 +156,7 @@
     - sshd_hardening_use_dropin
   tags: [enforce]
 
-- name: common | Verify sshd_config includes drop-in directory
+- name: common | Check if sshd_config already includes drop-in directory
   ansible.builtin.command: >-
     grep -Eq "^[[:space:]]*Include[[:space:]]+{{ sshd_hardening_config_dir }}/\\*\\.conf"
     {{ sshd_hardening_config_path }}
@@ -168,15 +168,18 @@
     - sshd_hardening_use_dropin
   tags: [enforce]
 
-- name: common | Fail if sshd_config lacks Include for drop-ins
-  ansible.builtin.fail:
-    msg: >-
-      CRITICAL: {{ sshd_hardening_config_path }} does not include {{ sshd_hardening_config_dir }}/*.conf.
-      Enable Include before using sshd_hardening_use_dropin to avoid a lockout.
+- name: common | Inject Include directive into sshd_config (single targeted change)
+  ansible.builtin.lineinfile:
+    path: "{{ sshd_hardening_config_path }}"
+    line: "Include {{ sshd_hardening_config_dir }}/*.conf"
+    insertbefore: BOF
+    state: present
+    validate: "{{ sshd_hardening_binary_path }} -t -f %s"
   when:
     - security_mode | default('enforce') == 'enforce'
     - sshd_hardening_use_dropin
     - sshd_hardening_include_check.rc != 0
+  notify: Restart sshd
   tags: [enforce]
 
 - name: common | Configure sshd_config

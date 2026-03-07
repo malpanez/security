@@ -1,0 +1,98 @@
+---
+- name: Verify kernel_hardening role
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Verify sysctl security file exists
+      ansible.builtin.stat:
+        path: /etc/sysctl.d/99-security.conf
+      register: _sysctl_stat
+      failed_when: not _sysctl_stat.stat.exists
+
+    - name: Verify sysctl file contains key parameters
+      ansible.builtin.command:
+        cmd: "grep -E '{{ item.key }}\\s*=\\s*{{ item.value }}' /etc/sysctl.d/99-security.conf"
+      loop:
+        - {key: "kernel.randomize_va_space", value: "2"}
+        - {key: "fs.suid_dumpable", value: "0"}
+        - {key: "net.ipv4.tcp_syncookies", value: "1"}
+        - {key: "net.ipv4.conf.all.send_redirects", value: "0"}
+        - {key: "net.ipv4.conf.all.accept_redirects", value: "0"}
+      loop_control:
+        label: "{{ item.key }}"
+      changed_when: false
+      register: _sysctl_check
+
+    - name: Assert all key sysctl parameters present in config file
+      ansible.builtin.assert:
+        that: item.rc == 0
+        fail_msg: "sysctl config missing: {{ item.item.key }} = {{ item.item.value }}"
+        success_msg: "✓ sysctl {{ item.item.key }} = {{ item.item.value }}"
+      loop: "{{ _sysctl_check.results }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+
+    - name: Verify kernel.randomize_va_space is active at runtime
+      ansible.builtin.command:
+        cmd: sysctl -n kernel.randomize_va_space
+      changed_when: false
+      register: _aslr_runtime
+      failed_when: false  # May be read-only in containers
+
+    - name: Assert ASLR is enabled at runtime (skip in containers)
+      ansible.builtin.assert:
+        that: _aslr_runtime.stdout | trim == '2'
+        fail_msg: "kernel.randomize_va_space not 2 at runtime (got: {{ _aslr_runtime.stdout | trim }})"
+        success_msg: "✓ ASLR enabled at runtime (randomize_va_space=2)"
+      when: _aslr_runtime.rc == 0
+      ignore_errors: true  # Containers may restrict this
+
+    - name: Verify modprobe disabled file exists
+      ansible.builtin.stat:
+        path: /etc/modprobe.d/99-security-disabled.conf
+      register: _modprobe_stat
+      failed_when: not _modprobe_stat.stat.exists
+
+    - name: Verify modprobe file blacklists legacy network protocols
+      ansible.builtin.command:
+        cmd: "grep -E 'blacklist {{ item }}' /etc/modprobe.d/99-security-disabled.conf"
+      loop:
+        - dccp
+        - sctp
+        - rds
+        - tipc
+      changed_when: false
+      register: _modprobe_check
+
+    - name: Assert all expected modules are blacklisted
+      ansible.builtin.assert:
+        that: item.rc == 0
+        fail_msg: "modprobe file missing blacklist for: {{ item.item }}"
+        success_msg: "✓ blacklist {{ item.item }}"
+      loop: "{{ _modprobe_check.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Verify modprobe file uses install stubs
+      ansible.builtin.command:
+        cmd: "grep -E 'install {{ item }} /bin/false' /etc/modprobe.d/99-security-disabled.conf"
+      loop:
+        - dccp
+        - sctp
+      changed_when: false
+      register: _modprobe_stub_check
+
+    - name: Assert install stubs are present
+      ansible.builtin.assert:
+        that: item.rc == 0
+        fail_msg: "modprobe file missing install stub for: {{ item.item }}"
+        success_msg: "✓ install stub: {{ item.item }} /bin/false"
+      loop: "{{ _modprobe_stub_check.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: kernel_hardening verification complete
+      ansible.builtin.debug:
+        msg: "✓ kernel_hardening molecule verification complete"

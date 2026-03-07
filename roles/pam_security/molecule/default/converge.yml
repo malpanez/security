@@ -1,0 +1,25 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Ensure remote tmp directory
+      ansible.builtin.raw: mkdir -p /tmp/ansible-tmp
+      changed_when: false
+    - name: Gather facts
+      ansible.builtin.setup:
+  roles:
+    - role: pam_security
+      vars:
+        security_mode: enforce
+        pam_security_enabled: true
+        pam_security_pwquality_enabled: true
+        pam_security_logindefs_enabled: true
+        pam_security_faillock_enabled: true
+        pam_security_limits_enabled: true
+        pam_security_access_enabled: false  # Requires site-specific rules
+        # Slightly relaxed for testing (don't lock out CI)
+        pam_security_pwquality_minlen: 12
+        pam_security_faillock_deny: 10
+        pam_security_logindefs_pass_max_days: 90

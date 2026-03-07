@@ -1,0 +1,74 @@
+---
+- name: Verify apparmor role
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Verify AppArmor packages are installed
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert apparmor package is installed
+      ansible.builtin.assert:
+        that: "'apparmor' in packages"
+        fail_msg: "apparmor package not installed"
+        success_msg: "✓ apparmor package installed"
+
+    - name: Assert apparmor-utils is installed
+      ansible.builtin.assert:
+        that: "'apparmor-utils' in packages"
+        fail_msg: "apparmor-utils package not installed"
+        success_msg: "✓ apparmor-utils installed"
+
+    - name: Check if AppArmor kernel module is available
+      ansible.builtin.command:
+        cmd: cat /sys/module/apparmor/parameters/enabled
+      register: _aa_kernel
+      changed_when: false
+      failed_when: false
+
+    - name: Report AppArmor kernel status
+      ansible.builtin.debug:
+        msg: >-
+          AppArmor kernel enabled: {{ _aa_kernel.stdout | default('unavailable') | trim }}
+          (containers may not have full AppArmor kernel support)
+
+    - name: Check AppArmor service is enabled
+      ansible.builtin.service_facts:
+
+    - name: Assert AppArmor service is enabled
+      ansible.builtin.assert:
+        that:
+          - "'apparmor.service' in ansible_facts.services"
+          - ansible_facts.services['apparmor.service'].status == 'enabled'
+        fail_msg: "AppArmor service not enabled"
+        success_msg: "✓ AppArmor service enabled"
+      ignore_errors: true  # Containers may not support AppArmor service
+
+    - name: Verify aa-status command is available
+      ansible.builtin.command:
+        cmd: which aa-status
+      changed_when: false
+      register: _aa_status_cmd
+
+    - name: Assert aa-status is available
+      ansible.builtin.assert:
+        that: _aa_status_cmd.rc == 0
+        fail_msg: "aa-status command not found"
+        success_msg: "✓ aa-status available"
+
+    - name: Run aa-status for information (non-fatal)
+      ansible.builtin.command:
+        cmd: aa-status
+      changed_when: false
+      failed_when: false
+      register: _aa_status_output
+
+    - name: Report AppArmor status
+      ansible.builtin.debug:
+        msg: "{{ _aa_status_output.stdout | default('(aa-status not available)') }}"
+
+    - name: apparmor verification complete
+      ansible.builtin.debug:
+        msg: "✓ apparmor molecule verification complete"

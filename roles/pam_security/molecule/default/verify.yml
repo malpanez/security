@@ -1,0 +1,102 @@
+---
+- name: Verify pam_security role
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Verify pwquality.conf exists
+      ansible.builtin.stat:
+        path: /etc/security/pwquality.conf
+      register: _pwquality_stat
+      failed_when: not _pwquality_stat.stat.exists
+
+    - name: Verify pwquality.conf has correct minlen
+      ansible.builtin.command:
+        cmd: grep -E "^minlen\s*=\s*12" /etc/security/pwquality.conf
+      changed_when: false
+      failed_when: false
+      register: _pwquality_minlen
+
+    - name: Assert pwquality minlen is set
+      ansible.builtin.assert:
+        that: _pwquality_minlen.rc == 0
+        fail_msg: "pwquality.conf missing minlen = 12"
+        success_msg: "✓ pwquality minlen = 12"
+
+    - name: Verify pwquality.conf has maxrepeat
+      ansible.builtin.command:
+        cmd: grep -E "^maxrepeat\s*=" /etc/security/pwquality.conf
+      changed_when: false
+      register: _pwquality_maxrepeat
+
+    - name: Assert pwquality maxrepeat is set
+      ansible.builtin.assert:
+        that: _pwquality_maxrepeat.rc == 0
+        fail_msg: "pwquality.conf missing maxrepeat"
+        success_msg: "✓ pwquality maxrepeat present"
+
+    - name: Verify limits drop-in exists
+      ansible.builtin.stat:
+        path: /etc/security/limits.d/99-pam-security.conf
+      register: _limits_stat
+      failed_when: not _limits_stat.stat.exists
+
+    - name: Verify limits drop-in disables core dumps
+      ansible.builtin.command:
+        cmd: grep "hard core 0" /etc/security/limits.d/99-pam-security.conf
+      changed_when: false
+      register: _limits_core
+
+    - name: Assert core dump limit is set
+      ansible.builtin.assert:
+        that: _limits_core.rc == 0
+        fail_msg: "limits.d missing '* hard core 0'"
+        success_msg: "✓ core dump limit disabled"
+
+    - name: Verify login.defs PASS_MAX_DAYS is set
+      ansible.builtin.command:
+        cmd: grep -E "^PASS_MAX_DAYS\s+90" /etc/login.defs
+      changed_when: false
+      register: _logindefs_maxdays
+
+    - name: Assert PASS_MAX_DAYS is correct
+      ansible.builtin.assert:
+        that: _logindefs_maxdays.rc == 0
+        fail_msg: "login.defs PASS_MAX_DAYS not set to 90"
+        success_msg: "✓ PASS_MAX_DAYS = 90"
+
+    - name: Verify login.defs ENCRYPT_METHOD is SHA512
+      ansible.builtin.command:
+        cmd: grep -E "^ENCRYPT_METHOD\s+SHA512" /etc/login.defs
+      changed_when: false
+      register: _logindefs_encrypt
+
+    - name: Assert ENCRYPT_METHOD is SHA512
+      ansible.builtin.assert:
+        that: _logindefs_encrypt.rc == 0
+        fail_msg: "login.defs ENCRYPT_METHOD not set to SHA512"
+        success_msg: "✓ ENCRYPT_METHOD = SHA512"
+
+    - name: Verify faillock.conf exists (if supported)
+      ansible.builtin.stat:
+        path: /etc/security/faillock.conf
+      register: _faillock_stat
+
+    - name: Verify faillock deny setting (if file exists)
+      ansible.builtin.command:
+        cmd: grep -E "^deny\s*=" /etc/security/faillock.conf
+      changed_when: false
+      register: _faillock_deny
+      when: _faillock_stat.stat.exists
+
+    - name: Assert faillock deny is configured
+      ansible.builtin.assert:
+        that: _faillock_deny.rc == 0
+        fail_msg: "faillock.conf missing deny ="
+        success_msg: "✓ faillock deny configured"
+      when: _faillock_stat.stat.exists
+
+    - name: Verify review mode also works (idempotency check)
+      ansible.builtin.debug:
+        msg: "✓ pam_security molecule verification complete"

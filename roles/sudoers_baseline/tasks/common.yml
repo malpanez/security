@@ -14,7 +14,61 @@
   when: sudoers_baseline_iolog_enabled
   tags: [enforce]
 
-- name: common | Deploy sudoers defaults
+- name: common | Verify /etc/sudoers syntax is valid before any changes
+  ansible.builtin.command: "visudo -cf {{ sudoers_baseline_sudoers_path }}"
+  changed_when: false
+  register: _sudoers_pre_check
+  failed_when: _sudoers_pre_check.rc != 0
+
+- name: common | Check if @includedir is present in /etc/sudoers
+  ansible.builtin.command: >-
+    grep -Eq "^@includedir\s+{{ sudoers_baseline_files_path }}"
+    {{ sudoers_baseline_sudoers_path }}
+  changed_when: false
+  failed_when: false
+  register: _sudoers_includedir_check
+  when: sudoers_baseline_use_dropin | bool
+
+- name: common | Assert @includedir is present (required for drop-in mode)
+  ansible.builtin.assert:
+    that:
+      - _sudoers_includedir_check.rc == 0
+    fail_msg: >-
+      /etc/sudoers does not contain '@includedir {{ sudoers_baseline_files_path }}'.
+      Add it manually or set sudoers_baseline_use_dropin=false to use legacy mode.
+      We never rewrite /etc/sudoers automatically — that is intentional.
+    success_msg: "✓ @includedir {{ sudoers_baseline_files_path }} present"
+  when: sudoers_baseline_use_dropin | bool
+
+# ── Drop-in mode (recommended default) ───────────────────────────────────────
+# /etc/sudoers is NEVER modified. All hardening goes into /etc/sudoers.d/ files.
+# Safe across OS updates, easy to audit, easy to revert (just remove the files).
+
+- name: common | Deploy Defaults drop-in (sudoers.d/10-security-defaults)
+  ansible.builtin.template:
+    src: sudoers-defaults.d.j2
+    dest: "{{ sudoers_baseline_dropin_defaults }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: visudo -cf %s
+  when: sudoers_baseline_use_dropin | bool
+
+- name: common | Deploy group rules drop-in (sudoers.d/99-security-groups)
+  ansible.builtin.template:
+    src: sudoers-groups.d.j2
+    dest: "{{ sudoers_baseline_dropin_groups }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: visudo -cf %s
+  when:
+    - sudoers_baseline_use_dropin | bool
+    - sudoers_baseline_groups | length > 0
+
+# ── Legacy mode (backwards compatibility: use_dropin=false) ──────────────────
+
+- name: common | Deploy full /etc/sudoers replacement (legacy mode)
   ansible.builtin.template:
     src: sudoers.j2
     dest: "{{ sudoers_baseline_sudoers_path }}"
@@ -22,8 +76,9 @@
     group: root
     mode: "0440"
     validate: visudo -cf %s
+  when: not sudoers_baseline_use_dropin | bool
 
-- name: common | Deploy sudoers include files
+- name: common | Deploy group rules (legacy mode, sudoers.d/99-security)
   ansible.builtin.template:
     src: sudoers.d.j2
     dest: "{{ sudoers_baseline_files_path }}/99-security"
@@ -31,3 +86,4 @@
     group: root
     mode: "0440"
     validate: visudo -cf %s
+  when: not sudoers_baseline_use_dropin | bool

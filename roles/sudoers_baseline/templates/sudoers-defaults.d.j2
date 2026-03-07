@@ -1,0 +1,18 @@
+{{ ansible_managed | comment }}
+# /etc/sudoers.d/10-security-defaults
+# Managed by malpanez.security.sudoers_baseline role
+# Frameworks: CIS 5.3.x / PCI-DSS 7.1 / SOC2 CC6.2
+#
+# This file contains ONLY Defaults directives.
+# /etc/sudoers is NOT modified by this role.
+
+Defaults {{ sudoers_baseline_defaults | join(',') }}
+Defaults secure_path="{{ sudoers_baseline_secure_path }}"
+{% if sudoers_baseline_iolog_enabled %}
+# I/O logging — complete audit trail of all sudo commands
+# WARNING: Significant disk usage. Plan log rotation.
+Defaults log_input
+Defaults log_output
+Defaults iolog_dir="{{ sudoers_baseline_iolog_dir }}"
+Defaults maxseq={{ sudoers_baseline_iolog_maxseq }}
+{% endif %}

@@ -1,0 +1,19 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Ensure remote tmp directory
+      ansible.builtin.raw: mkdir -p /tmp/ansible-tmp
+      changed_when: false
+    - name: Gather facts
+      ansible.builtin.setup:
+  roles:
+    - role: kernel_hardening
+      vars:
+        security_mode: enforce
+        kernel_hardening_enabled: true
+        kernel_hardening_sysctl_enabled: true
+        kernel_hardening_modules_enabled: true
+        # In containers, many sysctl params are read-only; ignoreerrors=true handles this
