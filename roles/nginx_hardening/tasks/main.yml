@@ -1,0 +1,37 @@
+---
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_os_family }}.yml"
+        - main.yml
+      paths: "{{ role_path }}/vars"
+  tags: [nginx_hardening, always]
+
+- name: Check if Nginx is installed
+  ansible.builtin.stat:
+    path: "{{ nginx_hardening_config_path }}"
+  register: _nginx_installed
+  become: false
+  tags: [nginx_hardening, always]
+
+- name: Skip if Nginx not installed
+  ansible.builtin.debug:
+    msg: "Nginx not detected at {{ nginx_hardening_config_path }} — skipping"
+  when: not _nginx_installed.stat.exists
+  tags: [nginx_hardening, always]
+
+- name: Run nginx hardening when installed
+  when: _nginx_installed.stat.exists
+  tags: [nginx_hardening]
+  block:
+    - name: Review mode — assess Nginx posture
+      ansible.builtin.include_tasks: review.yml
+      tags: [nginx_hardening, review]
+
+    - name: Enforce mode — apply Nginx hardening
+      ansible.builtin.include_tasks: enforce.yml
+      when:
+        - nginx_hardening_enabled | bool
+        - security_mode | default('review') == 'enforce'
+      tags: [nginx_hardening, enforce]

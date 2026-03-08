@@ -1,0 +1,3 @@
+---
+_sh_dnf_conf: /etc/apt/apt.conf.d/99-security-hardening  # unused on Debian; apt template used
+_sh_logind_user: ""   # systemd-logind runs as root on Debian

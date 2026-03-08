@@ -1,0 +1,7 @@
+---
+_apache_service_name: httpd
+_apache_package: httpd
+_apache_binary: httpd
+_apache_conf_dir: /etc/httpd
+_apache_main_conf: /etc/httpd/conf/httpd.conf
+_apache_security_conf: /etc/httpd/conf.d/99-security-hardening.conf

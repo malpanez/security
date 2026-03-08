@@ -1,0 +1,200 @@
+---
+# ---------------------------------------------------------------------------
+# Enforce mode — apply system hardening changes
+# ---------------------------------------------------------------------------
+
+# ── Ctrl+Alt+Del ────────────────────────────────────────────────────────────
+- name: "Disable Ctrl+Alt+Del reboot target"
+  ansible.builtin.systemd:
+    name: ctrl-alt-del.target
+    masked: true
+  when: system_hardening_ctrlaltdel_enabled | bool
+  tags: [system_hardening, ctrlaltdel]
+
+# ── securetty ───────────────────────────────────────────────────────────────
+- name: "Deploy restricted /etc/securetty"
+  ansible.builtin.template:
+    src: securetty.j2
+    dest: /etc/securetty
+    owner: root
+    group: root
+    mode: "0600"
+  when: system_hardening_securetty_enabled | bool
+  tags: [system_hardening, securetty]
+
+# ── System accounts ─────────────────────────────────────────────────────────
+- name: "Lock system account shells"
+  ansible.builtin.user:
+    name: "{{ item.split(':')[0] }}"
+    shell: "{{ system_hardening_nologin_shell }}"
+  loop: "{{ _sh_interactive_sysaccts.stdout_lines | default([]) }}"
+  loop_control:
+    label: "{{ item.split(':')[0] }}"
+  when:
+    - system_hardening_accounts_enabled | bool
+    - _sh_interactive_sysaccts is defined
+    - _sh_interactive_sysaccts.stdout_lines | default([]) | length > 0
+  tags: [system_hardening, accounts]
+
+# ── .rhosts and .netrc ──────────────────────────────────────────────────────
+- name: "Remove legacy .rhosts and .netrc files"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ _sh_trust_files.stdout_lines | default([]) }}"
+  when:
+    - system_hardening_rhosts_enabled | bool
+    - system_hardening_rhosts_remove | bool
+    - _sh_trust_files is defined
+  tags: [system_hardening, rhosts]
+
+# ── Umask ────────────────────────────────────────────────────────────────────
+- name: "Deploy umask hardening profile"
+  ansible.builtin.template:
+    src: umask.sh.j2
+    dest: "{{ system_hardening_umask_profile_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: system_hardening_umask_enabled | bool
+  tags: [system_hardening, umask]
+
+# ── Core dump via profile.d ──────────────────────────────────────────────────
+- name: "Deploy core dump disable profile"
+  ansible.builtin.template:
+    src: coredump.sh.j2
+    dest: "{{ system_hardening_coredump_profile_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: system_hardening_coredump_enabled | bool
+  tags: [system_hardening, coredump]
+
+# ── Package manager GPG ──────────────────────────────────────────────────────
+- name: "Harden apt GPG settings (Debian/Ubuntu)"
+  ansible.builtin.template:
+    src: apt-security.conf.j2
+    dest: /etc/apt/apt.conf.d/99-security-hardening
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - system_hardening_gpg_enabled | bool
+    - ansible_os_family == 'Debian'
+  tags: [system_hardening, gpg]
+
+- name: "Harden dnf/yum GPG settings (RedHat)"
+  ansible.builtin.template:
+    src: dnf-security.conf.j2
+    dest: "{{ _sh_dnf_conf }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - system_hardening_gpg_enabled | bool
+    - ansible_os_family == 'RedHat'
+  tags: [system_hardening, gpg]
+
+# ── /proc hidepid ────────────────────────────────────────────────────────────
+- name: "Create proc group for hidepid bypass"
+  ansible.builtin.group:
+    name: "{{ system_hardening_proc_group }}"
+    system: true
+    state: present
+  when: system_hardening_hidepid_enabled | bool
+  tags: [system_hardening, hidepid]
+
+- name: "Add systemd-logind to proc group"
+  ansible.builtin.user:
+    name: "{{ _sh_logind_user }}"
+    groups: "{{ system_hardening_proc_group }}"
+    append: true
+  when:
+    - system_hardening_hidepid_enabled | bool
+    - _sh_logind_user is defined
+    - _sh_logind_user | length > 0
+  failed_when: false  # logind may run as root, no named user
+  tags: [system_hardening, hidepid]
+
+- name: "Ensure systemd-logind drop-in directory exists"
+  ansible.builtin.file:
+    path: /etc/systemd/system/systemd-logind.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: system_hardening_hidepid_enabled | bool
+  tags: [system_hardening, hidepid]
+
+- name: "Deploy systemd-logind proc group drop-in"
+  ansible.builtin.template:
+    src: logind-proc.conf.j2
+    dest: /etc/systemd/system/systemd-logind.service.d/99-proc-group.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: system_hardening_hidepid_enabled | bool
+  notify: Reload systemd daemon
+  tags: [system_hardening, hidepid]
+
+- name: "Deploy /etc/fstab hidepid entry for /proc"
+  ansible.builtin.template:
+    src: proc-fstab.conf.j2
+    dest: /etc/systemd/system/proc.mount
+    owner: root
+    group: root
+    mode: "0644"
+  when: system_hardening_hidepid_enabled | bool
+  notify: Reload systemd daemon
+  tags: [system_hardening, hidepid]
+
+- name: "Remount /proc with hidepid (live, non-destructive)"
+  ansible.builtin.command:
+    cmd: >-
+      mount -o remount,hidepid={{ system_hardening_hidepid_value }},gid={{ system_hardening_proc_group }}
+      /proc
+  register: _proc_remount
+  changed_when: _proc_remount.rc == 0
+  failed_when: false  # Containers restrict this; systemd will apply on next boot
+  when: system_hardening_hidepid_enabled | bool
+  tags: [system_hardening, hidepid]
+
+# ── Mount hardening ───────────────────────────────────────────────────────────
+- name: "Configure /tmp with security mount options"
+  ansible.posix.mount:
+    path: /tmp
+    src: tmpfs
+    fstype: tmpfs
+    opts: "{{ system_hardening_tmp_options }}"
+    state: mounted
+  when:
+    - system_hardening_mounts_enabled | bool
+    - system_hardening_tmp_enabled | bool
+  failed_when: false  # Containers may not allow remount
+  tags: [system_hardening, mounts]
+
+- name: "Configure /dev/shm with security mount options"
+  ansible.posix.mount:
+    path: /dev/shm
+    src: tmpfs
+    fstype: tmpfs
+    opts: "{{ system_hardening_dev_shm_options }}"
+    state: mounted
+  when:
+    - system_hardening_mounts_enabled | bool
+    - system_hardening_dev_shm_enabled | bool
+  failed_when: false  # Containers may not allow remount
+  tags: [system_hardening, mounts]
+
+# ── SUID/SGID removal ─────────────────────────────────────────────────────────
+- name: "Remove SUID/SGID bits from unexpected files"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    mode: "a-s"
+  loop: "{{ _sh_unexpected_suid | default([]) }}"
+  when:
+    - system_hardening_suid_enabled | bool
+    - system_hardening_suid_remove_unlisted | bool
+    - _sh_unexpected_suid is defined
+    - _sh_unexpected_suid | length > 0
+  tags: [system_hardening, suid]

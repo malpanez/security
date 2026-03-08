@@ -1,0 +1,111 @@
+---
+# ---------------------------------------------------------------------------
+# tomcat_hardening — Harden Apache Tomcat / Red Hat JBoss Web Server
+# Compliance: CIS Tomcat Benchmark, PCI-DSS 6.x, OWASP AppSec
+# Supports: Tomcat 9/10/11, JBoss Web Server (JWS) 5/6
+# ---------------------------------------------------------------------------
+
+tomcat_hardening_enabled: false
+
+# ---------------------------------------------------------------------------
+# Installation paths
+# ---------------------------------------------------------------------------
+tomcat_hardening_catalina_home: /opt/tomcat
+tomcat_hardening_catalina_base: /opt/tomcat
+tomcat_hardening_conf_dir: "{{ tomcat_hardening_catalina_home }}/conf"
+tomcat_hardening_webapps_dir: "{{ tomcat_hardening_catalina_home }}/webapps"
+tomcat_hardening_logs_dir: "{{ tomcat_hardening_catalina_home }}/logs"
+tomcat_hardening_service_name: tomcat
+tomcat_hardening_user: tomcat
+tomcat_hardening_group: tomcat
+
+# ---------------------------------------------------------------------------
+# Shutdown port — set to -1 to disable (recommended for production)
+# CIS Tomcat: 1.x
+# ---------------------------------------------------------------------------
+tomcat_hardening_shutdown_port: -1            # -1 disables the shutdown port
+tomcat_hardening_shutdown_command: DISABLED   # Randomized or disabled
+
+# ---------------------------------------------------------------------------
+# Default web applications to remove
+# These expose version information and attack surface
+# CIS Tomcat: 4.x
+# ---------------------------------------------------------------------------
+tomcat_hardening_remove_default_webapps:
+  - ROOT          # Default landing page (replace with your own)
+  - examples      # Servlet/JSP examples — NEVER leave in production
+  - docs          # Tomcat documentation — version disclosure
+  - host-manager  # Virtual host management — secure or remove
+  - manager       # Manager app — highly targeted, lock down or remove
+
+# Manager app — keep it but restrict access (set to false to remove it)
+tomcat_hardening_manager_enabled: false
+tomcat_hardening_manager_allowed_ip: "127.0.0.1"
+
+# ---------------------------------------------------------------------------
+# Connector hardening (server.xml)
+# CIS Tomcat: 7.x
+# ---------------------------------------------------------------------------
+tomcat_hardening_http_port: 8080
+tomcat_hardening_https_port: 8443
+tomcat_hardening_ajp_enabled: false           # Disable AJP (CVE-2020-1938 Ghostcat)
+tomcat_hardening_ajp_port: 8009
+
+# HTTPS connector
+tomcat_hardening_ssl_enabled: true
+tomcat_hardening_ssl_protocol: "TLSv1.2+TLSv1.3"
+tomcat_hardening_ssl_ciphers: >-
+  TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+  TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+tomcat_hardening_ssl_certificate_file: /etc/pki/tls/certs/tomcat.crt
+tomcat_hardening_ssl_certificate_key_file: /etc/pki/tls/private/tomcat.key
+
+# Connector timeouts
+tomcat_hardening_connection_timeout: 20000    # 20 seconds
+tomcat_hardening_max_threads: 150
+tomcat_hardening_max_connections: 10000
+tomcat_hardening_accept_count: 100
+
+# Disable HTTP TRACE method
+tomcat_hardening_allow_trace: false
+
+# Enable HTTP2 (requires Tomcat 9.0.13+)
+tomcat_hardening_http2_enabled: true
+
+# ---------------------------------------------------------------------------
+# Security headers via web.xml HttpHeaderSecurityFilter
+# ---------------------------------------------------------------------------
+tomcat_hardening_security_headers_enabled: true
+tomcat_hardening_hsts_enabled: true
+tomcat_hardening_hsts_max_age: 31536000
+tomcat_hardening_anti_click_jacking: true
+tomcat_hardening_block_content_type_sniffing: true
+tomcat_hardening_xss_protection: true
+
+# ---------------------------------------------------------------------------
+# Session security (web.xml)
+# ---------------------------------------------------------------------------
+tomcat_hardening_session_timeout: 30          # Minutes
+tomcat_hardening_session_cookie_http_only: true
+tomcat_hardening_session_cookie_secure: true
+
+# ---------------------------------------------------------------------------
+# File permissions
+# ---------------------------------------------------------------------------
+tomcat_hardening_conf_mode: "0750"
+tomcat_hardening_webapps_mode: "0750"
+tomcat_hardening_logs_mode: "0750"
+
+# ---------------------------------------------------------------------------
+# Error page handling (suppress version info from error pages)
+# ---------------------------------------------------------------------------
+tomcat_hardening_custom_error_pages: true
+tomcat_hardening_error_page_redirect: /error
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+tomcat_hardening_access_log_enabled: true
+tomcat_hardening_access_log_pattern: >-
+  %{yyyy-MM-dd HH:mm:ss}t %a %{X-Forwarded-For}i %m %U%q %s %b %D
+tomcat_hardening_rotate_logs: true

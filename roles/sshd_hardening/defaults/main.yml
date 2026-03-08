@@ -33,7 +33,11 @@ sshd_hardening_trusted_ca_key: ""
 sshd_hardening_trusted_ca_path: /etc/ssh/trusted_user_ca_keys
 sshd_hardening_config_path: /etc/ssh/sshd_config
 sshd_hardening_config_dir: /etc/ssh/sshd_config.d
-sshd_hardening_use_dropin: false
+# Use drop-in in /etc/ssh/sshd_config.d/ instead of replacing the main file.
+# Strongly recommended: the main file stays as shipped by the OS; our hardening
+# is isolated in one file, easy to audit and revert.
+# Requires OpenSSH >= 7.3 (Debian 9+, Ubuntu 16.04+, RHEL 7.4+, SUSE 15+).
+sshd_hardening_use_dropin: true
 sshd_hardening_dropin_path: "{{ sshd_hardening_config_dir }}/20-auth-hardening.conf"
 sshd_hardening_binary_path: /usr/sbin/sshd
 sshd_hardening_auth_log: /var/log/auth.log

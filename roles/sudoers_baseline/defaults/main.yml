@@ -1,6 +1,16 @@
 ---
 sudoers_baseline_strict: false
 
+# Drop-in mode: ALL hardening goes into /etc/sudoers.d/ files.
+# /etc/sudoers is NEVER rewritten — only verified with visudo -c.
+# Safe, auditable, and survives OS package updates.
+#   /etc/sudoers.d/10-security-defaults  → Defaults directives
+#   /etc/sudoers.d/99-security-groups    → Group-based rules
+# Set to false only if your system lacks @includedir in /etc/sudoers.
+sudoers_baseline_use_dropin: true
+sudoers_baseline_dropin_defaults: "{{ sudoers_baseline_files_path }}/10-security-defaults"
+sudoers_baseline_dropin_groups: "{{ sudoers_baseline_files_path }}/99-security-groups"
+
 # I/O logging for complete audit trail (ADVANCED)
 # WARNING: Generates significant disk usage - plan for log rotation
 sudoers_baseline_iolog_enabled: false  # Set true for HIGH security environments

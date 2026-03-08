@@ -1,0 +1,12 @@
+{{ ansible_managed | comment }}
+# /etc/sudoers.d/99-security-groups
+# Managed by malpanez.security.sudoers_baseline role
+# Frameworks: CIS 5.3.x / PCI-DSS 7.1 / SOC2 CC6.2
+#
+# Group-based sudo privileges. Each group entry has:
+#   require_password: true/false
+#   commands: list of full paths (use /usr/bin/systemctl, not systemctl)
+
+{% for group, cfg in sudoers_baseline_groups.items() %}
+%{{ group }} ALL=(ALL){{ '' if cfg.require_password else ' NOPASSWD:' }} {{ cfg.commands | join(', ') }}
+{% endfor %}

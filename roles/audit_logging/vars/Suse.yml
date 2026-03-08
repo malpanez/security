@@ -1,0 +1,10 @@
+---
+# SUSE Linux Enterprise / openSUSE Leap platform-specific values.
+# audit_logging_rules is defined in defaults/main.yml — do NOT override here.
+
+audit_logging_package: audit
+audit_logging_service: auditd
+audit_logging_rules_path: /etc/audit/rules.d/99-security.rules
+# SUSE uses /var/log/messages for general auth events; /var/log/audit/audit.log for auditd
+audit_logging_auth_log: /var/log/messages
+audit_logging_secure_log: /var/log/messages

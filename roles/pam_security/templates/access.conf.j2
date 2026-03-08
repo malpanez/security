@@ -1,0 +1,22 @@
+{{ ansible_managed | comment }}
+# /etc/security/access.conf
+# Managed by malpanez.security.pam_security role
+# Frameworks: CIS 5.5.x / HIPAA 164.312(a)(2)(ii) / SOC2 CC6.1
+#
+# Format: permission : user or (group) : origins
+#   + = allow access
+#   - = deny access
+#   ALL  = matches any user/group/host
+#   LOCAL = local logins (console, pts without remote host)
+#
+# Rules are evaluated top-down; first match wins.
+# WARNING: An incorrect configuration here can lock you out of the system.
+#          Test in a separate session before closing your current one.
+
+{% for rule in pam_security_access_rules %}
+{{ rule }}
+{% endfor %}
+{% if pam_security_access_rules | length == 0 %}
+# No access rules defined. Set pam_security_access_rules to activate this file.
+# All access is permitted (default system behavior without explicit rules).
+{% endif %}

@@ -1,0 +1,4 @@
+#!/bin/sh
+# /etc/profile.d/99-security-umask.sh — managed by Ansible (system_hardening role)
+# Sets restrictive default file creation mask. CIS Benchmark: 5.4.x
+umask {{ system_hardening_umask }}

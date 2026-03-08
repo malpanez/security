@@ -1,0 +1,25 @@
+---
+galaxy_info:
+  author: Miguel Alpañez
+  description: >-
+    Enable and enforce AppArmor MAC (Mandatory Access Control) on Debian,
+    Ubuntu, and SUSE/openSUSE systems. Parallel to selinux_enforcement for
+    RedHat family. Installs utilities, sets enforcement mode, and optionally
+    enforces additional profiles.
+  license: GPL-2.0-or-later
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - security
+    - compliance
+    - hardening
+    - apparmor
+    - mac
+    - linux
+  platforms:
+    - name: Debian
+      versions: [buster, bullseye, bookworm, trixie]
+    - name: Ubuntu
+      versions: [bionic, focal, jammy, noble]
+    - name: opensuse
+      versions: ["15.5", "all"]
+dependencies: []

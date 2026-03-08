@@ -3,6 +3,9 @@ name: molecule-chaos
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   chaos:
     runs-on: ubuntu-latest  # Docker driver required

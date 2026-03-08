@@ -1,0 +1,27 @@
+# /etc/mysql/conf.d/99-security-hardening.cnf
+# Managed by Ansible (mysql_hardening role). CIS MySQL Benchmark / PCI-DSS 6.x
+
+[mysqld]
+# ── Network ────────────────────────────────────────────────────────────────
+bind-address = {{ mysql_hardening_bind_address }}
+
+# ── Security settings ──────────────────────────────────────────────────────
+local-infile = {{ '1' if mysql_hardening_local_infile else '0' }}
+allow-suspicious-udfs = {{ '1' if mysql_hardening_allow_suspicious_udfs else '0' }}
+automatic-sp-privileges = {{ '1' if mysql_hardening_automatic_sp_privileges else '0' }}
+symbolic-links = {{ '1' if mysql_hardening_symbolic_links else '0' }}
+secure-file-priv = {{ mysql_hardening_secure_file_priv }}
+safe-user-create = {{ '1' if mysql_hardening_safe_user_create else '0' }}
+
+# ── Logging ────────────────────────────────────────────────────────────────
+log-warnings = {{ mysql_hardening_log_warnings }}
+
+{% if mysql_hardening_ssl_enabled %}
+# ── TLS ───────────────────────────────────────────────────────────────────
+ssl-cert = {{ mysql_hardening_ssl_cert }}
+ssl-key = {{ mysql_hardening_ssl_key }}
+ssl-ca = {{ mysql_hardening_ssl_ca }}
+{% if mysql_hardening_require_ssl %}
+require-secure-transport = ON
+{% endif %}
+{% endif %}

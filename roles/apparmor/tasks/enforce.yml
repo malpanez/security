@@ -1,0 +1,85 @@
+---
+# apparmor — enforce tasks
+
+- name: "[enforce] Install AppArmor packages"
+  ansible.builtin.package:
+    name: "{{ apparmor_packages }}"
+    state: present
+  tags: [apparmor, enforce]
+
+- name: "[enforce] Enable and start AppArmor service"
+  ansible.builtin.service:
+    name: "{{ apparmor_service }}"
+    enabled: true
+    state: started
+  tags: [apparmor, enforce]
+
+- name: "[enforce] Collect current denial count before enforcement"
+  ansible.builtin.shell:
+    cmd: "grep -c 'apparmor=\"DENIED\"' /var/log/audit/audit.log 2>/dev/null || echo 0"
+  register: _aa_denials_before
+  changed_when: false
+  failed_when: false
+  when: apparmor_check_denials | bool
+  tags: [apparmor, enforce]
+
+- name: "[enforce] Fail if denials exceed threshold (pre-enforce check)"
+  ansible.builtin.fail:
+    msg: >-
+      AppArmor has {{ _aa_denials_before.stdout | trim }} denial events in the audit log.
+      This exceeds the allowed threshold of {{ apparmor_max_denials_before_enforce }}.
+      Review denials with: grep 'apparmor="DENIED"' /var/log/audit/audit.log
+      Then set apparmor_mode=complain to monitor before enforcing.
+  when:
+    - apparmor_check_denials | bool
+    - apparmor_mode == 'enforce'
+    - (_aa_denials_before.stdout | trim | int) > apparmor_max_denials_before_enforce
+  tags: [apparmor, enforce]
+
+# ── Profile management ────────────────────────────────────────────────────────
+
+- name: "[enforce] Set specific profiles to enforce mode"
+  ansible.builtin.command:
+    cmd: "{{ apparmor_enforce_cmd }} {{ item }}"
+  loop: "{{ apparmor_enforce_profiles }}"
+  register: _aa_enforce_result
+  changed_when: "'Setting' in _aa_enforce_result.stdout"
+  failed_when: false  # Profile may not exist on this system
+  tags: [apparmor, enforce]
+
+- name: "[enforce] Set specific profiles to complain mode"
+  ansible.builtin.command:
+    cmd: "{{ apparmor_complain_cmd }} {{ item }}"
+  loop: "{{ apparmor_complain_profiles }}"
+  register: _aa_complain_result
+  changed_when: "'Setting' in _aa_complain_result.stdout"
+  failed_when: false
+  when: apparmor_complain_profiles | length > 0
+  tags: [apparmor, enforce]
+
+- name: "[enforce] Set ALL profiles to configured mode"
+  ansible.builtin.command:
+    cmd: "{{ apparmor_enforce_cmd if apparmor_mode == 'enforce' else apparmor_complain_cmd }} --dir {{ apparmor_profiles_dir }}"
+  register: _aa_setall_result
+  when: apparmor_set_all_profiles | bool
+  changed_when: "'Setting' in _aa_setall_result.stdout or 'set to' in _aa_setall_result.stdout"
+  tags: [apparmor, enforce]
+
+# ── Verify ────────────────────────────────────────────────────────────────────
+
+- name: "[enforce] Verify AppArmor is running post-enforcement"
+  ansible.builtin.command:
+    cmd: "{{ apparmor_status_cmd }}"
+  register: _aa_verify
+  changed_when: false
+  failed_when: _aa_verify.rc != 0
+  tags: [apparmor, enforce]
+
+- name: "[enforce] Report enforcement complete"
+  ansible.builtin.debug:
+    msg: >-
+      apparmor enforcement complete on {{ ansible_hostname }}.
+      Mode: {{ apparmor_mode }}.
+      Enforced profiles: {{ apparmor_enforce_profiles | length }}.
+      Use 'aa-status' to view current profile states.
+  tags: [apparmor, enforce]

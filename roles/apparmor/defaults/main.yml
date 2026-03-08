@@ -1,0 +1,49 @@
+---
+# Enable/disable this role entirely
+apparmor_enabled: false
+
+# ---------------------------------------------------------------------------
+# AppArmor — Mandatory Access Control
+# Parallel to selinux_enforcement for RHEL family.
+# CIS: 1.7.x (Debian/Ubuntu) / 1.4.x (SUSE)
+# PCI-DSS: 6.3 (security hardening)
+# NIS2: baseline system isolation
+# ---------------------------------------------------------------------------
+
+# Packages to install (platform-specific vars override)
+apparmor_packages:
+  - apparmor
+  - apparmor-utils
+  - apparmor-profiles
+
+# ---------------------------------------------------------------------------
+# Enforcement mode
+# complain — logs violations but does not block (safe starting point)
+# enforce  — blocks policy violations (production mode)
+# ---------------------------------------------------------------------------
+apparmor_mode: complain   # Start in complain mode; switch to enforce after validation
+
+# Set all installed profiles to this mode on enforce run
+apparmor_set_all_profiles: false
+
+# Individual profiles to set to enforce mode (even in complain mode run)
+# These are high-value profiles that should always be enforced.
+apparmor_enforce_profiles:
+  - /usr/sbin/sshd
+  - /usr/sbin/ntpd
+  - /usr/sbin/chronyd
+  - /usr/sbin/mysqld
+  - /usr/sbin/apache2
+
+# Profiles to set to complain mode (for monitoring/troubleshooting)
+apparmor_complain_profiles: []
+
+# ---------------------------------------------------------------------------
+# Validation
+# ---------------------------------------------------------------------------
+# Number of denied events in audit log that are acceptable before blocking enforce
+# (0 = fail immediately if any denials detected)
+apparmor_max_denials_before_enforce: 0
+
+# Check recent audit log for denials before switching to enforce
+apparmor_check_denials: true

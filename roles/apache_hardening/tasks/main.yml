@@ -1,0 +1,37 @@
+---
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_os_family }}.yml"
+        - main.yml
+      paths: "{{ role_path }}/vars"
+  tags: [apache_hardening, always]
+
+- name: Check if Apache is installed
+  ansible.builtin.stat:
+    path: "{{ _apache_conf_dir }}"
+  register: _apache_installed
+  become: false
+  tags: [apache_hardening, always]
+
+- name: Skip if Apache not installed
+  ansible.builtin.debug:
+    msg: "Apache not detected at {{ _apache_conf_dir }} — skipping"
+  when: not _apache_installed.stat.exists
+  tags: [apache_hardening, always]
+
+- name: Run Apache hardening when installed
+  when: _apache_installed.stat.exists
+  tags: [apache_hardening]
+  block:
+    - name: Review mode — assess Apache posture
+      ansible.builtin.include_tasks: review.yml
+      tags: [apache_hardening, review]
+
+    - name: Enforce mode — apply Apache hardening
+      ansible.builtin.include_tasks: enforce.yml
+      when:
+        - apache_hardening_enabled | bool
+        - security_mode | default('review') == 'enforce'
+      tags: [apache_hardening, enforce]

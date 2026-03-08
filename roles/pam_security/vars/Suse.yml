@@ -1,0 +1,22 @@
+---
+# SUSE Linux Enterprise / openSUSE Leap platform variables
+
+pam_security_pwquality_package: libpwquality1
+pam_security_pwquality_conf: /etc/security/pwquality.conf
+
+# faillock.conf available in SUSE 15.3+
+pam_security_faillock_conf: /etc/security/faillock.conf
+pam_security_faillock_package: pam
+
+pam_security_access_conf: /etc/security/access.conf
+pam_security_limits_conf: /etc/security/limits.conf
+pam_security_logindefs_path: /etc/login.defs
+
+# SUSE uses /etc/pam.d/common-* (similar to Debian)
+pam_security_pam_common_password: /etc/pam.d/common-password
+pam_security_pam_common_auth: /etc/pam.d/common-auth
+
+pam_security_faillock_conf_supported: >-
+  {{ ansible_distribution_version is version('15.3', '>=') }}
+
+pam_security_use_authselect: false

@@ -1,0 +1,4 @@
+#!/bin/sh
+# /etc/profile.d/99-security-coredump.sh — managed by Ansible (system_hardening role)
+# Disable core dumps via shell ulimit. CIS Benchmark: 1.6.1
+ulimit -c 0

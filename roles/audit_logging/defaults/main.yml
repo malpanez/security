@@ -2,19 +2,44 @@
 audit_logging_enabled: true
 audit_logging_package: auditd
 audit_logging_rules:
+  # SSH daemon configuration
   - "-w /etc/ssh/sshd_config -p wa -k sshd_config"
   - "-w /etc/ssh/sshd_config.d -p wa -k sshd_config_d"
+  # Sudoers
   - "-w /etc/sudoers -p wa -k sudoers"
   - "-w /etc/sudoers.d -p wa -k sudoers_d"
+  # PAM configuration
   - "-w /etc/pam.d/sshd -p wa -k pam_sshd"
   - "-w /etc/pam.d/sudo -p wa -k pam_sudo"
   - "-w /etc/pam.d/mfa-totp -p wa -k pam_mfa_substack"
   - "-w /etc/pam.d/common-auth -p wa -k pam_common_auth"
   - "-w /etc/pam.d/system-auth -p wa -k pam_system_auth"
+  # Identity files
   - "-w /etc/passwd -p wa -k identity"
   - "-w /etc/group -p wa -k identity"
   - "-w /etc/shadow -p wa -k identity"
   - "-w /etc/gshadow -p wa -k identity"
+  # Password and login policy (pam_security role)
+  - "-w /etc/security/pwquality.conf -p wa -k pwquality"
+  - "-w /etc/security/faillock.conf -p wa -k faillock"
+  - "-w /etc/security/access.conf -p wa -k pam_access"
+  - "-w /etc/security/limits.conf -p wa -k limits"
+  - "-w /etc/security/limits.d -p wa -k limits_d"
+  - "-w /etc/login.defs -p wa -k login_defs"
+  # AppArmor profiles
+  - "-w /etc/apparmor.d -p wa -k apparmor"
+  # Kernel sysctl and module policy (kernel_hardening role)
+  - "-w /etc/sysctl.conf -p wa -k sysctl"
+  - "-w /etc/sysctl.d -p wa -k sysctl_d"
+  - "-w /etc/modprobe.d -p wa -k modprobe"
+  # Cron (privilege escalation risk)
+  - "-w /etc/cron.allow -p wa -k cron_allow"
+  - "-w /etc/cron.deny -p wa -k cron_deny"
+  - "-w /etc/crontab -p wa -k crontab"
+  - "-w /etc/cron.d -p wa -k cron_d"
+  # Time synchronization (audit log integrity depends on correct time)
+  - "-w /etc/chrony.conf -p wa -k chrony"
+  - "-w /etc/ntp.conf -p wa -k ntp"
 audit_logging_syscall_rules:
   - "-a always,exit -F arch=b64 -S execve -k exec"
   - "-a always,exit -F arch=b32 -S execve -k exec"

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- web.xml — managed by Ansible (tomcat_hardening role). -->
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+         https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+{% if tomcat_hardening_security_headers_enabled %}
+  <!-- HTTP Security headers filter -->
+  <filter>
+    <filter-name>httpHeaderSecurity</filter-name>
+    <filter-class>org.apache.catalina.filters.HttpHeaderSecurityFilter</filter-class>
+    <init-param>
+      <param-name>antiClickJackingEnabled</param-name>
+      <param-value>{{ tomcat_hardening_anti_click_jacking | lower }}</param-value>
+    </init-param>
+    <init-param>
+      <param-name>antiClickJackingOption</param-name>
+      <param-value>SAMEORIGIN</param-value>
+    </init-param>
+    <init-param>
+      <param-name>blockContentTypeSniffingEnabled</param-name>
+      <param-value>{{ tomcat_hardening_block_content_type_sniffing | lower }}</param-value>
+    </init-param>
+    <init-param>
+      <param-name>xssProtectionEnabled</param-name>
+      <param-value>{{ tomcat_hardening_xss_protection | lower }}</param-value>
+    </init-param>
+{% if tomcat_hardening_hsts_enabled %}
+    <init-param>
+      <param-name>hstsEnabled</param-name>
+      <param-value>true</param-value>
+    </init-param>
+    <init-param>
+      <param-name>hstsMaxAgeSeconds</param-name>
+      <param-value>{{ tomcat_hardening_hsts_max_age }}</param-value>
+    </init-param>
+{% endif %}
+  </filter>
+  <filter-mapping>
+    <filter-name>httpHeaderSecurity</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+  </filter-mapping>
+{% endif %}
+
+  <!-- Session configuration -->
+  <session-config>
+    <session-timeout>{{ tomcat_hardening_session_timeout }}</session-timeout>
+    <cookie-config>
+      <http-only>{{ tomcat_hardening_session_cookie_http_only | lower }}</http-only>
+      <secure>{{ tomcat_hardening_session_cookie_secure | lower }}</secure>
+    </cookie-config>
+    <tracking-mode>COOKIE</tracking-mode>
+  </session-config>
+
+{% if tomcat_hardening_custom_error_pages %}
+  <!-- Custom error pages — suppress Tomcat version disclosure -->
+  <error-page>
+    <error-code>400</error-code>
+    <location>{{ tomcat_hardening_error_page_redirect }}</location>
+  </error-page>
+  <error-page>
+    <error-code>403</error-code>
+    <location>{{ tomcat_hardening_error_page_redirect }}</location>
+  </error-page>
+  <error-page>
+    <error-code>404</error-code>
+    <location>{{ tomcat_hardening_error_page_redirect }}</location>
+  </error-page>
+  <error-page>
+    <error-code>500</error-code>
+    <location>{{ tomcat_hardening_error_page_redirect }}</location>
+  </error-page>
+{% endif %}
+
+</web-app>

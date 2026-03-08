@@ -1,0 +1,24 @@
+---
+# RHEL / CentOS / Rocky Linux / AlmaLinux platform variables
+
+pam_security_pwquality_package: libpwquality
+pam_security_pwquality_conf: /etc/security/pwquality.conf
+
+# faillock.conf available since RHEL 8 / pam-1.4
+pam_security_faillock_conf: /etc/security/faillock.conf
+pam_security_faillock_package: pam
+
+pam_security_access_conf: /etc/security/access.conf
+pam_security_limits_conf: /etc/security/limits.conf
+pam_security_logindefs_path: /etc/login.defs
+
+# PAM files on RHEL family (managed via authselect on RHEL 8+)
+pam_security_pam_common_password: /etc/pam.d/system-auth
+pam_security_pam_common_auth: /etc/pam.d/system-auth
+
+# RHEL 8+ uses authselect; direct PAM file editing is discouraged there
+pam_security_use_authselect: >-
+  {{ ansible_distribution_major_version | int >= 8 }}
+
+pam_security_faillock_conf_supported: >-
+  {{ ansible_distribution_major_version | int >= 8 }}

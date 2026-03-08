@@ -10,5 +10,5 @@ galaxy_info:
     - name: Ubuntu
       versions: [bionic, focal, jammy]
     - name: EL
-      versions: ["7", "8", "9"]
+      versions: [all]
 dependencies: []

@@ -1,0 +1,53 @@
+---
+# apparmor — review tasks (read-only, no changes)
+
+- name: "[review] Check if AppArmor is available"
+  ansible.builtin.command:
+    cmd: "{{ apparmor_status_cmd }}"
+  register: _aa_status
+  changed_when: false
+  failed_when: false
+  tags: [apparmor, review]
+
+- name: "[review] Check AppArmor kernel parameter"
+  ansible.builtin.command:
+    cmd: cat /sys/module/apparmor/parameters/enabled
+  register: _aa_kernel
+  changed_when: false
+  failed_when: false
+  tags: [apparmor, review]
+
+- name: "[review] Count recent AppArmor denials in audit log"
+  ansible.builtin.shell:
+    cmd: "grep -c 'apparmor=\"DENIED\"' /var/log/audit/audit.log 2>/dev/null || grep -c 'apparmor=\"DENIED\"' /var/log/syslog 2>/dev/null || echo 0"
+  register: _aa_denials
+  changed_when: false
+  failed_when: false
+  tags: [apparmor, review]
+
+- name: "[review] Report AppArmor review findings"
+  ansible.builtin.debug:
+    msg: |
+      ── AppArmor Review ──────────────────────────────────────────────────────
+
+      Host: {{ ansible_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})
+
+      AppArmor status:
+      {% if _aa_status.rc == 0 %}
+        Available: YES
+        Kernel enabled: {{ _aa_kernel.stdout | default('unknown') }}
+        Recent denials: {{ _aa_denials.stdout | default('0') | trim }}
+
+        Current status output:
+        {{ _aa_status.stdout | indent(8) }}
+      {% else %}
+        Available: NO — AppArmor utilities not found or not running.
+        Run with security_mode=enforce and apparmor_enabled=true to install and enable.
+      {% endif %}
+
+      Policy target:
+        Mode: {{ apparmor_mode }}
+        Profiles to enforce: {{ apparmor_enforce_profiles | length }}
+        Set all profiles: {{ apparmor_set_all_profiles }}
+      ─────────────────────────────────────────────────────────────────────────
+  tags: [apparmor, review]

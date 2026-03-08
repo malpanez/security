@@ -1,0 +1,42 @@
+---
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_os_family }}.yml"
+        - main.yml
+      paths: "{{ role_path }}/vars"
+  tags: [mysql_hardening, always]
+
+- name: Check if MySQL/MariaDB service exists
+  ansible.builtin.service_facts:
+  become: false
+  tags: [mysql_hardening, always]
+
+- name: Determine MySQL service is running
+  ansible.builtin.set_fact:
+    _mysql_running: >-
+      {{ _mysql_service_name ~ '.service' in ansible_facts.services and
+         ansible_facts.services[_mysql_service_name ~ '.service'].state == 'running' }}
+  tags: [mysql_hardening, always]
+
+- name: Skip if MySQL/MariaDB not running
+  ansible.builtin.debug:
+    msg: "MySQL/MariaDB not running — skipping mysql_hardening"
+  when: not _mysql_running | bool
+  tags: [mysql_hardening, always]
+
+- name: Run MySQL hardening when service is active
+  when: _mysql_running | bool
+  tags: [mysql_hardening]
+  block:
+    - name: Review mode — assess MySQL posture
+      ansible.builtin.include_tasks: review.yml
+      tags: [mysql_hardening, review]
+
+    - name: Enforce mode — apply MySQL hardening
+      ansible.builtin.include_tasks: enforce.yml
+      when:
+        - mysql_hardening_enabled | bool
+        - security_mode | default('review') == 'enforce'
+      tags: [mysql_hardening, enforce]

@@ -1,0 +1,3 @@
+---
+_sh_dnf_conf: /etc/zypp/zypp.conf   # zypper on SUSE
+_sh_logind_user: ""

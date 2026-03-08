@@ -1,0 +1,88 @@
+---
+argument_specs:
+  main:
+    short_description: Harden Linux kernel via sysctl parameters and module blacklists.
+    options:
+      kernel_hardening_enabled:
+        type: bool
+        default: false
+        description: Set to true to enable enforcement. Review always runs.
+      kernel_hardening_sysctl_enabled:
+        type: bool
+        default: true
+        description: Manage sysctl parameters via drop-in file.
+      kernel_hardening_sysctl_file:
+        type: str
+        default: /etc/sysctl.d/99-security.conf
+        description: Path for the sysctl drop-in file. Never touches /etc/sysctl.conf.
+      kernel_hardening_sysctl_params:
+        type: dict
+        description: >-
+          Dict of sysctl parameters to enforce. Keys are parameter names,
+          values are the desired settings. See defaults/main.yml for the full
+          list of 50+ parameters covering kernel hardening, network hardening,
+          filesystem protection, and VM settings.
+        default:
+          kernel.randomize_va_space: 2
+          fs.suid_dumpable: 0
+          fs.protected_hardlinks: 1
+          fs.protected_symlinks: 1
+          net.ipv4.tcp_syncookies: 1
+          net.ipv4.conf.all.send_redirects: 0
+          net.ipv4.conf.all.accept_redirects: 0
+          net.ipv4.conf.all.accept_source_route: 0
+          net.ipv4.conf.all.log_martians: 1
+          net.ipv4.conf.all.rp_filter: 1
+          kernel.dmesg_restrict: 1
+          kernel.kptr_restrict: 2
+          kernel.perf_event_paranoid: 3
+          kernel.yama.ptrace_scope: 1
+          kernel.kexec_load_disabled: 1
+          kernel.sysrq: 0
+          vm.mmap_min_addr: 65536
+      kernel_hardening_modules_enabled:
+        type: bool
+        default: true
+        description: Manage kernel module blacklist via modprobe.d drop-in.
+      kernel_hardening_modprobe_dir:
+        type: str
+        default: /etc/modprobe.d
+        description: Directory for modprobe blacklist files.
+      kernel_hardening_disabled_modules:
+        type: list
+        elements: dict
+        description: >-
+          List of modules to disable. Each entry has 'name' (module name) and
+          'comment' (reason). Both blacklist and install /bin/false stubs are
+          applied so modules cannot be loaded even if explicitly requested.
+        default:
+          - name: dccp
+            comment: DCCP protocol — rarely needed, CVE history
+          - name: sctp
+            comment: SCTP protocol — rarely needed in enterprise
+          - name: rds
+            comment: RDS protocol — not needed on most servers
+          - name: tipc
+            comment: TIPC protocol — cluster protocol, disable if not used
+          - name: cramfs
+            comment: Cramfs filesystem — not used on modern systems
+          - name: freevxfs
+            comment: FreeVxFS filesystem — not used on modern systems
+          - name: jffs2
+            comment: JFFS2 filesystem — embedded only
+          - name: hfs
+            comment: HFS filesystem — macOS only
+          - name: hfsplus
+            comment: HFS+ filesystem — macOS only
+          - name: squashfs
+            comment: SquashFS — disable if snap/AppImage not used
+          - name: udf
+            comment: UDF filesystem — optical media
+      kernel_hardening_disabled_modules_extra:
+        type: list
+        elements: dict
+        default: []
+        description: >-
+          Extra modules to disable beyond the defaults. Same format as
+          kernel_hardening_disabled_modules. Use for site-specific needs
+          (e.g., usb_storage, bluetooth, firewire_core).

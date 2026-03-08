@@ -32,5 +32,58 @@ compliance_evidence_items:
       'passwordauthentication|kbdinteractiveauthentication|challengeresponseauthentication|authenticationmethods|pubkeyacceptedalgorithms|permitrootlogin|usepam' || true
   - name: sudoers_summary
     command: visudo -c -f /etc/sudoers && cat /etc/sudoers
+
+  # ── Password & login policy (pam_security role) ─────────────────────────
+  - name: pwquality_conf
+    path: /etc/security/pwquality.conf
+  - name: faillock_conf
+    path: /etc/security/faillock.conf
+  - name: access_conf
+    path: /etc/security/access.conf
+  - name: limits_conf
+    path: /etc/security/limits.conf
+  - name: limits_d
+    path: /etc/security/limits.d
+  - name: login_defs
+    path: /etc/login.defs
+  - name: faillock_status
+    command: faillock || true
+
+  # ── Kernel hardening (kernel_hardening role) ─────────────────────────────
+  - name: sysctl_security
+    path: /etc/sysctl.d/99-security.conf
+  - name: sysctl_all
+    command: sysctl -a --ignore 2>/dev/null | sort || true
+  - name: modprobe_disabled
+    path: /etc/modprobe.d/99-security-disabled.conf
+  - name: loaded_modules
+    command: lsmod | sort || true
+
+  # ── AppArmor (apparmor role — Debian/Ubuntu/SUSE) ───────────────────────
+  - name: apparmor_status
+    command: aa-status 2>/dev/null || echo 'AppArmor not available'
+
+  # ── SELinux (selinux_enforcement role — RHEL family) ─────────────────────
+  - name: selinux_status_cmd
+    command: sestatus 2>/dev/null || echo 'SELinux not available'
+
+  # ── Time synchronization (audit log integrity) ───────────────────────────
+  - name: chrony_conf
+    path: /etc/chrony.conf
+  - name: ntp_conf
+    path: /etc/ntp.conf
+  - name: timedatectl
+    command: timedatectl status || true
+
+  # ── Cron security ────────────────────────────────────────────────────────
+  - name: cron_allow
+    path: /etc/cron.allow
+  - name: cron_deny
+    path: /etc/cron.deny
+  - name: at_allow
+    path: /etc/at.allow
+  - name: at_deny
+    path: /etc/at.deny
+
   - name: controls_map
     command: echo 'See docs/controls.md'

@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: tomcat_hardening
+  author: malpanez
+  description: "Harden tomcat hardening — review and enforce mode, multi-platform"
+  license: GPL-2.0-or-later
+  min_ansible_version: "2.16"
+  platforms:
+    - name: EL
+      versions: [all]
+    - name: Debian
+      versions: [buster, bullseye, bookworm, trixie]
+    - name: Ubuntu
+      versions: [focal, jammy, noble]
+    - name: opensuse
+      versions: ["15.5", "all"]
+  galaxy_tags:
+    - security
+    - hardening
+
+dependencies: []

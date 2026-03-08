@@ -1,0 +1,78 @@
+---
+# kernel_hardening — review tasks (read-only, no changes)
+
+- name: "[review] Collect current sysctl values for policy parameters"
+  ansible.builtin.command:
+    cmd: "sysctl {{ item.key }}"
+  register: _kh_sysctl_current
+  loop: "{{ kernel_hardening_sysctl_params | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  changed_when: false
+  failed_when: false
+  when: kernel_hardening_sysctl_enabled | bool
+  tags: [kernel_hardening, review]
+
+- name: "[review] Detect sysctl policy violations"
+  ansible.builtin.set_fact:
+    _kh_sysctl_violations: >-
+      {{
+        _kh_sysctl_current.results
+        | selectattr('rc', 'eq', 0)
+        | selectattr('stdout', 'defined')
+        | selectattr('stdout', 'search', '=\\s*(?!' + item.value | string + '$)')
+        | map(attribute='item.key')
+        | list
+      }}
+  loop: "{{ kernel_hardening_sysctl_params | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: kernel_hardening_sysctl_enabled | bool
+  tags: [kernel_hardening, review]
+
+- name: "[review] Check loaded kernel modules against disabled list"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && lsmod | awk 'NR>1 {print $1}'"
+  register: _kh_loaded_modules
+  changed_when: false
+  failed_when: false
+  tags: [kernel_hardening, review]
+
+- name: "[review] Identify disabled modules that are currently loaded"
+  ansible.builtin.set_fact:
+    _kh_modules_loaded_but_disabled: >-
+      {{
+        (kernel_hardening_disabled_modules + kernel_hardening_disabled_modules_extra)
+        | map(attribute='name')
+        | select('in', _kh_loaded_modules.stdout_lines | default([]))
+        | list
+      }}
+  tags: [kernel_hardening, review]
+
+- name: "[review] Report kernel hardening review findings"
+  ansible.builtin.debug:
+    msg: |
+      ── Kernel Hardening Review ──────────────────────────────────────────────
+
+      Host: {{ ansible_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})
+
+      sysctl policy ({{ kernel_hardening_sysctl_file }}):
+      {% if not kernel_hardening_sysctl_enabled %}
+        DISABLED — sysctl enforcement is off (kernel_hardening_sysctl_enabled=false)
+      {% else %}
+        Parameters to enforce: {{ kernel_hardening_sysctl_params | length }}
+        Loaded modules flagged for removal: {{ _kh_modules_loaded_but_disabled | length }}
+        {% if _kh_modules_loaded_but_disabled | length > 0 %}
+        Modules currently loaded that policy disables:
+        {% for m in _kh_modules_loaded_but_disabled %}
+          - {{ m }}
+        {% endfor %}
+        {% endif %}
+        Run with security_mode=enforce to apply all sysctl and module restrictions.
+      {% endif %}
+
+      Kernel module restrictions ({{ kernel_hardening_modprobe_dir }}):
+        Modules to disable: {{ (kernel_hardening_disabled_modules + kernel_hardening_disabled_modules_extra) | length }}
+      ─────────────────────────────────────────────────────────────────────────
+  tags: [kernel_hardening, review]

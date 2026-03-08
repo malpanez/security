@@ -1,0 +1,104 @@
+---
+# pam_security — review tasks (read-only, no changes)
+# Reads current configuration and reports gaps against policy.
+
+- name: "[review] Read current pwquality.conf"
+  ansible.builtin.slurp:
+    src: "{{ pam_security_pwquality_conf }}"
+  register: _pam_sec_pwquality_raw
+  failed_when: false
+  changed_when: false
+  tags: [pam_security, review]
+
+- name: "[review] Read current login.defs"
+  ansible.builtin.slurp:
+    src: "{{ pam_security_logindefs_path }}"
+  register: _pam_sec_logindefs_raw
+  failed_when: false
+  changed_when: false
+  tags: [pam_security, review]
+
+- name: "[review] Read current faillock.conf"
+  ansible.builtin.slurp:
+    src: "{{ pam_security_faillock_conf }}"
+  register: _pam_sec_faillock_raw
+  failed_when: false
+  changed_when: false
+  tags: [pam_security, review]
+
+- name: "[review] Read current access.conf"
+  ansible.builtin.slurp:
+    src: "{{ pam_security_access_conf }}"
+  register: _pam_sec_access_raw
+  failed_when: false
+  changed_when: false
+  tags: [pam_security, review]
+
+- name: "[review] Read current limits.conf"
+  ansible.builtin.slurp:
+    src: "{{ pam_security_limits_conf }}"
+  register: _pam_sec_limits_raw
+  failed_when: false
+  changed_when: false
+  tags: [pam_security, review]
+
+- name: "[review] Check pwquality minlen setting"
+  ansible.builtin.set_fact:
+    _pam_sec_pwquality_content: >-
+      {{ _pam_sec_pwquality_raw.content | default('') | b64decode }}
+  tags: [pam_security, review]
+
+- name: "[review] Report PAM security review findings"
+  ansible.builtin.debug:
+    msg: |
+      ── PAM Security Review ──────────────────────────────────────────────────
+
+      pwquality.conf ({{ pam_security_pwquality_conf }}):
+        Policy: minlen={{ pam_security_pwquality_minlen }}, dcredit={{ pam_security_pwquality_dcredit }},
+                ucredit={{ pam_security_pwquality_ucredit }}, ocredit={{ pam_security_pwquality_ocredit }},
+                maxrepeat={{ pam_security_pwquality_maxrepeat }}, retry={{ pam_security_pwquality_retry }}
+      {% if _pam_sec_pwquality_raw.failed | default(true) %}
+        STATUS: File not found — pwquality not configured
+      {% else %}
+        Current content available for review. Enforce to apply policy.
+      {% endif %}
+
+      login.defs ({{ pam_security_logindefs_path }}):
+        Policy: PASS_MAX_DAYS={{ pam_security_logindefs_pass_max_days }},
+                PASS_MIN_DAYS={{ pam_security_logindefs_pass_min_days }},
+                PASS_WARN_AGE={{ pam_security_logindefs_pass_warn_age }},
+                ENCRYPT_METHOD={{ pam_security_logindefs_encrypt_method }}
+      {% if _pam_sec_logindefs_raw.failed | default(true) %}
+        STATUS: File not found
+      {% else %}
+        File found. Run with security_mode=enforce to apply policy values.
+      {% endif %}
+
+      faillock.conf ({{ pam_security_faillock_conf }}):
+        Policy: deny={{ pam_security_faillock_deny }},
+                unlock_time={{ pam_security_faillock_unlock_time }},
+                fail_interval={{ pam_security_faillock_fail_interval }}
+      {% if _pam_sec_faillock_raw.failed | default(true) %}
+        STATUS: File not found — account lockout may not be active
+      {% else %}
+        File found. Run with security_mode=enforce to apply policy values.
+      {% endif %}
+
+      access.conf ({{ pam_security_access_conf }}):
+        Policy: pam_security_access_enabled={{ pam_security_access_enabled }}
+      {% if not pam_security_access_enabled %}
+        STATUS: Access control disabled in policy (set pam_security_access_enabled=true to enable)
+      {% elif _pam_sec_access_raw.failed | default(true) %}
+        STATUS: File not found
+      {% else %}
+        File found. Run with security_mode=enforce to apply rules.
+      {% endif %}
+
+      limits.conf ({{ pam_security_limits_conf }}):
+      {% if _pam_sec_limits_raw.failed | default(true) %}
+        STATUS: File not found
+      {% else %}
+        File found. Run with security_mode=enforce to apply limits.
+      {% endif %}
+      ─────────────────────────────────────────────────────────────────────────
+  tags: [pam_security, review]

@@ -1,0 +1,122 @@
+---
+# ---------------------------------------------------------------------------
+# system_hardening — OS-level hardening: mounts, accounts, kernel settings
+# Compliance: CIS 1.x/5.x, PCI-DSS 2.2, NIS2 Art.21, HIPAA §164.312
+# ---------------------------------------------------------------------------
+
+system_hardening_enabled: false
+
+# ---------------------------------------------------------------------------
+# Filesystem mount hardening — nodev/nosuid/noexec on temp/sensitive mounts
+# CIS 1.1.2–1.1.9
+# ---------------------------------------------------------------------------
+system_hardening_mounts_enabled: true
+
+system_hardening_tmp_enabled: true
+system_hardening_tmp_options: "defaults,nodev,nosuid,noexec"
+system_hardening_tmp_type: tmpfs
+
+system_hardening_var_tmp_enabled: true
+system_hardening_var_tmp_bind: true        # Bind-mount /var/tmp onto /tmp
+
+system_hardening_dev_shm_enabled: true
+system_hardening_dev_shm_options: "defaults,nodev,nosuid,noexec"
+
+system_hardening_home_enabled: true
+system_hardening_home_options: "defaults,nodev,nosuid"
+
+# ---------------------------------------------------------------------------
+# /proc hidepid — hide other users' processes
+# CIS 1.1.x / STIG V-238218
+# ---------------------------------------------------------------------------
+system_hardening_hidepid_enabled: true
+system_hardening_hidepid_value: 2          # 1=hide entries, 2=hide completely
+system_hardening_proc_group: proc          # Group that bypasses hidepid
+system_hardening_proc_group_extra_members: []
+
+# ---------------------------------------------------------------------------
+# Ctrl+Alt+Del — prevent reboot from physical console — CIS 1.5.5
+# ---------------------------------------------------------------------------
+system_hardening_ctrlaltdel_enabled: true
+
+# ---------------------------------------------------------------------------
+# securetty — restrict root TTY logins — CIS 5.5
+# ---------------------------------------------------------------------------
+system_hardening_securetty_enabled: true
+system_hardening_securetty_allowed_ttys:
+  - console
+  - tty1
+  - tty2
+  - tty3
+  - tty4
+  - tty5
+  - tty6
+
+# ---------------------------------------------------------------------------
+# System account shell hardening — CIS 5.5.2
+# Ensures system accounts (UID < uid_min) use /sbin/nologin or /bin/false
+# ---------------------------------------------------------------------------
+system_hardening_accounts_enabled: true
+system_hardening_uid_min: 1000
+system_hardening_accounts_shell_whitelist:
+  - root
+  - sync
+  - shutdown
+  - halt
+system_hardening_nologin_shell: /sbin/nologin
+
+# ---------------------------------------------------------------------------
+# SUID/SGID removal — CIS 1.1.x, 6.1.x
+# ---------------------------------------------------------------------------
+system_hardening_suid_enabled: true
+system_hardening_suid_report: true          # Always report in review mode
+system_hardening_suid_remove_unlisted: false  # Remove unlisted (enforce only)
+system_hardening_suid_whitelist:
+  - /usr/bin/sudo
+  - /usr/bin/su
+  - /usr/bin/newgrp
+  - /usr/bin/passwd
+  - /usr/bin/chsh
+  - /usr/bin/chfn
+  - /usr/bin/gpasswd
+  - /bin/ping
+  - /usr/bin/ping
+  - /sbin/unix_chkpwd
+  - /usr/sbin/unix_chkpwd
+  - /usr/lib/openssh/ssh-keysign
+  - /usr/lib/ssh/ssh-keysign
+  - /usr/lib/dbus-1.0/dbus-daemon-launch-helper
+  - /usr/libexec/dbus-daemon-launch-helper
+  - /usr/bin/mount
+  - /usr/bin/umount
+  - /usr/bin/pkexec
+  - /usr/lib/polkit-1/polkit-agent-helper-1
+
+# ---------------------------------------------------------------------------
+# .rhosts and .netrc removal — CIS 5.3.x
+# ---------------------------------------------------------------------------
+system_hardening_rhosts_enabled: true
+system_hardening_rhosts_report: true
+system_hardening_rhosts_remove: true
+
+# ---------------------------------------------------------------------------
+# Package manager GPG verification — CIS 1.2.x
+# ---------------------------------------------------------------------------
+system_hardening_gpg_enabled: true
+system_hardening_apt_allow_unauthenticated: false
+system_hardening_dnf_gpgcheck: true
+system_hardening_dnf_repo_gpgcheck: false
+system_hardening_dnf_localpkg_gpgcheck: true
+
+# ---------------------------------------------------------------------------
+# Umask hardening — CIS 5.4.x
+# ---------------------------------------------------------------------------
+system_hardening_umask_enabled: true
+system_hardening_umask: "027"
+system_hardening_umask_profile_path: /etc/profile.d/99-security-umask.sh
+
+# ---------------------------------------------------------------------------
+# Core dump policy via profile.d (complements pam_security limits.d)
+# ---------------------------------------------------------------------------
+system_hardening_coredump_enabled: true
+system_hardening_coredump_profile_path: /etc/profile.d/99-security-coredump.sh

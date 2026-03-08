@@ -1,0 +1,26 @@
+---
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_os_family }}.yml"
+        - main.yml
+      paths: "{{ role_path }}/vars"
+  tags: [system_hardening, always]
+
+- name: Assert supported platform
+  ansible.builtin.assert:
+    that: ansible_os_family in ['Debian', 'RedHat', 'Suse']
+    fail_msg: "system_hardening does not support {{ ansible_os_family }}"
+  tags: [system_hardening, always]
+
+- name: Review mode — assess system posture
+  ansible.builtin.include_tasks: review.yml
+  tags: [system_hardening, review]
+
+- name: Enforce mode — apply hardening
+  ansible.builtin.include_tasks: enforce.yml
+  when:
+    - system_hardening_enabled | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [system_hardening, enforce]

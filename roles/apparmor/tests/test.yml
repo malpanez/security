@@ -1,0 +1,6 @@
+---
+- name: Test apparmor role
+  hosts: localhost
+  remote_user: root
+  roles:
+    - role: malpanez.security.apparmor

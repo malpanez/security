@@ -1,0 +1,3 @@
+---
+_tomcat_default_user: tomcat
+_tomcat_jws_variant: false  # JBoss Web Server variant

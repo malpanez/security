@@ -1,0 +1,26 @@
+---
+- name: Generate DH parameters (may take a few minutes)
+  ansible.builtin.command:
+    cmd: "openssl dhparam -out {{ nginx_hardening_ssl_dhparam }} {{ nginx_hardening_dhparam_bits }}"
+    creates: "{{ nginx_hardening_ssl_dhparam }}"
+  when: nginx_hardening_generate_dhparam | bool
+  notify: Reload nginx
+  tags: [nginx_hardening, tls]
+
+- name: Deploy Nginx security hardening configuration
+  ansible.builtin.template:
+    src: nginx-security.conf.j2
+    dest: "{{ nginx_hardening_security_conf }}"
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "nginx -t -c %s"
+  notify: Reload nginx
+  tags: [nginx_hardening, config]
+
+- name: Verify Nginx configuration is valid
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+  register: _ng_validate
+  tags: [nginx_hardening, validate]

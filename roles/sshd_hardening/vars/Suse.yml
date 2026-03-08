@@ -1,0 +1,10 @@
+---
+# SUSE Linux Enterprise / openSUSE Leap platform-specific values.
+
+sshd_hardening_config_path: /etc/ssh/sshd_config
+sshd_hardening_config_dir: /etc/ssh/sshd_config.d
+# SUSE uses 'sshd' service name (same as RHEL)
+sshd_hardening_service_name: sshd
+sshd_hardening_binary_path: /usr/sbin/sshd
+sshd_hardening_auth_log: /var/log/messages
+sshd_hardening_package_name: openssh

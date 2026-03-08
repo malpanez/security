@@ -1,0 +1,170 @@
+---
+# harden-system.yml — Apply hardening controls with explicit opt-in
+#
+# Each control area is gated behind a boolean variable.
+# All default to false — you must explicitly enable what you want.
+# This prevents accidental broad changes.
+#
+# Usage (review what would change first):
+#   ansible-playbook playbooks/harden-system.yml -i inventory/ --check --diff \
+#     -e security_mode=enforce \
+#     -e pam_security_enabled=true \
+#     -e kernel_hardening_enabled=true
+#
+# Usage (apply, single role at a time):
+#   ansible-playbook playbooks/harden-system.yml -i inventory/ \
+#     -e security_mode=enforce \
+#     -e kernel_hardening_enabled=true \
+#     --tags kernel_hardening
+#
+# Usage (apply all — use after dry-run review):
+#   ansible-playbook playbooks/harden-system.yml -i inventory/ \
+#     -e security_mode=enforce \
+#     -e pam_security_enabled=true \
+#     -e kernel_hardening_enabled=true \
+#     -e apparmor_enabled=true \
+#     -e audit_logging_enabled=true
+#
+# IMPORTANT: Always run preflight-check.yml and review-system.yml first.
+
+- name: Apply security hardening controls
+  hosts: all
+  gather_facts: true
+  become: true
+  serial: "{{ harden_serial | default(1) }}"  # One host at a time by default
+
+  vars:
+    # ── Required: must be set to 'enforce' to apply any changes ─────────────
+    # security_mode: review   # Default — override with -e security_mode=enforce
+
+    # ── Per-area opt-in (all default false) ─────────────────────────────────
+    # Set these to true via -e flags or group_vars to enable each area.
+
+    # PAM: password quality, faillock, login.defs, access.conf
+    pam_security_enabled: false
+
+    # Kernel: sysctl parameters, kernel module restrictions
+    kernel_hardening_enabled: false
+
+    # AppArmor: Debian/Ubuntu/SUSE MAC (skip on RHEL — use selinux_enforcement)
+    apparmor_enabled: false
+
+    # SELinux: RHEL/Rocky/Alma only
+    selinux_enforcement_enabled: false
+
+    # SSH daemon hardening
+    # sshd_hardening always runs when security_mode=enforce (existing role behavior)
+
+    # Sudoers baseline
+    sudoers_baseline_strict: false
+
+    # PAM MFA (YubiKey / TOTP)
+    pam_mfa_enabled: false
+
+    # Auditd rules
+    audit_logging_enabled: true  # Audit logging is safe to always enable
+
+    # CIS Benchmark enforcement
+    cis_baseline_enabled: false
+    cis_baseline_mode: enforce
+
+  pre_tasks:
+    - name: Assert security_mode is explicitly set to enforce
+      ansible.builtin.assert:
+        that:
+          - security_mode is defined
+          - security_mode == 'enforce'
+        fail_msg: |
+          STOP: security_mode must be explicitly set to 'enforce'.
+          Add: -e security_mode=enforce
+          This safeguard prevents accidental changes.
+        success_msg: "✓ Enforce mode confirmed"
+      tags: [always]
+
+    - name: Display hardening plan
+      ansible.builtin.debug:
+        msg: |
+          ====================================================
+          HARDENING — ENFORCE MODE
+          ====================================================
+          Host            : {{ inventory_hostname }}
+          OS              : {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Serial          : {{ harden_serial | default(1) }}
+
+          Controls ENABLED for this run:
+            pam_security     : {{ pam_security_enabled }}
+            kernel_hardening : {{ kernel_hardening_enabled }}
+            apparmor         : {{ apparmor_enabled }}
+            selinux          : {{ selinux_enforcement_enabled }}
+            sudoers_strict   : {{ sudoers_baseline_strict }}
+            pam_mfa          : {{ pam_mfa_enabled }}
+            audit_logging    : {{ audit_logging_enabled }}
+            cis_baseline     : {{ cis_baseline_enabled }}
+
+          Roles NOT listed above (sshd_hardening) run when security_mode=enforce.
+
+          CTRL+C NOW to abort if this is unexpected.
+          ====================================================
+      tags: [always]
+
+    - name: Pause for operator review (10s)
+      ansible.builtin.pause:
+        seconds: 10
+        prompt: "Review the plan above. Press Enter to continue or Ctrl+C to abort."
+      when: harden_pause | default(true) | bool
+      tags: [always]
+
+  roles:
+    - role: malpanez.security.security_capabilities
+      tags: [capabilities, always]
+
+    - role: malpanez.security.audit_logging
+      tags: [audit_logging]
+
+    - role: malpanez.security.pam_security
+      tags: [pam_security]
+
+    - role: malpanez.security.kernel_hardening
+      tags: [kernel_hardening]
+
+    - role: malpanez.security.sshd_hardening
+      tags: [sshd, ssh_hardening]
+
+    - role: malpanez.security.sudoers_baseline
+      tags: [sudoers]
+
+    - role: malpanez.security.pam_mfa
+      tags: [pam_mfa, mfa]
+
+    - role: malpanez.security.apparmor
+      tags: [apparmor, mac]
+      when: ansible_os_family in ['Debian', 'Suse']
+
+    - role: malpanez.security.selinux_enforcement
+      tags: [selinux, mac]
+      when: ansible_os_family == 'RedHat'
+
+    - role: malpanez.security.cis_baseline
+      tags: [cis]
+
+    - role: malpanez.security.compliance_evidence
+      tags: [evidence, always]
+
+  post_tasks:
+    - name: Hardening complete
+      ansible.builtin.debug:
+        msg: |
+          ====================================================
+          HARDENING COMPLETE: {{ inventory_hostname }}
+          ====================================================
+
+          Evidence collected at: /var/log/compliance/
+          Hash manifest:         /var/log/compliance/evidence.sha256
+
+          Recommended follow-up:
+            1. Verify access with a NEW SSH session before closing this one
+            2. Generate full compliance report:
+               ansible-playbook playbooks/generate-compliance-report.yml -i inventory/
+            3. Store evidence pack in your compliance system of record
+          ====================================================
+      tags: [always]

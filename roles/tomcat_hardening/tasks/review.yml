@@ -1,0 +1,36 @@
+---
+- name: "[review] Check for default webapps"
+  ansible.builtin.stat:
+    path: "{{ tomcat_hardening_webapps_dir }}/{{ item }}"
+  register: _tc_webapps_stat
+  loop: "{{ tomcat_hardening_remove_default_webapps }}"
+  loop_control:
+    label: "{{ item }}"
+  tags: [tomcat_hardening, review]
+
+- name: "[review] Check AJP connector"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && grep -i 'AJP' {{ tomcat_hardening_conf_dir }}/server.xml | grep -v '<!--' || echo 'AJP not found'"
+  register: _tc_ajp
+  changed_when: false
+  failed_when: false
+  tags: [tomcat_hardening, review]
+
+- name: "[review] Check shutdown port"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: "set -o pipefail && grep -i 'shutdown' {{ tomcat_hardening_conf_dir }}/server.xml | head -3 || echo 'not found'"
+  register: _tc_shutdown
+  changed_when: false
+  failed_when: false
+  tags: [tomcat_hardening, review]
+
+- name: "[review] Report Tomcat posture"
+  ansible.builtin.debug:
+    msg: |
+      Tomcat security review:
+        Default webapps present: {{ _tc_webapps_stat.results | selectattr('stat.exists') | map(attribute='item') | list | join(', ') | default('none') }}
+        AJP connector          : {{ _tc_ajp.stdout | trim }}
+        Shutdown config        : {{ _tc_shutdown.stdout | trim }}
+  tags: [tomcat_hardening, review]

@@ -1,0 +1,21 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Ensure remote tmp directory
+      ansible.builtin.raw: mkdir -p /tmp/ansible-tmp
+      changed_when: false
+    - name: Gather facts
+      ansible.builtin.setup:
+  roles:
+    - role: apparmor
+      vars:
+        security_mode: enforce
+        apparmor_enabled: true
+        # Start in complain mode for testing (safe in CI)
+        apparmor_mode: complain
+        apparmor_set_all_profiles: false
+        apparmor_check_denials: false  # No audit log in fresh containers
+        apparmor_enforce_profiles: []  # Don't enforce specific profiles in CI

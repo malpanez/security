@@ -1,0 +1,52 @@
+# /etc/nginx/conf.d/99-security-hardening.conf
+# Managed by Ansible (nginx_hardening role). CIS Nginx Benchmark / PCI-DSS 6.6
+
+# ── Information disclosure ─────────────────────────────────────────────────
+server_tokens {{ nginx_hardening_server_tokens }};
+server_name_in_redirect {{ nginx_hardening_server_name_in_redirect }};
+
+{% if nginx_hardening_tls_enabled %}
+# ── TLS ───────────────────────────────────────────────────────────────────
+ssl_protocols {{ nginx_hardening_ssl_protocols }};
+ssl_ciphers '{{ nginx_hardening_ssl_ciphers | replace('\n', '') | trim }}';
+ssl_prefer_server_ciphers {{ nginx_hardening_ssl_prefer_server_ciphers }};
+ssl_session_cache {{ nginx_hardening_ssl_session_cache }};
+ssl_session_timeout {{ nginx_hardening_ssl_session_timeout }};
+ssl_session_tickets {{ nginx_hardening_ssl_session_tickets }};
+{% if nginx_hardening_generate_dhparam %}
+ssl_dhparam {{ nginx_hardening_ssl_dhparam }};
+{% endif %}
+ssl_stapling {{ nginx_hardening_ssl_stapling }};
+ssl_stapling_verify {{ nginx_hardening_ssl_stapling_verify }};
+{% endif %}
+
+{% if nginx_hardening_headers_enabled %}
+# ── Security headers ───────────────────────────────────────────────────────
+{% if nginx_hardening_hsts_enabled %}
+add_header Strict-Transport-Security "max-age={{ nginx_hardening_hsts_max_age }}{{ '; includeSubDomains' if nginx_hardening_hsts_include_subdomains else '' }}{{ '; preload' if nginx_hardening_hsts_preload else '' }}" always;
+{% endif %}
+add_header X-Frame-Options "{{ nginx_hardening_x_frame_options }}" always;
+add_header X-Content-Type-Options "{{ nginx_hardening_x_content_type_options }}" always;
+add_header X-XSS-Protection "{{ nginx_hardening_x_xss_protection }}" always;
+add_header Referrer-Policy "{{ nginx_hardening_referrer_policy }}" always;
+add_header Permissions-Policy "{{ nginx_hardening_permissions_policy }}" always;
+add_header Content-Security-Policy "{{ nginx_hardening_csp | replace('\n', ' ') | trim }}" always;
+{% endif %}
+
+# ── Request limits ─────────────────────────────────────────────────────────
+client_max_body_size {{ nginx_hardening_client_max_body_size }};
+client_body_timeout {{ nginx_hardening_client_body_timeout }};
+client_header_timeout {{ nginx_hardening_client_header_timeout }};
+send_timeout {{ nginx_hardening_send_timeout }};
+keepalive_timeout {{ nginx_hardening_keepalive_timeout }};
+large_client_header_buffers {{ nginx_hardening_large_client_header_buffers }};
+
+{% if nginx_hardening_limit_conn_enabled %}
+# ── Connection / rate limiting ─────────────────────────────────────────────
+limit_conn_zone {{ nginx_hardening_limit_conn_zone }};
+limit_conn perip {{ nginx_hardening_limit_conn_per_ip }};
+{% endif %}
+{% if nginx_hardening_limit_req_enabled %}
+limit_req_zone {{ nginx_hardening_limit_req_zone }};
+limit_req zone=ratelimit burst={{ nginx_hardening_limit_req_burst }} nodelay;
+{% endif %}

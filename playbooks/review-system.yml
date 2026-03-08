@@ -1,0 +1,97 @@
+---
+# review-system.yml — Full read-only security posture review
+#
+# Runs ALL security roles in review mode.
+# Makes ZERO changes to target systems.
+# Safe to run in production at any time.
+#
+# Usage:
+#   ansible-playbook playbooks/review-system.yml -i inventory/hosts.yml
+#   ansible-playbook playbooks/review-system.yml -i inventory/hosts.yml --limit webservers
+#   ansible-playbook playbooks/review-system.yml -i inventory/hosts.yml --tags kernel_hardening
+#
+# Output: Debug messages per host. For a full evidence pack, run
+#         playbooks/generate-compliance-report.yml instead.
+
+- name: Full security posture review (read-only)
+  hosts: all
+  gather_facts: true
+  become: true
+
+  vars:
+    security_mode: review
+
+    # All enforcement disabled — review only
+    pam_security_enabled: false
+    kernel_hardening_enabled: false
+    apparmor_enabled: false
+    selinux_enforcement_enabled: false
+    audit_logging_enabled: false
+    sudoers_baseline_strict: false
+    pam_mfa_enabled: false
+    cis_baseline_enabled: true
+    cis_baseline_mode: review
+    cis_baseline_review_fail_on_violation: false
+
+  pre_tasks:
+    - name: Display review header
+      ansible.builtin.debug:
+        msg: |
+          ====================================================
+          SECURITY POSTURE REVIEW — READ-ONLY
+          ====================================================
+          Host    : {{ inventory_hostname }}
+          OS      : {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Kernel  : {{ ansible_kernel }}
+          Mode    : review (no changes will be made)
+          ====================================================
+      tags: [always]
+
+  roles:
+    - role: malpanez.security.security_capabilities
+      tags: [capabilities]
+
+    - role: malpanez.security.pam_security
+      tags: [pam_security]
+
+    - role: malpanez.security.kernel_hardening
+      tags: [kernel_hardening]
+
+    - role: malpanez.security.apparmor
+      tags: [apparmor]
+      when: ansible_os_family in ['Debian', 'Suse']
+
+    - role: malpanez.security.selinux_enforcement
+      tags: [selinux]
+      when: ansible_os_family == 'RedHat'
+
+    - role: malpanez.security.cis_baseline
+      tags: [cis]
+
+    - role: malpanez.security.compliance_evidence
+      tags: [evidence]
+
+  post_tasks:
+    - name: Review complete — next steps
+      ansible.builtin.debug:
+        msg: |
+          ====================================================
+          REVIEW COMPLETE: {{ inventory_hostname }}
+          ====================================================
+
+          Review findings shown above (per role).
+
+          Next steps:
+            1. To see what WOULD change without applying:
+               ansible-playbook playbooks/dry-run.yml --check --diff -i inventory/
+
+            2. To generate a full compliance evidence pack:
+               ansible-playbook playbooks/generate-compliance-report.yml -i inventory/
+
+            3. To apply hardening (with explicit confirmation):
+               ansible-playbook playbooks/harden-system.yml -i inventory/ \
+                 -e security_mode=enforce \
+                 -e pam_security_enabled=true \
+                 -e kernel_hardening_enabled=true
+          ====================================================
+      tags: [always]

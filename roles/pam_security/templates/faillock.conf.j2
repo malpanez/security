@@ -1,0 +1,28 @@
+{{ ansible_managed | comment }}
+# /etc/security/faillock.conf
+# Managed by malpanez.security.pam_security role
+# Frameworks: CIS 5.4.2 / PCI-DSS 8.2.6 / NIS2 account lockout baseline
+
+# Number of consecutive failed logins before account is locked
+deny = {{ pam_security_faillock_deny }}
+
+# Time window (seconds) in which failures are counted
+fail_interval = {{ pam_security_faillock_fail_interval }}
+
+# Duration (seconds) the account is locked (0 = until admin unlocks)
+unlock_time = {{ pam_security_faillock_unlock_time }}
+
+{% if pam_security_faillock_audit %}
+# Record lockout events to the audit subsystem
+audit
+{% endif %}
+
+{% if pam_security_faillock_silent %}
+# Do not print informational messages to the user
+silent
+{% endif %}
+
+{% if pam_security_faillock_even_deny_root %}
+# Apply lockout to root account as well (high-security environments)
+even_deny_root
+{% endif %}

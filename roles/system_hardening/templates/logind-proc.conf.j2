@@ -1,0 +1,5 @@
+# /etc/systemd/system/systemd-logind.service.d/99-proc-group.conf
+# Allows systemd-logind to read /proc when hidepid is active.
+# Managed by Ansible (system_hardening role).
+[Service]
+SupplementaryGroups={{ system_hardening_proc_group }}

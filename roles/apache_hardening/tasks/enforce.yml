@@ -1,0 +1,35 @@
+---
+- name: Deploy Apache security hardening configuration
+  ansible.builtin.template:
+    src: apache-security.conf.j2
+    dest: "{{ _apache_security_conf }}"
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "{{ _apache_binary }} -t"
+  notify: Reload apache
+  tags: [apache_hardening, config]
+
+- name: Enable required Apache modules (Debian/Ubuntu)
+  community.general.apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ apache_hardening_modules_enable }}"
+  when: ansible_os_family == 'Debian'
+  notify: Reload apache
+  tags: [apache_hardening, modules]
+
+- name: Disable unneeded Apache modules (Debian/Ubuntu)
+  community.general.apache2_module:
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ apache_hardening_modules_disable }}"
+  when: ansible_os_family == 'Debian'
+  notify: Reload apache
+  tags: [apache_hardening, modules]
+
+- name: Verify Apache configuration
+  ansible.builtin.command:
+    cmd: "{{ _apache_binary }} -t"
+  changed_when: false
+  tags: [apache_hardening, validate]

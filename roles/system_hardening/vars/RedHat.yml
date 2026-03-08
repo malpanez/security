@@ -1,0 +1,3 @@
+---
+_sh_dnf_conf: /etc/dnf/dnf.conf
+_sh_logind_user: ""   # systemd-logind runs as root on RHEL

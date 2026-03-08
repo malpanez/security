@@ -1,0 +1,3 @@
+---
+_tomcat_default_user: tomcat
+_tomcat_jws_variant: true  # RHEL has JBoss Web Server (JWS)

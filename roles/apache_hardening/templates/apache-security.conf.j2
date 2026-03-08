@@ -1,0 +1,54 @@
+# Apache security hardening — managed by Ansible (apache_hardening role)
+# CIS Apache Benchmark / PCI-DSS 6.6 / OWASP Top 10
+
+# ── Information disclosure ─────────────────────────────────────────────────
+ServerTokens {{ apache_hardening_server_tokens }}
+ServerSignature {{ apache_hardening_server_signature }}
+TraceEnable {{ apache_hardening_trace_enable }}
+
+{% if apache_hardening_tls_enabled %}
+# ── TLS ───────────────────────────────────────────────────────────────────
+SSLProtocol {{ apache_hardening_ssl_protocol }}
+SSLCipherSuite {{ apache_hardening_ssl_cipher_suite | replace('\n', '') | trim }}
+SSLHonorCipherOrder {{ apache_hardening_ssl_honor_cipher_order }}
+SSLSessionTickets {{ apache_hardening_ssl_session_tickets }}
+SSLUseStapling {{ apache_hardening_ssl_stapling }}
+SSLStaplingVerify {{ apache_hardening_ssl_stapling_verify }}
+{{ apache_hardening_ssl_use_stapling_cache }}
+SSLCompression {{ apache_hardening_ssl_compression }}
+{% endif %}
+
+{% if apache_hardening_headers_enabled %}
+# ── Security headers ───────────────────────────────────────────────────────
+<IfModule mod_headers.c>
+{% if apache_hardening_hsts_enabled %}
+    Header always set Strict-Transport-Security "max-age={{ apache_hardening_hsts_max_age }}{{ '; includeSubDomains' if apache_hardening_hsts_include_subdomains else '' }}"
+{% endif %}
+    Header always set X-Frame-Options "{{ apache_hardening_x_frame_options }}"
+    Header always set X-Content-Type-Options "{{ apache_hardening_x_content_type_options }}"
+    Header always set X-XSS-Protection "{{ apache_hardening_x_xss_protection }}"
+    Header always set Referrer-Policy "{{ apache_hardening_referrer_policy }}"
+    Header always set Content-Security-Policy "{{ apache_hardening_csp | replace('\n', ' ') | trim }}"
+    Header unset Server
+    Header unset X-Powered-By
+</IfModule>
+{% endif %}
+
+# ── Directory hardening ────────────────────────────────────────────────────
+<Directory />
+    Options None
+    AllowOverride None
+    Require all denied
+</Directory>
+
+# ── Request limits ─────────────────────────────────────────────────────────
+LimitRequestBody {{ apache_hardening_limit_request_body }}
+LimitRequestFields {{ apache_hardening_limit_request_fields }}
+LimitRequestLine {{ apache_hardening_limit_request_line }}
+Timeout {{ apache_hardening_timeout }}
+KeepAlive {{ apache_hardening_keep_alive }}
+KeepAliveTimeout {{ apache_hardening_keep_alive_timeout }}
+MaxKeepAliveRequests {{ apache_hardening_max_keep_alive_requests }}
+
+# ── Logging ────────────────────────────────────────────────────────────────
+LogLevel {{ apache_hardening_log_level }}

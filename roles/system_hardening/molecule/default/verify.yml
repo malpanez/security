@@ -1,0 +1,70 @@
+---
+- name: Verify system_hardening role
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Check Ctrl+Alt+Del target is masked
+      ansible.builtin.command:
+        cmd: systemctl is-enabled ctrl-alt-del.target
+      register: _ctrlaltdel_state
+      changed_when: false
+      failed_when: false
+
+    - name: Assert Ctrl+Alt+Del is masked
+      ansible.builtin.assert:
+        that: _ctrlaltdel_state.stdout | trim == 'masked'
+        fail_msg: "ctrl-alt-del.target is not masked (got: {{ _ctrlaltdel_state.stdout | trim }})"
+        success_msg: "✓ ctrl-alt-del.target is masked"
+
+    - name: Check /etc/securetty exists
+      ansible.builtin.stat:
+        path: /etc/securetty
+      register: _securetty_stat
+
+    - name: Assert securetty exists and is restrictive
+      ansible.builtin.assert:
+        that:
+          - _securetty_stat.stat.exists
+          - _securetty_stat.stat.mode == '0600'
+        fail_msg: "/etc/securetty missing or wrong permissions"
+        success_msg: "✓ /etc/securetty exists with 0600"
+
+    - name: Check umask profile exists
+      ansible.builtin.stat:
+        path: /etc/profile.d/99-security-umask.sh
+      register: _umask_stat
+
+    - name: Assert umask profile deployed
+      ansible.builtin.assert:
+        that: _umask_stat.stat.exists
+        fail_msg: "/etc/profile.d/99-security-umask.sh not deployed"
+        success_msg: "✓ umask profile deployed"
+
+    - name: Verify umask value in profile
+      ansible.builtin.command:
+        cmd: grep -E 'umask 0[0-9]+' /etc/profile.d/99-security-umask.sh
+      changed_when: false
+      register: _umask_content
+
+    - name: Assert umask is set
+      ansible.builtin.assert:
+        that: _umask_content.rc == 0
+        fail_msg: "umask not set in profile"
+        success_msg: "✓ umask configured in profile"
+
+    - name: Check core dump profile exists
+      ansible.builtin.stat:
+        path: /etc/profile.d/99-security-coredump.sh
+      register: _coredump_stat
+
+    - name: Assert core dump profile deployed
+      ansible.builtin.assert:
+        that: _coredump_stat.stat.exists
+        fail_msg: "/etc/profile.d/99-security-coredump.sh not deployed"
+        success_msg: "✓ core dump profile deployed"
+
+    - name: System hardening verification complete
+      ansible.builtin.debug:
+        msg: "✓ system_hardening molecule verification complete"

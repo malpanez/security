@@ -9,20 +9,65 @@
     security_phase_sudoers: "{{ sudoers_baseline_strict | default(false) }}"
     security_phase_mfa: "{{ pam_mfa_enabled | default(false) }}"
     security_phase_selinux: "{{ selinux_enforcement_enabled | default(false) }}"
+    security_phase_apparmor: "{{ apparmor_enabled | default(false) }}"
     security_phase_audit: "{{ audit_logging_enabled | default(true) }}"
+    security_phase_pam: "{{ pam_security_enabled | default(false) }}"
+    security_phase_kernel: "{{ kernel_hardening_enabled | default(false) }}"
+    security_phase_system: "{{ system_hardening_enabled | default(false) }}"
+    security_phase_nginx: "{{ nginx_hardening_enabled | default(false) }}"
+    security_phase_apache: "{{ apache_hardening_enabled | default(false) }}"
+    security_phase_mysql: "{{ mysql_hardening_enabled | default(false) }}"
+    security_phase_tomcat: "{{ tomcat_hardening_enabled | default(false) }}"
 
   pre_tasks:
     - name: Backup configurations
       ansible.builtin.include_tasks: ../tasks/backup-configs.yml
 
   roles:
+    # 1. Detect system capabilities (always first)
     - security_capabilities
-    - service_accounts_transfer
+
+    # 2. PAM: password quality, faillock, login.defs, access.conf, limits
+    - pam_security
+
+    # 3. Kernel hardening: sysctl (50+ params) + module blacklist
+    - kernel_hardening
+
+    # 4. OS system hardening: mounts, hidepid, SUID/SGID, accounts, ctrl+alt+del
+    - system_hardening
+
+    # 5. SSH daemon hardening (drop-in by default)
     - sshd_hardening
+
+    # 6. PAM MFA: YubiKey / TOTP
     - pam_mfa
+
+    # 7. Sudoers: drop-ins only by default, never rewrites /etc/sudoers
     - sudoers_baseline
-    - selinux_enforcement
+
+    # 8. Service accounts: ForceCommand, chroot, SSH Match blocks
+    - service_accounts_transfer
+
+    # 9. MAC: AppArmor (Debian/Ubuntu/SUSE) or SELinux (RHEL family)
+    - role: apparmor
+      when: ansible_os_family in ['Debian', 'Suse']
+    - role: selinux_enforcement
+      when: ansible_os_family == 'RedHat'
+
+    # 10. Web server hardening (skips if not installed)
+    - nginx_hardening
+    - apache_hardening
+
+    # 11. Database hardening (skips if not installed)
+    - mysql_hardening
+
+    # 12. Application server hardening (skips if not installed)
+    - tomcat_hardening
+
+    # 13. Audit logging: auditd rules for all managed config files
     - audit_logging
+
+    # 14. Compliance evidence: collect and hash all artifacts
     - compliance_evidence
 
   post_tasks:

@@ -1,0 +1,13 @@
+---
+# SUSE ships AppArmor by default (unlike RHEL which uses SELinux)
+apparmor_packages:
+  - apparmor-parser
+  - apparmor-utils
+  - apparmor-profiles
+
+apparmor_status_cmd: aa-status
+apparmor_enforce_cmd: aa-enforce
+apparmor_complain_cmd: aa-complain
+apparmor_profiles_dir: /etc/apparmor.d
+
+apparmor_service: apparmor

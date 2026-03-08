@@ -1,0 +1,49 @@
+---
+- name: Remove default Tomcat webapps
+  ansible.builtin.file:
+    path: "{{ tomcat_hardening_webapps_dir }}/{{ item }}"
+    state: absent
+  loop: >-
+    {{ tomcat_hardening_remove_default_webapps
+       if not tomcat_hardening_manager_enabled
+       else (tomcat_hardening_remove_default_webapps | reject('equalto', 'manager') | list) }}
+  loop_control:
+    label: "{{ item }}"
+  notify: Restart tomcat
+  tags: [tomcat_hardening, webapps]
+
+- name: Deploy hardened server.xml
+  ansible.builtin.template:
+    src: server.xml.j2
+    dest: "{{ tomcat_hardening_conf_dir }}/server.xml"
+    owner: "{{ tomcat_hardening_user }}"
+    group: "{{ tomcat_hardening_group }}"
+    mode: "0640"
+    backup: true
+  notify: Restart tomcat
+  tags: [tomcat_hardening, config]
+
+- name: Deploy hardened web.xml
+  ansible.builtin.template:
+    src: web.xml.j2
+    dest: "{{ tomcat_hardening_conf_dir }}/web.xml"
+    owner: "{{ tomcat_hardening_user }}"
+    group: "{{ tomcat_hardening_group }}"
+    mode: "0640"
+    backup: true
+  notify: Restart tomcat
+  tags: [tomcat_hardening, config]
+
+- name: Harden Tomcat directory permissions
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: "{{ tomcat_hardening_user }}"
+    group: "{{ tomcat_hardening_group }}"
+    mode: "{{ item.mode }}"
+    recurse: true
+  loop:
+    - {path: "{{ tomcat_hardening_conf_dir }}", mode: "{{ tomcat_hardening_conf_mode }}"}
+    - {path: "{{ tomcat_hardening_logs_dir }}", mode: "{{ tomcat_hardening_logs_mode }}"}
+  loop_control:
+    label: "{{ item.path }}"
+  tags: [tomcat_hardening, permissions]

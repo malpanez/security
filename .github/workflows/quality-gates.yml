@@ -7,6 +7,13 @@ on:
     branches: [develop]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pre-commit-checks:
     name: Pre-commit Hooks
@@ -26,7 +33,11 @@ jobs:
           pip install pre-commit ansible-core ansible-lint
 
       - name: Install Ansible Galaxy collections
-        run: ansible-galaxy collection install -r requirements.yml -p .ansible/collections
+        run: |
+          ansible-galaxy collection install -r requirements.yml -p .ansible/collections
+          ansible-galaxy collection install . -p .ansible/collections
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
 
       - name: Run pre-commit hooks
         env:
@@ -131,11 +142,19 @@ jobs:
         run: |
           pip install ansible-core>=2.16
 
+      - name: Install Ansible Galaxy collections
+        run: |
+          ansible-galaxy collection install . -p .ansible/collections
+          ansible-galaxy collection install community.general community.mysql ansible.posix -p .ansible/collections
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
       - name: Syntax check all playbooks
         run: |
           for playbook in playbooks/*.yml; do
             echo "Checking syntax: $playbook"
-            ansible-playbook "$playbook" --syntax-check
+            ANSIBLE_COLLECTIONS_PATH=${{ github.workspace }}/.ansible/collections \
+              ansible-playbook "$playbook" --syntax-check
           done
 
       - name: Verify ansible.cfg syntax

@@ -1,0 +1,56 @@
+---
+- name: Deploy MySQL security configuration
+  ansible.builtin.template:
+    src: mysql-security.cnf.j2
+    dest: "{{ _mysql_security_conf }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart mysql
+  tags: [mysql_hardening, config]
+
+- name: Remove anonymous MySQL users
+  community.mysql.mysql_user:
+    name: ''
+    host_all: true
+    state: absent
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  when: mysql_hardening_remove_anonymous_users | bool
+  no_log: true
+  tags: [mysql_hardening, accounts]
+
+- name: Remove remote root MySQL accounts
+  community.mysql.mysql_user:
+    name: root
+    host: "{{ item }}"
+    state: absent
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  loop: "{{ (_my_remote_root.query_result[0] | default([])) | map(attribute='host') | list }}"
+  when:
+    - mysql_hardening_disallow_remote_root | bool
+    - _my_remote_root is defined
+    - _my_remote_root.query_result is defined
+  no_log: true
+  tags: [mysql_hardening, accounts]
+
+- name: Remove test database
+  community.mysql.mysql_db:
+    name: test
+    state: absent
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  when: mysql_hardening_remove_test_db | bool
+  tags: [mysql_hardening, databases]
+
+- name: Harden MySQL datadir permissions
+  ansible.builtin.file:
+    path: "{{ _mysql_datadir }}"
+    owner: "{{ mysql_hardening_datadir_owner }}"
+    group: "{{ mysql_hardening_datadir_group }}"
+    mode: "{{ mysql_hardening_datadir_mode }}"
+  tags: [mysql_hardening, permissions]
+
+- name: Flush MySQL privileges
+  community.mysql.mysql_query:
+    query: "FLUSH PRIVILEGES"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  tags: [mysql_hardening, accounts]
