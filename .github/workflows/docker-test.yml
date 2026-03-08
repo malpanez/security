@@ -109,9 +109,10 @@ jobs:
       - name: Install required packages in container
         run: |
           # Fix nsswitch.conf to prevent PAM/sudo failures in RHEL-family containers
-          # (Rocky/RHEL containers often have 'sss' in nsswitch.conf but sssd is not running)
+          # (Rocky/RHEL containers have 'sss' in nsswitch.conf but sssd is not running)
+          # Handle both "sss files" and "files sss" patterns
           docker exec test-container bash -c \
-            "sed -i 's/ sss//g' /etc/nsswitch.conf 2>/dev/null || true"
+            "sed -i 's/sss //g; s/ sss//g' /etc/nsswitch.conf 2>/dev/null || true"
           if [[ "${{ matrix.platform.image }}" =~ "debian" ]]; then
             docker exec test-container bash -lc 'apt-get update -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true'
             docker exec test-container bash -lc 'apt-get install -y --no-install-recommends --allow-unauthenticated debian-archive-keyring gnupg ca-certificates'
@@ -129,7 +130,7 @@ jobs:
           ansible-playbook -i test-inventory/hosts \
             playbooks/preflight-check.yml \
             --connection=docker \
-            --extra-vars "ansible_host=test-container" \
+            --extra-vars "ansible_host=test-container ansible_python_interpreter=/usr/bin/python3" \
             || echo "Preflight check completed with warnings (expected in Docker)"
         continue-on-error: true
 
@@ -138,20 +139,20 @@ jobs:
           ansible-playbook -i test-inventory/hosts \
             playbooks/audit-only.yml \
             --connection=docker \
-            --extra-vars "ansible_host=test-container"
+            --extra-vars "ansible_host=test-container ansible_python_interpreter=/usr/bin/python3"
 
       - name: Run dry-run playbook (check mode)
         run: |
           ansible-playbook -i test-inventory/hosts \
             playbooks/dry-run.yml \
             --connection=docker \
-            --extra-vars "ansible_host=test-container" \
+            --extra-vars "ansible_host=test-container ansible_python_interpreter=/usr/bin/python3" \
             --check --diff
 
       - name: Test SSH hardening role
         run: |
           ansible-playbook -i test-inventory/hosts \
-            -e '{"ansible_connection": "docker", "ansible_host": "test-container"}' \
+            -e '{"ansible_connection": "docker", "ansible_host": "test-container", "ansible_python_interpreter": "/usr/bin/python3"}' \
             --tags sshd_hardening \
             playbooks/site.yml
 
