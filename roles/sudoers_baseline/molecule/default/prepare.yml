@@ -1,0 +1,20 @@
+---
+- name: Prepare instances
+  hosts: all
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Fix nsswitch.conf - remove sss entries (sssd not running in containers)
+      ansible.builtin.raw: |
+        if [ -f /etc/nsswitch.conf ]; then
+          sed -i 's/sss //g; s/ sss//g' /etc/nsswitch.conf
+        fi
+      changed_when: false
+
+    - name: Ensure @includedir /etc/sudoers.d is present on RHEL-family containers
+      ansible.builtin.raw: |
+        if command -v rpm >/dev/null 2>&1; then
+          grep -q '@includedir /etc/sudoers.d' /etc/sudoers || \
+            echo '@includedir /etc/sudoers.d' >> /etc/sudoers
+        fi
+      changed_when: false

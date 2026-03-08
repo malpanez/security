@@ -12,6 +12,7 @@
   ansible.builtin.stat:
     path: "{{ nginx_hardening_config_path }}"
   register: _nginx_installed
+  become: false
   tags: [nginx_hardening, always]
 
 - name: Skip if Nginx not installed

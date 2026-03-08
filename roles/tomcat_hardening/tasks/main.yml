@@ -12,6 +12,7 @@
   ansible.builtin.stat:
     path: "{{ tomcat_hardening_conf_dir }}"
   register: _tomcat_installed
+  become: false
   tags: [tomcat_hardening, always]
 
 - name: Skip if Tomcat not installed

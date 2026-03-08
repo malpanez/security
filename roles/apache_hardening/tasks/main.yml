@@ -12,6 +12,7 @@
   ansible.builtin.stat:
     path: "{{ _apache_conf_dir }}"
   register: _apache_installed
+  become: false
   tags: [apache_hardening, always]
 
 - name: Skip if Apache not installed
