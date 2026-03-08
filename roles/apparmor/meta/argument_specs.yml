@@ -1,0 +1,57 @@
+---
+argument_specs:
+  main:
+    short_description: Enable and configure AppArmor Mandatory Access Control (MAC).
+    options:
+      apparmor_enabled:
+        type: bool
+        default: false
+        description: Set to true to enable enforcement. Review always runs.
+      apparmor_packages:
+        type: list
+        elements: str
+        default:
+          - apparmor
+          - apparmor-utils
+          - apparmor-profiles
+        description: AppArmor packages to install. Overridden by platform vars.
+      apparmor_mode:
+        type: str
+        default: complain
+        description: >-
+          Default profile mode. 'complain' logs violations without blocking
+          (safe for initial deployment). 'enforce' blocks violations.
+          Switch to enforce after validating no false positives in audit log.
+      apparmor_set_all_profiles:
+        type: bool
+        default: false
+        description: When true, set ALL installed profiles to apparmor_mode.
+      apparmor_enforce_profiles:
+        type: list
+        elements: str
+        default:
+          - /usr/sbin/sshd
+          - /usr/sbin/ntpd
+          - /usr/sbin/chronyd
+          - /usr/sbin/mysqld
+          - /usr/sbin/apache2
+        description: >-
+          Profiles to always set to enforce mode, regardless of apparmor_mode.
+          Use for high-value targets (sshd, mysqld, ntpd).
+      apparmor_complain_profiles:
+        type: list
+        elements: str
+        default: []
+        description: Profiles to set to complain mode for monitoring/troubleshooting.
+      apparmor_check_denials:
+        type: bool
+        default: true
+        description: >-
+          Before switching a profile to enforce, check recent audit log for
+          denial events. Prevents locking out services.
+      apparmor_max_denials_before_enforce:
+        type: int
+        default: 0
+        description: >-
+          Maximum acceptable denial events in audit log before switching to
+          enforce mode. 0 means fail immediately if any denials detected.

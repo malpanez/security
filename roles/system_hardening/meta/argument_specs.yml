@@ -1,0 +1,158 @@
+---
+argument_specs:
+  main:
+    short_description: OS-level hardening — mounts, hidepid, accounts, SUID/SGID, umask.
+    options:
+      system_hardening_enabled:
+        type: bool
+        default: false
+        description: Set to true to enable enforcement. Review always runs.
+      system_hardening_mounts_enabled:
+        type: bool
+        default: true
+        description: Manage mount options for /tmp, /var/tmp, /dev/shm, /home.
+      system_hardening_tmp_enabled:
+        type: bool
+        default: true
+        description: Apply nodev/nosuid/noexec to /tmp via tmpfs.
+      system_hardening_tmp_options:
+        type: str
+        default: defaults,nodev,nosuid,noexec
+        description: Mount options for /tmp.
+      system_hardening_var_tmp_enabled:
+        type: bool
+        default: true
+        description: Bind-mount /var/tmp onto /tmp to inherit mount options.
+      system_hardening_dev_shm_enabled:
+        type: bool
+        default: true
+        description: Apply nodev/nosuid/noexec to /dev/shm.
+      system_hardening_home_enabled:
+        type: bool
+        default: true
+        description: Apply nodev/nosuid to /home.
+      system_hardening_hidepid_enabled:
+        type: bool
+        default: true
+        description: Mount /proc with hidepid to restrict process visibility.
+      system_hardening_hidepid_value:
+        type: int
+        default: 2
+        description: >-
+          hidepid value. 1=hide directory entries, 2=hide completely.
+          Use 1 on RHEL 7 (kernel 3.10, no gid=proc support).
+      system_hardening_proc_group:
+        type: str
+        default: proc
+        description: Group that bypasses hidepid restrictions (e.g., monitoring users).
+      system_hardening_proc_group_extra_members:
+        type: list
+        elements: str
+        default: []
+        description: Extra users to add to the proc group (monitoring agents, etc.).
+      system_hardening_ctrlaltdel_enabled:
+        type: bool
+        default: true
+        description: Mask ctrl-alt-del.target to prevent console reboot.
+      system_hardening_securetty_enabled:
+        type: bool
+        default: true
+        description: Manage /etc/securetty to restrict root TTY logins.
+      system_hardening_securetty_allowed_ttys:
+        type: list
+        elements: str
+        default:
+          - console
+          - tty1
+          - tty2
+          - tty3
+          - tty4
+          - tty5
+          - tty6
+        description: TTYs from which root login is permitted.
+      system_hardening_accounts_enabled:
+        type: bool
+        default: true
+        description: Ensure system accounts (UID < uid_min) use nologin shell.
+      system_hardening_uid_min:
+        type: int
+        default: 1000
+        description: UIDs below this value are treated as system accounts.
+      system_hardening_accounts_shell_whitelist:
+        type: list
+        elements: str
+        default:
+          - root
+          - sync
+          - shutdown
+          - halt
+        description: System accounts allowed to keep a login shell.
+      system_hardening_nologin_shell:
+        type: str
+        default: /sbin/nologin
+        description: Shell to assign to system accounts not in the whitelist.
+      system_hardening_suid_enabled:
+        type: bool
+        default: true
+        description: Audit and optionally remove SUID/SGID bits.
+      system_hardening_suid_report:
+        type: bool
+        default: true
+        description: Always report SUID/SGID findings in review mode.
+      system_hardening_suid_remove_unlisted:
+        type: bool
+        default: false
+        description: Remove SUID/SGID bits from binaries not in whitelist (enforce only).
+      system_hardening_suid_whitelist:
+        type: list
+        elements: str
+        description: Binaries that legitimately require SUID/SGID bits.
+        default:
+          - /usr/bin/sudo
+          - /usr/bin/su
+          - /usr/bin/newgrp
+          - /usr/bin/passwd
+          - /usr/bin/chsh
+          - /usr/bin/chfn
+          - /usr/bin/gpasswd
+          - /bin/ping
+          - /usr/bin/ping
+          - /sbin/unix_chkpwd
+          - /usr/sbin/unix_chkpwd
+          - /usr/lib/openssh/ssh-keysign
+          - /usr/lib/dbus-1.0/dbus-daemon-launch-helper
+          - /usr/bin/mount
+          - /usr/bin/umount
+          - /usr/bin/pkexec
+      system_hardening_rhosts_enabled:
+        type: bool
+        default: true
+        description: Search for .rhosts and .netrc files.
+      system_hardening_rhosts_remove:
+        type: bool
+        default: true
+        description: Remove found .rhosts and .netrc files in enforce mode.
+      system_hardening_gpg_enabled:
+        type: bool
+        default: true
+        description: Enforce GPG signature verification for package managers.
+      system_hardening_apt_allow_unauthenticated:
+        type: bool
+        default: false
+        description: Whether to allow unauthenticated apt packages (should be false).
+      system_hardening_dnf_gpgcheck:
+        type: bool
+        default: true
+        description: Enforce GPG check for dnf packages.
+      system_hardening_umask_enabled:
+        type: bool
+        default: true
+        description: Deploy umask setting via /etc/profile.d drop-in.
+      system_hardening_umask:
+        type: str
+        default: "027"
+        description: System-wide default umask (027 = owner rwx, group rx, world none).
+      system_hardening_coredump_enabled:
+        type: bool
+        default: true
+        description: Deploy core dump disable via /etc/profile.d drop-in.

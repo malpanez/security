@@ -1,0 +1,117 @@
+---
+argument_specs:
+  main:
+    short_description: Harden Nginx via drop-in config — TLS, headers, rate limiting.
+    options:
+      nginx_hardening_enabled:
+        type: bool
+        default: false
+        description: Set to true to enable enforcement. Skips if Nginx not installed.
+      nginx_hardening_config_path:
+        type: str
+        default: /etc/nginx/nginx.conf
+        description: Path to nginx.conf — used to detect if Nginx is installed.
+      nginx_hardening_security_conf:
+        type: str
+        default: /etc/nginx/conf.d/99-security-hardening.conf
+        description: Drop-in security config path. This is the only file written.
+      nginx_hardening_server_tokens:
+        type: str
+        default: "off"
+        description: Hide Nginx version from responses. Set to 'off'.
+      nginx_hardening_tls_enabled:
+        type: bool
+        default: true
+        description: Apply TLS hardening directives.
+      nginx_hardening_ssl_protocols:
+        type: str
+        default: TLSv1.2 TLSv1.3
+        description: Allowed TLS protocol versions. Do not include TLSv1 or TLSv1.1.
+      nginx_hardening_ssl_session_tickets:
+        type: str
+        default: "off"
+        description: Disable TLS session tickets to preserve forward secrecy.
+      nginx_hardening_ssl_stapling:
+        type: str
+        default: "on"
+        description: Enable OCSP stapling.
+      nginx_hardening_generate_dhparam:
+        type: bool
+        default: true
+        description: Generate Diffie-Hellman parameters on first run.
+      nginx_hardening_dhparam_bits:
+        type: int
+        default: 2048
+        description: DH parameter bit size. 2048 is the minimum; 4096 for higher security.
+      nginx_hardening_headers_enabled:
+        type: bool
+        default: true
+        description: Add HTTP security headers to all responses.
+      nginx_hardening_hsts_enabled:
+        type: bool
+        default: true
+        description: Add Strict-Transport-Security header.
+      nginx_hardening_hsts_max_age:
+        type: int
+        default: 31536000
+        description: HSTS max-age in seconds (default 1 year).
+      nginx_hardening_hsts_include_subdomains:
+        type: bool
+        default: true
+        description: Include subdomains in HSTS header.
+      nginx_hardening_hsts_preload:
+        type: bool
+        default: false
+        description: Add preload directive. Only set true if submitting to HSTS preload list.
+      nginx_hardening_x_frame_options:
+        type: str
+        default: SAMEORIGIN
+        description: X-Frame-Options header value.
+      nginx_hardening_x_content_type_options:
+        type: str
+        default: nosniff
+        description: X-Content-Type-Options header value.
+      nginx_hardening_referrer_policy:
+        type: str
+        default: strict-origin-when-cross-origin
+        description: Referrer-Policy header value.
+      nginx_hardening_csp:
+        type: str
+        default: "default-src 'self'"
+        description: Content-Security-Policy header value. Customise for your application.
+      nginx_hardening_permissions_policy:
+        type: str
+        default: "geolocation=(), microphone=(), camera=()"
+        description: Permissions-Policy header value.
+      nginx_hardening_client_max_body_size:
+        type: str
+        default: 10m
+        description: Maximum client request body size.
+      nginx_hardening_client_body_timeout:
+        type: str
+        default: 10s
+        description: Timeout for reading client request body.
+      nginx_hardening_client_header_timeout:
+        type: str
+        default: 10s
+        description: Timeout for reading client request header.
+      nginx_hardening_limit_conn_enabled:
+        type: bool
+        default: true
+        description: Enable per-IP connection limiting.
+      nginx_hardening_limit_conn_per_ip:
+        type: int
+        default: 10
+        description: Maximum concurrent connections per IP.
+      nginx_hardening_limit_req_enabled:
+        type: bool
+        default: true
+        description: Enable per-IP request rate limiting.
+      nginx_hardening_limit_req_burst:
+        type: int
+        default: 20
+        description: Maximum burst size for rate limiting.
+      nginx_hardening_disable_trace:
+        type: bool
+        default: true
+        description: Block HTTP TRACE method.

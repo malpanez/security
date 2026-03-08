@@ -1,0 +1,132 @@
+---
+argument_specs:
+  main:
+    short_description: Harden Apache httpd/apache2 via drop-in config — TLS, headers, modules.
+    options:
+      apache_hardening_enabled:
+        type: bool
+        default: false
+        description: Set to true to enable enforcement. Skips if Apache not installed.
+      apache_hardening_tls_enabled:
+        type: bool
+        default: true
+        description: Apply TLS hardening directives.
+      apache_hardening_ssl_protocol:
+        type: str
+        default: all -SSLv3 -TLSv1 -TLSv1.1
+        description: Allowed TLS protocols. Excludes SSLv3, TLS 1.0, and TLS 1.1.
+      apache_hardening_ssl_honor_cipher_order:
+        type: str
+        default: "On"
+        description: Prefer server cipher order over client preference.
+      apache_hardening_ssl_session_tickets:
+        type: str
+        default: "Off"
+        description: Disable TLS session tickets to preserve forward secrecy.
+      apache_hardening_ssl_stapling:
+        type: str
+        default: "On"
+        description: Enable OCSP stapling.
+      apache_hardening_ssl_compression:
+        type: str
+        default: "Off"
+        description: Disable TLS compression (CRIME attack mitigation).
+      apache_hardening_server_tokens:
+        type: str
+        default: Prod
+        description: Server info in headers. 'Prod' shows only 'Apache'.
+      apache_hardening_server_signature:
+        type: str
+        default: "Off"
+        description: Remove version info from error pages.
+      apache_hardening_trace_enable:
+        type: str
+        default: "Off"
+        description: Disable HTTP TRACE method.
+      apache_hardening_headers_enabled:
+        type: bool
+        default: true
+        description: Add HTTP security headers via mod_headers.
+      apache_hardening_hsts_enabled:
+        type: bool
+        default: true
+        description: Add Strict-Transport-Security header.
+      apache_hardening_hsts_max_age:
+        type: int
+        default: 31536000
+        description: HSTS max-age in seconds (default 1 year).
+      apache_hardening_hsts_include_subdomains:
+        type: bool
+        default: true
+        description: Include subdomains in HSTS header.
+      apache_hardening_x_frame_options:
+        type: str
+        default: SAMEORIGIN
+        description: X-Frame-Options header value.
+      apache_hardening_x_content_type_options:
+        type: str
+        default: nosniff
+        description: X-Content-Type-Options header value.
+      apache_hardening_referrer_policy:
+        type: str
+        default: strict-origin-when-cross-origin
+        description: Referrer-Policy header value.
+      apache_hardening_csp:
+        type: str
+        default: "default-src 'self'"
+        description: Content-Security-Policy header value.
+      apache_hardening_options_none:
+        type: bool
+        default: true
+        description: Disable Options Indexes (prevents directory listing).
+      apache_hardening_follow_symlinks:
+        type: bool
+        default: false
+        description: Disable FollowSymLinks (prevents symlink traversal attacks).
+      apache_hardening_override_none:
+        type: bool
+        default: true
+        description: Set AllowOverride None (disables .htaccess files).
+      apache_hardening_limit_request_body:
+        type: int
+        default: 10485760
+        description: Maximum request body size in bytes (default 10MB).
+      apache_hardening_limit_request_fields:
+        type: int
+        default: 100
+        description: Maximum number of request header fields.
+      apache_hardening_limit_request_line:
+        type: int
+        default: 8190
+        description: Maximum size of the HTTP request line in bytes.
+      apache_hardening_timeout:
+        type: int
+        default: 60
+        description: Connection timeout in seconds.
+      apache_hardening_modules_disable:
+        type: list
+        elements: str
+        description: Apache modules to disable (reduces attack surface).
+        default:
+          - autoindex
+          - status
+          - info
+          - userdir
+          - cgi
+          - cgid
+          - dav
+          - dav_fs
+          - dav_lock
+          - negotiation
+      apache_hardening_modules_enable:
+        type: list
+        elements: str
+        description: Apache modules to enable (required for hardening features).
+        default:
+          - headers
+          - ssl
+          - rewrite
+      apache_hardening_log_level:
+        type: str
+        default: warn
+        description: Apache log level (error, warn, notice, info, debug).

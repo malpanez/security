@@ -1,0 +1,167 @@
+---
+argument_specs:
+  main:
+    short_description: Harden Apache Tomcat/JBoss Web Server — server.xml, web.xml, webapps.
+    options:
+      tomcat_hardening_enabled:
+        type: bool
+        default: false
+        description: Set to true to enable enforcement. Skips if Tomcat not found.
+      tomcat_hardening_catalina_home:
+        type: str
+        default: /opt/tomcat
+        description: >-
+          CATALINA_HOME path. Configure for your install. For package installs
+          this may be /usr/share/tomcat9 or /usr/share/tomcat10.
+      tomcat_hardening_catalina_base:
+        type: str
+        default: /opt/tomcat
+        description: CATALINA_BASE path. Usually same as catalina_home for single installs.
+      tomcat_hardening_user:
+        type: str
+        default: tomcat
+        description: OS user that Tomcat runs as.
+      tomcat_hardening_group:
+        type: str
+        default: tomcat
+        description: OS group that Tomcat runs as.
+      tomcat_hardening_service_name:
+        type: str
+        default: tomcat
+        description: Systemd service name. Use 'jws6-tomcat' for JBoss Web Server 6.
+      tomcat_hardening_shutdown_port:
+        type: int
+        default: -1
+        description: >-
+          Tomcat shutdown port. -1 disables it completely (recommended for production).
+          Setting to -1 prevents unauthenticated shutdown via localhost.
+      tomcat_hardening_shutdown_command:
+        type: str
+        default: DISABLED
+        description: Shutdown command string. Use a random string or DISABLED.
+      tomcat_hardening_remove_default_webapps:
+        type: list
+        elements: str
+        default:
+          - ROOT
+          - examples
+          - docs
+          - host-manager
+          - manager
+        description: >-
+          Default web applications to remove. These expose version information
+          and attack surface. Remove all in production unless specifically needed.
+      tomcat_hardening_manager_enabled:
+        type: bool
+        default: false
+        description: Keep the Manager application (needed for CI/CD deployments).
+      tomcat_hardening_manager_allowed_ip:
+        type: str
+        default: "127.0.0.1"
+        description: IP/CIDR allowed to access the Manager app via RemoteAddrValve.
+      tomcat_hardening_http_port:
+        type: int
+        default: 8080
+        description: HTTP connector port.
+      tomcat_hardening_https_port:
+        type: int
+        default: 8443
+        description: HTTPS connector port.
+      tomcat_hardening_ajp_enabled:
+        type: bool
+        default: false
+        description: >-
+          Enable AJP connector. Disabled by default to mitigate CVE-2020-1938
+          (Ghostcat). Enable only if using Apache httpd mod_proxy_ajp.
+      tomcat_hardening_ajp_port:
+        type: int
+        default: 8009
+        description: AJP connector port (only used if ajp_enabled is true).
+      tomcat_hardening_ssl_enabled:
+        type: bool
+        default: true
+        description: Enable HTTPS connector.
+      tomcat_hardening_ssl_protocol:
+        type: str
+        default: TLSv1.2+TLSv1.3
+        description: Allowed TLS protocols for HTTPS connector.
+      tomcat_hardening_ssl_certificate_file:
+        type: str
+        default: /etc/pki/tls/certs/tomcat.crt
+        description: Path to TLS certificate.
+      tomcat_hardening_ssl_certificate_key_file:
+        type: str
+        default: /etc/pki/tls/private/tomcat.key
+        description: Path to TLS private key.
+      tomcat_hardening_connection_timeout:
+        type: int
+        default: 20000
+        description: Connector connection timeout in milliseconds.
+      tomcat_hardening_max_threads:
+        type: int
+        default: 150
+        description: Maximum number of request processing threads.
+      tomcat_hardening_allow_trace:
+        type: bool
+        default: false
+        description: Allow HTTP TRACE method. Keep false to prevent XST attacks.
+      tomcat_hardening_http2_enabled:
+        type: bool
+        default: true
+        description: Enable HTTP/2 protocol (requires Tomcat 9.0.13+).
+      tomcat_hardening_security_headers_enabled:
+        type: bool
+        default: true
+        description: Add security headers via HttpHeaderSecurityFilter in web.xml.
+      tomcat_hardening_hsts_enabled:
+        type: bool
+        default: true
+        description: Add HSTS header via HttpHeaderSecurityFilter.
+      tomcat_hardening_hsts_max_age:
+        type: int
+        default: 31536000
+        description: HSTS max-age in seconds.
+      tomcat_hardening_anti_click_jacking:
+        type: bool
+        default: true
+        description: Enable anti-clickjacking (X-Frame-Options) via security filter.
+      tomcat_hardening_block_content_type_sniffing:
+        type: bool
+        default: true
+        description: 'Block content type sniffing (X-Content-Type-Options: nosniff).'
+      tomcat_hardening_xss_protection:
+        type: bool
+        default: true
+        description: Enable XSS protection header for legacy browsers.
+      tomcat_hardening_session_timeout:
+        type: int
+        default: 30
+        description: Default session timeout in minutes.
+      tomcat_hardening_session_cookie_http_only:
+        type: bool
+        default: true
+        description: Mark session cookies as HttpOnly (prevents JavaScript access).
+      tomcat_hardening_session_cookie_secure:
+        type: bool
+        default: true
+        description: Mark session cookies as Secure (HTTPS only).
+      tomcat_hardening_conf_mode:
+        type: str
+        default: "0750"
+        description: Permissions for the Tomcat conf directory.
+      tomcat_hardening_webapps_mode:
+        type: str
+        default: "0750"
+        description: Permissions for the Tomcat webapps directory.
+      tomcat_hardening_logs_mode:
+        type: str
+        default: "0750"
+        description: Permissions for the Tomcat logs directory.
+      tomcat_hardening_custom_error_pages:
+        type: bool
+        default: true
+        description: Configure custom error pages to suppress version info from responses.
+      tomcat_hardening_access_log_enabled:
+        type: bool
+        default: true
+        description: Enable access logging via AccessLogValve.

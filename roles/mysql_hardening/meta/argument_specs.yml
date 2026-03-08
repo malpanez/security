@@ -1,0 +1,121 @@
+---
+argument_specs:
+  main:
+    short_description: Harden MySQL/MariaDB — remove insecure defaults, enforce config.
+    options:
+      mysql_hardening_enabled:
+        type: bool
+        default: false
+        description: Set to true to enable enforcement. Skips if MySQL not installed.
+      mysql_hardening_service_name:
+        type: str
+        default: mysql
+        description: Systemd service name. Use 'mariadb' for MariaDB package installs.
+      mysql_hardening_remove_remote_root:
+        type: bool
+        default: true
+        description: Remove remote root login accounts (root@%).
+      mysql_hardening_remove_anonymous_users:
+        type: bool
+        default: true
+        description: Remove anonymous (password-less) user accounts.
+      mysql_hardening_remove_test_db:
+        type: bool
+        default: true
+        description: Remove the 'test' database and its privileges.
+      mysql_hardening_bind_address:
+        type: str
+        default: "127.0.0.1"
+        description: >-
+          Interface to bind MySQL to. Use 127.0.0.1 for single-server installs.
+          Change to specific IP for replication setups.
+      mysql_hardening_local_infile:
+        type: bool
+        default: false
+        description: Allow LOAD DATA LOCAL INFILE. Set to false to prevent local file reads.
+      mysql_hardening_allow_suspicious_udfs:
+        type: bool
+        default: false
+        description: Allow loading UDFs from arbitrary paths. Keep false.
+      mysql_hardening_skip_grant_tables:
+        type: bool
+        default: false
+        description: Skip grant tables (disables auth). Must always be false.
+      mysql_hardening_automatic_sp_privileges:
+        type: bool
+        default: false
+        description: Automatically grant privileges to stored procedure creators.
+      mysql_hardening_safe_user_create:
+        type: bool
+        default: true
+        description: Prevent CREATE USER unless the user has INSERT on mysql.user.
+      mysql_hardening_symbolic_links:
+        type: bool
+        default: false
+        description: Disable symbolic link support (prevents privilege escalation).
+      mysql_hardening_secure_file_priv:
+        type: str
+        default: /tmp
+        description: >-
+          Restrict LOAD/SELECT INTO OUTFILE to this directory.
+          Use an empty string to allow any path (not recommended).
+      mysql_hardening_require_passwords:
+        type: bool
+        default: true
+        description: Ensure all accounts have non-empty passwords.
+      mysql_hardening_password_expiry_days:
+        type: int
+        default: 90
+        description: Password expiry in days for accounts without an expiry policy.
+      mysql_hardening_ssl_enabled:
+        type: bool
+        default: false
+        description: Enable TLS/SSL for MySQL connections.
+      mysql_hardening_ssl_cert:
+        type: str
+        default: /etc/mysql/ssl/server-cert.pem
+        description: Path to server TLS certificate.
+      mysql_hardening_ssl_key:
+        type: str
+        default: /etc/mysql/ssl/server-key.pem
+        description: Path to server TLS private key.
+      mysql_hardening_ssl_ca:
+        type: str
+        default: /etc/mysql/ssl/ca-cert.pem
+        description: Path to CA certificate for client validation.
+      mysql_hardening_require_ssl:
+        type: bool
+        default: false
+        description: Force TLS for all connections (require_secure_transport=ON).
+      mysql_hardening_audit_enabled:
+        type: bool
+        default: false
+        description: Enable audit logging (MariaDB audit plugin / MySQL Enterprise Audit).
+      mysql_hardening_audit_log_file:
+        type: str
+        default: /var/log/mysql/audit.log
+        description: Path for audit log file.
+      mysql_hardening_datadir_mode:
+        type: str
+        default: "0750"
+        description: Permissions for MySQL data directory.
+      mysql_hardening_datadir_owner:
+        type: str
+        default: mysql
+        description: Owner user for MySQL data directory.
+      mysql_hardening_datadir_group:
+        type: str
+        default: mysql
+        description: Owner group for MySQL data directory.
+      mysql_hardening_error_log_mode:
+        type: str
+        default: "0640"
+        description: Permissions for MySQL error log file.
+      mysql_hardening_user:
+        type: str
+        default: mysql
+        description: OS user that MySQL runs as.
+      mysql_hardening_log_warnings:
+        type: int
+        default: 2
+        description: Log warning level (2 = log connection errors and aborted connections).
