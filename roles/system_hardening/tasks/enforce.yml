@@ -34,7 +34,6 @@
     - system_hardening_accounts_enabled | bool
     - _sh_interactive_sysaccts is defined
     - _sh_interactive_sysaccts.stdout_lines | default([]) | length > 0
-  no_log: false
   tags: [system_hardening, accounts]
 
 # ── .rhosts and .netrc ──────────────────────────────────────────────────────
