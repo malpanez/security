@@ -60,8 +60,9 @@
 - name: "[enforce] Set ALL profiles to configured mode"
   ansible.builtin.command:
     cmd: "{{ apparmor_enforce_cmd if apparmor_mode == 'enforce' else apparmor_complain_cmd }} --dir {{ apparmor_profiles_dir }}"
+  register: _aa_setall_result
   when: apparmor_set_all_profiles | bool
-  changed_when: true
+  changed_when: "'Setting' in _aa_setall_result.stdout or 'set to' in _aa_setall_result.stdout"
   tags: [apparmor, enforce]
 
 # ── Verify ────────────────────────────────────────────────────────────────────
