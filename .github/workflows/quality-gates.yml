@@ -29,7 +29,11 @@ jobs:
           pip install pre-commit ansible-core ansible-lint
 
       - name: Install Ansible Galaxy collections
-        run: ansible-galaxy collection install -r requirements.yml -p .ansible/collections
+        run: |
+          ansible-galaxy collection install -r requirements.yml -p .ansible/collections
+          ansible-galaxy collection install . -p .ansible/collections
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
 
       - name: Run pre-commit hooks
         env:

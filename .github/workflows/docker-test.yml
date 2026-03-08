@@ -108,6 +108,10 @@ jobs:
 
       - name: Install required packages in container
         run: |
+          # Fix nsswitch.conf to prevent PAM/sudo failures in RHEL-family containers
+          # (Rocky/RHEL containers often have 'sss' in nsswitch.conf but sssd is not running)
+          docker exec test-container bash -c \
+            "sed -i 's/ sss//g' /etc/nsswitch.conf 2>/dev/null || true"
           if [[ "${{ matrix.platform.image }}" =~ "debian" ]]; then
             docker exec test-container bash -lc 'apt-get update -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true'
             docker exec test-container bash -lc 'apt-get install -y --no-install-recommends --allow-unauthenticated debian-archive-keyring gnupg ca-certificates'
