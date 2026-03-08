@@ -258,17 +258,208 @@ jobs:
         env:
           ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
 
+  # ── Rocky Linux 9 (RHEL-compatible) — docker container on Ubuntu host ────
+  # sysctl params land on the host kernel (privileged); we verify inside the
+  # container so the Rocky Linux OS paths and dnf package layout are exercised.
+
+  rocky-container:
+    name: "Kernel hardening on Rocky Linux 9 (RHEL-compatible)"
+    runs-on: ubuntu-latest
+
+    env:
+      PYTHONUNBUFFERED: "1"
+      PY_COLORS: "1"
+      ANSIBLE_FORCE_COLOR: "1"
+      ANSIBLE_CONFIG: ansible.cfg
+      ANSIBLE_STDOUT_CALLBACK: default
+      ANSIBLE_RESULT_FORMAT: yaml
+      CONTAINER: rocky9-hardening
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible and dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Install Ansible Galaxy collections
+        run: |
+          ansible-galaxy collection install -r requirements.yml
+          ansible-galaxy collection install . -p .ansible/collections
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
+      - name: Start Rocky Linux 9 container
+        run: |
+          docker run -d \
+            --name "$CONTAINER" \
+            --privileged \
+            --cgroupns host \
+            --tmpfs /run \
+            --tmpfs /run/lock \
+            --tmpfs /tmp \
+            --volume /sys/fs/cgroup:/sys/fs/cgroup:rw \
+            --platform linux/amd64 \
+            geerlingguy/docker-rockylinux9-ansible:latest \
+            /lib/systemd/systemd
+          # Wait for systemd to be ready
+          sleep 5
+          docker exec "$CONTAINER" systemctl is-system-running --wait || true
+
+      - name: Prepare container (nsswitch, python3)
+        run: |
+          # Remove sssd entries that break PAM in containers without sssd running
+          docker exec "$CONTAINER" bash -c \
+            "sed -i 's/sss //g; s/ sss//g' /etc/nsswitch.conf 2>/dev/null || true"
+          # Ensure python3 resolves to a modern interpreter
+          docker exec "$CONTAINER" bash -c \
+            "python3 --version 2>/dev/null || dnf install -y python3"
+
+      - name: Create docker inventory
+        run: |
+          mkdir -p test-inventory
+          cat > test-inventory/hosts << EOF
+          [rocky]
+          $CONTAINER ansible_connection=docker ansible_python_interpreter=/usr/bin/python3
+          EOF
+
+      # ── kernel_hardening ─────────────────────────────────────────────────
+
+      - name: "Enforce kernel_hardening on Rocky Linux 9"
+        run: |
+          ansible-playbook -i test-inventory/hosts \
+            -e "kernel_hardening_enabled=true" \
+            -e "security_mode=enforce" \
+            -e "ansible_python_interpreter=/usr/bin/python3" \
+            playbooks/kernel-vm-test.yml \
+            --tags kernel_hardening
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
+      - name: "Verify sysctl values applied (Rocky Linux 9)"
+        run: |
+          set -euo pipefail
+          FAIL=0
+          check_sysctl() {
+            local param="$1" expected="$2" actual
+            actual=$(docker exec "$CONTAINER" sysctl -n "$param" 2>/dev/null || echo "MISSING")
+            if [ "$actual" != "$expected" ]; then
+              echo "FAIL: $param = $actual (expected $expected)"
+              FAIL=1
+            else
+              echo "OK:   $param = $actual"
+            fi
+          }
+          check_sysctl kernel.randomize_va_space 2
+          check_sysctl net.ipv4.conf.all.accept_source_route 0
+          check_sysctl net.ipv4.conf.all.accept_redirects 0
+          check_sysctl net.ipv4.conf.all.send_redirects 0
+          check_sysctl net.ipv4.conf.all.log_martians 1
+          check_sysctl net.ipv4.tcp_syncookies 1
+          check_sysctl fs.suid_dumpable 0
+          check_sysctl fs.protected_hardlinks 1
+          check_sysctl fs.protected_symlinks 1
+          check_sysctl kernel.dmesg_restrict 1
+          check_sysctl kernel.kptr_restrict 2
+          check_sysctl kernel.yama.ptrace_scope 1
+          [ $FAIL -eq 0 ] || exit 1
+
+      - name: "Verify modprobe blacklist deployed (Rocky Linux 9)"
+        run: |
+          set -euo pipefail
+          BLACKLIST=/etc/modprobe.d/99-security-disabled.conf
+          docker exec "$CONTAINER" test -f "$BLACKLIST" || \
+            { echo "FAIL: $BLACKLIST not found"; exit 1; }
+          for mod in dccp sctp rds tipc cramfs jffs2 hfs hfsplus udf; do
+            docker exec "$CONTAINER" grep -q "blacklist $mod" "$BLACKLIST" || \
+              { echo "FAIL: blacklist $mod missing"; exit 1; }
+            echo "OK:   blacklist $mod"
+          done
+
+      - name: "Idempotency check — kernel_hardening on Rocky Linux 9"
+        run: |
+          set -euo pipefail
+          OUTPUT=$(ansible-playbook -i test-inventory/hosts \
+            -e "kernel_hardening_enabled=true" \
+            -e "security_mode=enforce" \
+            -e "ansible_python_interpreter=/usr/bin/python3" \
+            playbooks/kernel-vm-test.yml \
+            --tags kernel_hardening 2>&1)
+          echo "$OUTPUT"
+          CHANGED=$(echo "$OUTPUT" | grep -oP 'changed=\K[0-9]+' | paste -sd+ | bc 2>/dev/null || echo "0")
+          echo "Total changed: $CHANGED"
+          [ "${CHANGED:-0}" -eq 0 ] || { echo "IDEMPOTENCY VIOLATION: $CHANGED changed"; exit 1; }
+          echo "OK: idempotency confirmed"
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
+      # ── system_hardening ─────────────────────────────────────────────────
+
+      - name: "Enforce system_hardening on Rocky Linux 9"
+        run: |
+          ansible-playbook -i test-inventory/hosts \
+            -e "system_hardening_enabled=true" \
+            -e "security_mode=enforce" \
+            -e "ansible_python_interpreter=/usr/bin/python3" \
+            -e "system_hardening_suid_remove_unlisted=false" \
+            playbooks/kernel-vm-test.yml \
+            --tags system_hardening
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
+      - name: "Verify Ctrl+Alt+Del masked (Rocky Linux 9)"
+        run: |
+          set -euo pipefail
+          MASKED=$(docker exec "$CONTAINER" \
+            systemctl show ctrl-alt-del.target --property=LoadState --value 2>/dev/null || echo "unknown")
+          echo "ctrl-alt-del.target LoadState: $MASKED"
+          [ "$MASKED" = "masked" ] || { echo "FAIL: not masked ($MASKED)"; exit 1; }
+          echo "OK: ctrl-alt-del.target masked"
+
+      - name: "Idempotency check — system_hardening on Rocky Linux 9"
+        run: |
+          set -euo pipefail
+          OUTPUT=$(ansible-playbook -i test-inventory/hosts \
+            -e "system_hardening_enabled=true" \
+            -e "security_mode=enforce" \
+            -e "ansible_python_interpreter=/usr/bin/python3" \
+            -e "system_hardening_suid_remove_unlisted=false" \
+            playbooks/kernel-vm-test.yml \
+            --tags system_hardening 2>&1)
+          echo "$OUTPUT"
+          CHANGED=$(echo "$OUTPUT" | grep -oP 'changed=\K[0-9]+' | paste -sd+ | bc 2>/dev/null || echo "0")
+          echo "Total changed: $CHANGED"
+          [ "${CHANGED:-0}" -eq 0 ] || { echo "IDEMPOTENCY VIOLATION: $CHANGED changed"; exit 1; }
+          echo "OK: idempotency confirmed"
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
+      - name: Stop Rocky Linux container
+        if: always()
+        run: docker rm -f "$CONTAINER" 2>/dev/null || true
+
   # ── Compliance summary ────────────────────────────────────────────────────
   summary:
     name: VM Test Summary
     runs-on: ubuntu-latest
-    needs: kernel-vm
+    needs: [kernel-vm, rocky-container]
     if: always()
     steps:
       - name: Check all VM tests passed
         run: |
           if [ "${{ needs.kernel-vm.result }}" != "success" ]; then
-            echo "One or more VM kernel tests failed."
+            echo "Ubuntu VM kernel tests failed."
             exit 1
           fi
-          echo "All VM kernel/system hardening tests passed."
+          if [ "${{ needs.rocky-container.result }}" != "success" ]; then
+            echo "Rocky Linux 9 container tests failed."
+            exit 1
+          fi
+          echo "All VM kernel/system hardening tests passed (Ubuntu + Rocky Linux 9)."
