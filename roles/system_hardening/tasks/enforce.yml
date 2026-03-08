@@ -116,6 +116,16 @@
   failed_when: false  # logind may run as root, no named user
   tags: [system_hardening, hidepid]
 
+- name: "Ensure systemd-logind drop-in directory exists"
+  ansible.builtin.file:
+    path: /etc/systemd/system/systemd-logind.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: system_hardening_hidepid_enabled | bool
+  tags: [system_hardening, hidepid]
+
 - name: "Deploy systemd-logind proc group drop-in"
   ansible.builtin.template:
     src: logind-proc.conf.j2
