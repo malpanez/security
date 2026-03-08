@@ -122,7 +122,11 @@ jobs:
             docker exec test-container apt-get update
             docker exec test-container apt-get install -y python3 sudo openssh-server
           else
-            docker exec test-container dnf install -y python3 sudo openssh-server
+            # Rocky Linux 8 ships with Python 3.6 which is too old for Ansible 2.18+
+            # Install python3.11 so auto_silent interpreter discovery finds it first
+            docker exec test-container dnf install -y python3.11 python3 sudo openssh-server || \
+              docker exec test-container dnf install -y python39 python3 sudo openssh-server || \
+              docker exec test-container dnf install -y python3 sudo openssh-server
           fi
 
       - name: Run preflight-check playbook
@@ -130,7 +134,7 @@ jobs:
           ansible-playbook -i test-inventory/hosts \
             playbooks/preflight-check.yml \
             --connection=docker \
-            --extra-vars "ansible_host=test-container ansible_python_interpreter=/usr/bin/python3" \
+            --extra-vars "ansible_host=test-container ansible_python_interpreter=auto_silent" \
             || echo "Preflight check completed with warnings (expected in Docker)"
         continue-on-error: true
 
@@ -139,20 +143,20 @@ jobs:
           ansible-playbook -i test-inventory/hosts \
             playbooks/audit-only.yml \
             --connection=docker \
-            --extra-vars "ansible_host=test-container ansible_python_interpreter=/usr/bin/python3"
+            --extra-vars "ansible_host=test-container ansible_python_interpreter=auto_silent"
 
       - name: Run dry-run playbook (check mode)
         run: |
           ansible-playbook -i test-inventory/hosts \
             playbooks/dry-run.yml \
             --connection=docker \
-            --extra-vars "ansible_host=test-container ansible_python_interpreter=/usr/bin/python3" \
+            --extra-vars "ansible_host=test-container ansible_python_interpreter=auto_silent" \
             --check --diff
 
       - name: Test SSH hardening role
         run: |
           ansible-playbook -i test-inventory/hosts \
-            -e '{"ansible_connection": "docker", "ansible_host": "test-container", "ansible_python_interpreter": "/usr/bin/python3"}' \
+            -e '{"ansible_connection": "docker", "ansible_host": "test-container", "ansible_python_interpreter": "auto_silent"}' \
             --tags sshd_hardening \
             playbooks/site.yml
 

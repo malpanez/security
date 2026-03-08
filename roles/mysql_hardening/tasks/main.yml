@@ -10,6 +10,7 @@
 
 - name: Check if MySQL/MariaDB service exists
   ansible.builtin.service_facts:
+  become: false
   tags: [mysql_hardening, always]
 
 - name: Determine MySQL service is running
