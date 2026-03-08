@@ -88,8 +88,8 @@ jobs:
             -e "kernel_hardening_enabled=true" \
             -e "security_mode=enforce" \
             -e "ansible_python_interpreter=/usr/bin/python3" \
-            --tags kernel_hardening \
-            playbooks/site.yml
+            playbooks/kernel-vm-test.yml \
+            --tags kernel_hardening
         env:
           ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
 
@@ -169,8 +169,8 @@ jobs:
             -e "kernel_hardening_enabled=true" \
             -e "security_mode=enforce" \
             -e "ansible_python_interpreter=/usr/bin/python3" \
-            --tags kernel_hardening \
-            playbooks/site.yml 2>&1)
+            playbooks/kernel-vm-test.yml \
+            --tags kernel_hardening 2>&1)
           echo "$OUTPUT"
           # Extract changed count from play recap
           CHANGED=$(echo "$OUTPUT" | grep -oP 'changed=\K[0-9]+' | paste -sd+ | bc 2>/dev/null || echo "0")
@@ -192,8 +192,8 @@ jobs:
             -e "security_mode=enforce" \
             -e "ansible_python_interpreter=/usr/bin/python3" \
             -e "system_hardening_suid_remove_unlisted=false" \
-            --tags system_hardening \
-            playbooks/site.yml
+            playbooks/kernel-vm-test.yml \
+            --tags system_hardening
         env:
           ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
 
@@ -245,8 +245,8 @@ jobs:
             -e "security_mode=enforce" \
             -e "ansible_python_interpreter=/usr/bin/python3" \
             -e "system_hardening_suid_remove_unlisted=false" \
-            --tags system_hardening \
-            playbooks/site.yml 2>&1)
+            playbooks/kernel-vm-test.yml \
+            --tags system_hardening 2>&1)
           echo "$OUTPUT"
           CHANGED=$(echo "$OUTPUT" | grep -oP 'changed=\K[0-9]+' | paste -sd+ | bc 2>/dev/null || echo "0")
           echo "Total changed tasks in second run: $CHANGED"

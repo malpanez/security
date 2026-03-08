@@ -1,0 +1,12 @@
+---
+# Dedicated playbook for GitHub Actions VM-based kernel/system hardening tests.
+# Does NOT include backup, SSH validation, or rollback tasks — those belong in
+# site.yml for production use. This playbook runs roles directly for CI testing
+# on real GitHub-hosted VMs (real kernel, real sysctl, real modprobe).
+- name: Apply kernel and system hardening (VM test)
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: kernel_hardening
+    - role: system_hardening
