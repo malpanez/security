@@ -134,11 +134,19 @@ jobs:
         run: |
           pip install ansible-core>=2.16
 
+      - name: Install Ansible Galaxy collections
+        run: |
+          ansible-galaxy collection install . -p .ansible/collections
+          ansible-galaxy collection install community.general community.mysql ansible.posix -p .ansible/collections
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
       - name: Syntax check all playbooks
         run: |
           for playbook in playbooks/*.yml; do
             echo "Checking syntax: $playbook"
-            ansible-playbook "$playbook" --syntax-check
+            ANSIBLE_COLLECTIONS_PATH=${{ github.workspace }}/.ansible/collections \
+              ansible-playbook "$playbook" --syntax-check
           done
 
       - name: Verify ansible.cfg syntax

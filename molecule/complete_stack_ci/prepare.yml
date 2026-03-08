@@ -1,12 +1,19 @@
 ---
 # Molecule prepare - minimal bootstrap so converge can run cleanly
-- name: Prepare instances for complete stack
+- name: Prepare instances - fix nsswitch before sudo is needed
   hosts: all
-  become: true
+  become: false
   gather_facts: false
 
   tasks:
-    - name: Install Python for Ansible
+    - name: Fix nsswitch.conf - remove sss entry to prevent PAM sudo failures in containers
+      raw: |
+        if [ -f /etc/nsswitch.conf ]; then
+          sed -i 's/ sss//g' /etc/nsswitch.conf
+        fi
+      changed_when: false
+
+    - name: Install Python and base packages (runs as root in container)
       raw: |
         if command -v apt-get >/dev/null 2>&1; then
           apt-get update -y && apt-get install -y python3 sudo openssh-server
@@ -17,6 +24,12 @@
         fi
       changed_when: false
 
+- name: Prepare instances - ensure SSH is available
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
     - name: Ensure SSH service is available
       ansible.builtin.service:
         name: sshd
