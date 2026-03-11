@@ -4,7 +4,7 @@
 
 - name: Converge - Apply Complete Security Baseline
   hosts: all
-  become: true
+  become: false
   gather_facts: false
 
   pre_tasks:
@@ -113,14 +113,30 @@
       become: true
       become_user: test_human
 
+    - name: Read generated public keys from remote hosts
+      ansible.builtin.slurp:
+        src: "{{ item.path }}"
+      loop:
+        - { name: test_service_account, path: /home/test_service_account/.ssh/id_ed25519.pub }
+        - { name: test_human, path: /home/test_human/.ssh/id_ed25519.pub }
+      register: test_public_keys
+
     - name: Add public keys to authorized_keys
       ansible.posix.authorized_key:
         user: "{{ item.user }}"
-        key: "{{ lookup('file', item.key) }}"
+        key: >-
+          {{
+            (
+              test_public_keys.results
+              | selectattr('item.name', 'equalto', item.key_name)
+              | map(attribute='content')
+              | first
+            ) | b64decode
+          }}
       loop:
-        - { user: test_service_account, key: /home/test_service_account/.ssh/id_ed25519.pub }
-        - { user: test_human, key: /home/test_human/.ssh/id_ed25519.pub }
-        - { user: test_admin, key: /home/test_service_account/.ssh/id_ed25519.pub }
+        - { user: test_service_account, key_name: test_service_account }
+        - { user: test_human, key_name: test_human }
+        - { user: test_admin, key_name: test_service_account }
 
     - name: Add service account to MFA bypass group
       ansible.builtin.user:
