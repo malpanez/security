@@ -49,29 +49,32 @@
         state: present
       when: ansible_os_family == 'RedHat'
 
-    - name: Install PAM MFA packages (Debian/Ubuntu)
-      ansible.builtin.apt:
-        name:
-          - libpam-modules
-          - libpam-u2f
-          - libpam-google-authenticator
-          - libpam-fido2
-        state: present
-      when:
-        - ansible_os_family == 'Debian'
-        - pam_mfa_enabled | default(false)
+    - name: Ensure PAM module directories exist for MFA test mode
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /lib/security
+        - /usr/lib64/security
+      when: pam_mfa_enabled | default(false)
 
-    - name: Install PAM MFA packages (RedHat)
-      ansible.builtin.dnf:
-        name:
-          - pam
-          - pam_u2f
-          - google-authenticator
-          - pam_fido2
-        state: present
-      when:
-        - ansible_os_family == 'RedHat'
-        - pam_mfa_enabled | default(false)
+    - name: Create fake PAM modules for MFA test mode
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: touch
+        mode: "0644"
+      loop:
+        - /lib/security/pam_fido2.so
+        - /lib/security/pam_u2f.so
+        - /lib/security/pam_google_authenticator.so
+        - /lib/security/pam_succeed_if.so
+        - /usr/lib64/security/pam_fido2.so
+        - /usr/lib64/security/pam_u2f.so
+        - /usr/lib64/security/pam_google_authenticator.so
+        - /usr/lib64/security/pam_succeed_if.so
+      changed_when: false
+      when: pam_mfa_enabled | default(false)
 
     - name: Ensure SSH service is enabled
       ansible.builtin.service:

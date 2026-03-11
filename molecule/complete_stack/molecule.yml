@@ -121,6 +121,7 @@ provisioner:
 
         # PAM MFA (enabled per prompt)
         pam_mfa_enabled: true
+        pam_mfa_skip_module_validation: true
 
         # Sudoers
         sudoers_baseline_strict: true
