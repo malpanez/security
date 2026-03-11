@@ -126,6 +126,7 @@ provisioner:
         # Sudoers
         sudoers_baseline_strict: true
         sudoers_baseline_preserve_main: true
+        sudoers_baseline_use_dropin: "{{ ansible_os_family != 'RedHat' }}"
 
         # SELinux (only for RHEL-based)
         selinux_enforcement_enabled: true
