@@ -5,9 +5,13 @@
 - name: Converge - Apply Complete Security Baseline
   hosts: all
   become: true
-  gather_facts: true
+  gather_facts: false
 
   pre_tasks:
+    - name: Gather facts without privilege escalation
+      ansible.builtin.setup:
+      become: false
+
     - name: Display test information
       ansible.builtin.debug:
         msg: |
@@ -51,14 +55,6 @@
         enabled: true
         state: started
 
-    - name: Create test service account
-      ansible.builtin.user:
-        name: test_service_account
-        groups: test_service_accounts
-        shell: /bin/bash
-        create_home: true
-        state: present
-
     - name: Ensure MFA bypass group exists
       ansible.builtin.group:
         name: "{{ pam_mfa_service_bypass_group }}"
@@ -67,6 +63,22 @@
     - name: Ensure admin group exists for sudoers defaults
       ansible.builtin.group:
         name: linux_admins
+        state: present
+
+    - name: Ensure test groups exist
+      ansible.builtin.group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - test_service_accounts
+        - test_human_users
+
+    - name: Create test service account
+      ansible.builtin.user:
+        name: test_service_account
+        groups: test_service_accounts
+        shell: /bin/bash
+        create_home: true
         state: present
 
     - name: Create test admin user

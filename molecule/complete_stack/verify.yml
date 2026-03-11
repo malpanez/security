@@ -2,7 +2,7 @@
 # Molecule verify - critical smoke checks from IMPLEMENTATION_PROMPT
 - name: Verify complete stack
   hosts: all
-  gather_facts: true
+  gather_facts: false
   tasks:
     - name: Wait for SSH
       ansible.builtin.wait_for:
