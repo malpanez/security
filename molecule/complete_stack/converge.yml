@@ -49,6 +49,30 @@
         state: present
       when: ansible_os_family == 'RedHat'
 
+    - name: Install PAM MFA packages (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name:
+          - libpam-modules
+          - libpam-u2f
+          - libpam-google-authenticator
+          - libpam-fido2
+        state: present
+      when:
+        - ansible_os_family == 'Debian'
+        - pam_mfa_enabled | default(false)
+
+    - name: Install PAM MFA packages (RedHat)
+      ansible.builtin.dnf:
+        name:
+          - pam
+          - pam_u2f
+          - google-authenticator
+          - pam_fido2
+        state: present
+      when:
+        - ansible_os_family == 'RedHat'
+        - pam_mfa_enabled | default(false)
+
     - name: Ensure SSH service is enabled
       ansible.builtin.service:
         name: sshd
@@ -99,19 +123,38 @@
         create_home: true
         state: present
 
+    - name: Ensure SSH directories exist for test users
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.owner }}"
+        mode: "0700"
+      loop:
+        - { owner: test_service_account, path: /home/test_service_account/.ssh }
+        - { owner: test_human, path: /home/test_human/.ssh }
+
     - name: Generate SSH key for test service account
       ansible.builtin.command:
         cmd: ssh-keygen -t ed25519 -f /home/test_service_account/.ssh/id_ed25519 -N ''
         creates: /home/test_service_account/.ssh/id_ed25519
-      become: true
-      become_user: test_service_account
 
     - name: Generate SSH key for test human
       ansible.builtin.command:
         cmd: ssh-keygen -t ed25519 -f /home/test_human/.ssh/id_ed25519 -N ''
         creates: /home/test_human/.ssh/id_ed25519
-      become: true
-      become_user: test_human
+
+    - name: Set ownership on generated SSH material
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        owner: "{{ item.owner }}"
+        group: "{{ item.owner }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { owner: test_service_account, path: /home/test_service_account/.ssh/id_ed25519, mode: "0600" }
+        - { owner: test_service_account, path: /home/test_service_account/.ssh/id_ed25519.pub, mode: "0644" }
+        - { owner: test_human, path: /home/test_human/.ssh/id_ed25519, mode: "0600" }
+        - { owner: test_human, path: /home/test_human/.ssh/id_ed25519.pub, mode: "0644" }
 
     - name: Read generated public keys from remote hosts
       ansible.builtin.slurp:
