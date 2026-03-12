@@ -23,6 +23,7 @@
   when:
     - item.stat.exists | default(false)
     - not item.stat.isdir | default(false)
+  changed_when: false
   failed_when: false
   tags: [review]
 

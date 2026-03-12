@@ -103,7 +103,9 @@
     - name: Create test service account
       ansible.builtin.user:
         name: test_service_account
-        groups: test_service_accounts
+        groups:
+          - test_service_accounts
+          - "{{ pam_mfa_service_bypass_group }}"
         shell: /bin/bash
         create_home: true
         state: present
@@ -183,12 +185,6 @@
         - { user: test_service_account, key_name: test_service_account }
         - { user: test_human, key_name: test_human }
         - { user: test_admin, key_name: test_service_account }
-
-    - name: Add service account to MFA bypass group
-      ansible.builtin.user:
-        name: test_service_account
-        groups: "{{ pam_mfa_service_bypass_group }}"
-        append: true
 
   roles:
     # PHASE 1: Detect system capabilities
