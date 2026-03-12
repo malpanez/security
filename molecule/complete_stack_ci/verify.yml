@@ -68,6 +68,7 @@
       register: human_login
       changed_when: false
       failed_when: human_login.rc == 0
+      when: not (pam_mfa_skip_module_validation | default(false))
 
     - name: Verify service account key works (no MFA expected)
       ansible.builtin.command: >
@@ -77,6 +78,7 @@
       register: service_login
       changed_when: false
       failed_when: service_login.rc != 0
+      when: not (pam_mfa_skip_module_validation | default(false))
 
     - name: Confirm sudo works for test_admin if present
       ansible.builtin.command: sudo -n true
