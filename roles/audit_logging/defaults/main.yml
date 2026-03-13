@@ -42,7 +42,6 @@ audit_logging_rules:
   - "-w /etc/ntp.conf -p wa -k ntp"
 audit_logging_syscall_rules:
   - "-a always,exit -F arch=b64 -S execve -k exec"
-  - "-a always,exit -F arch=b32 -S execve -k exec"
 audit_logging_service: auditd
 audit_logging_rules_path: /etc/audit/rules.d/99-security.rules
 audit_logging_auth_log: /var/log/auth.log

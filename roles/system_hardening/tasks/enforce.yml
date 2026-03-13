@@ -150,6 +150,17 @@
   notify: Reload systemd daemon
   tags: [system_hardening, hidepid]
 
+- name: "Check current /proc mount options"
+  ansible.builtin.command:
+    cmd: findmnt -n -o OPTIONS /proc
+  register: _proc_mount_options
+  changed_when: false
+  failed_when: false
+  when:
+    - system_hardening_hidepid_enabled | bool
+    - ansible_virtualization_type | default('') not in ['docker', 'podman', 'container', 'lxc']
+  tags: [system_hardening, hidepid]
+
 - name: "Remount /proc with hidepid (live, non-destructive)"
   ansible.builtin.command:
     cmd: >-
@@ -161,6 +172,7 @@
   when:
     - system_hardening_hidepid_enabled | bool
     - ansible_virtualization_type | default('') not in ['docker', 'podman', 'container', 'lxc']
+    - _proc_mount_options.stdout is not search('hidepid=' ~ (system_hardening_hidepid_value | string))
   tags: [system_hardening, hidepid]
 
 # ── Mount hardening ───────────────────────────────────────────────────────────
