@@ -8,7 +8,9 @@
   ansible.builtin.systemd:
     name: ctrl-alt-del.target
     masked: true
-  when: system_hardening_ctrlaltdel_enabled | bool
+  when:
+    - system_hardening_ctrlaltdel_enabled | bool
+    - ansible_virtualization_type | default('') not in ['docker', 'podman', 'container', 'lxc']
   tags: [system_hardening, ctrlaltdel]
 
 # ── securetty ───────────────────────────────────────────────────────────────
@@ -156,7 +158,9 @@
   register: _proc_remount
   changed_when: _proc_remount.rc == 0
   failed_when: false  # Containers restrict this; systemd will apply on next boot
-  when: system_hardening_hidepid_enabled | bool
+  when:
+    - system_hardening_hidepid_enabled | bool
+    - ansible_virtualization_type | default('') not in ['docker', 'podman', 'container', 'lxc']
   tags: [system_hardening, hidepid]
 
 # ── Mount hardening ───────────────────────────────────────────────────────────
