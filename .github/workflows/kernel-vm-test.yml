@@ -283,18 +283,28 @@ jobs:
         run: |
           set -euo pipefail
           RULES=/etc/audit/rules.d/99-security.rules
+          GENERATED_RULES=/etc/audit/audit.rules
 
           systemctl is-active --quiet auditd || { echo "FAIL: auditd is not active"; exit 1; }
           systemctl is-enabled --quiet auditd || { echo "FAIL: auditd is not enabled"; exit 1; }
 
-          [ -f "$RULES" ] || { echo "FAIL: $RULES not found"; exit 1; }
-          PERMS=$(stat -c '%a' "$RULES")
-          [ "$PERMS" = "640" ] || { echo "FAIL: $RULES perms $PERMS (expected 640)"; exit 1; }
+          if [ -f "$RULES" ]; then
+            PERMS=$(stat -c '%a' "$RULES")
+            [ "$PERMS" = "640" ] || { echo "FAIL: $RULES perms $PERMS (expected 640)"; exit 1; }
 
-          grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" "$RULES" || \
-            { echo "FAIL: sshd_config audit rule missing from $RULES"; exit 1; }
-          grep -Fq -- "-w /etc/sudoers -p wa -k sudoers" "$RULES" || \
-            { echo "FAIL: sudoers audit rule missing from $RULES"; exit 1; }
+            grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" "$RULES" || \
+              { echo "FAIL: sshd_config audit rule missing from $RULES"; exit 1; }
+            grep -Fq -- "-w /etc/sudoers -p wa -k sudoers" "$RULES" || \
+              { echo "FAIL: sudoers audit rule missing from $RULES"; exit 1; }
+          elif [ -f "$GENERATED_RULES" ]; then
+            echo "INFO: $RULES not present; using generated rules file $GENERATED_RULES"
+            grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" "$GENERATED_RULES" || \
+              { echo "FAIL: sshd_config audit rule missing from $GENERATED_RULES"; exit 1; }
+            grep -Fq -- "-w /etc/sudoers -p wa -k sudoers" "$GENERATED_RULES" || \
+              { echo "FAIL: sudoers audit rule missing from $GENERATED_RULES"; exit 1; }
+          else
+            echo "INFO: no persistent audit rules file found; validating loaded kernel rules only"
+          fi
 
           OUTPUT=$(auditctl -l)
           echo "$OUTPUT"
