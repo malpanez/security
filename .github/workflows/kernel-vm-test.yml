@@ -1,7 +1,7 @@
-name: Kernel and System Hardening — VM Tests
+name: Kernel, System, and Audit Hardening - VM Tests
 
 # Containers cannot test kernel sysctl enforcement, real /proc hidepid,
-# or module blacklists. This workflow runs directly on GitHub-hosted
+# auditd service state, or module blacklists. This workflow runs directly on GitHub-hosted
 # Ubuntu VMs (real kernel, real systemd, no privilege restrictions).
 
 on:
@@ -10,12 +10,16 @@ on:
     paths:
       - "roles/kernel_hardening/**"
       - "roles/system_hardening/**"
+      - "roles/audit_logging/**"
+      - "playbooks/kernel-vm-test.yml"
       - ".github/workflows/kernel-vm-test.yml"
   pull_request:
     branches: [develop]
     paths:
       - "roles/kernel_hardening/**"
       - "roles/system_hardening/**"
+      - "roles/audit_logging/**"
+      - "playbooks/kernel-vm-test.yml"
       - ".github/workflows/kernel-vm-test.yml"
   workflow_dispatch:
   schedule:
@@ -262,6 +266,65 @@ jobs:
         env:
           ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
 
+      # ── audit_logging ─────────────────────────────────────────────────────
+
+      - name: "Enforce audit_logging (auditd + audit rules)"
+        run: |
+          ansible-playbook -i test-inventory/hosts \
+            -e "audit_logging_enabled=true" \
+            -e "security_mode=enforce" \
+            -e "ansible_python_interpreter=/usr/bin/python3" \
+            playbooks/kernel-vm-test.yml \
+            --tags audit_logging
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
+      - name: "Verify auditd service and rules on Ubuntu VM"
+        run: |
+          set -euo pipefail
+          RULES=/etc/audit/rules.d/99-security.rules
+
+          systemctl is-active --quiet auditd || { echo "FAIL: auditd is not active"; exit 1; }
+          systemctl is-enabled --quiet auditd || { echo "FAIL: auditd is not enabled"; exit 1; }
+
+          [ -f "$RULES" ] || { echo "FAIL: $RULES not found"; exit 1; }
+          PERMS=$(stat -c '%a' "$RULES")
+          [ "$PERMS" = "640" ] || { echo "FAIL: $RULES perms $PERMS (expected 640)"; exit 1; }
+
+          grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" "$RULES" || \
+            { echo "FAIL: sshd_config audit rule missing from $RULES"; exit 1; }
+          grep -Fq -- "-w /etc/sudoers -p wa -k sudoers" "$RULES" || \
+            { echo "FAIL: sudoers audit rule missing from $RULES"; exit 1; }
+
+          OUTPUT=$(auditctl -l)
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" || \
+            { echo "FAIL: sshd_config audit rule not loaded"; exit 1; }
+          echo "$OUTPUT" | grep -Fq -- "-w /etc/sudoers -p wa -k sudoers" || \
+            { echo "FAIL: sudoers audit rule not loaded"; exit 1; }
+
+          echo "OK: auditd active and audit rules loaded"
+
+      - name: "Idempotency check — audit_logging second run must have 0 changes"
+        run: |
+          set -euo pipefail
+          OUTPUT=$(ansible-playbook -i test-inventory/hosts \
+            -e "audit_logging_enabled=true" \
+            -e "security_mode=enforce" \
+            -e "ansible_python_interpreter=/usr/bin/python3" \
+            playbooks/kernel-vm-test.yml \
+            --tags audit_logging 2>&1)
+          echo "$OUTPUT"
+          CHANGED=$(echo "$OUTPUT" | grep -oP 'changed=\K[0-9]+' | paste -sd+ | bc 2>/dev/null || echo "0")
+          echo "Total changed tasks in second run: $CHANGED"
+          if [ "${CHANGED:-0}" -gt 0 ]; then
+            echo "IDEMPOTENCY VIOLATION: $CHANGED task(s) changed on second run"
+            exit 1
+          fi
+          echo "OK: idempotency confirmed"
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
   # ── Rocky Linux 9 (RHEL-compatible) — docker container on Ubuntu host ────
   # sysctl params land on the host kernel (privileged); we verify inside the
   # container so the Rocky Linux OS paths and dnf package layout are exercised.
@@ -466,4 +529,4 @@ jobs:
             echo "Rocky Linux 9 container tests failed."
             exit 1
           fi
-          echo "All VM kernel/system hardening tests passed (Ubuntu + Rocky Linux 9)."
+          echo "All VM kernel, system, and audit hardening tests passed (Ubuntu + Rocky Linux 9)."
