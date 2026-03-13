@@ -394,7 +394,7 @@ jobs:
           mkdir -p test-inventory
           cat > test-inventory/hosts << EOF
           [rocky]
-          $CONTAINER ansible_connection=docker ansible_python_interpreter=/usr/bin/python3
+          $CONTAINER ansible_connection=docker ansible_python_interpreter=/usr/bin/python3 ansible_become=false
           EOF
 
       # ── kernel_hardening ─────────────────────────────────────────────────
