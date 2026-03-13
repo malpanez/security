@@ -167,7 +167,7 @@
       mount -o remount,hidepid={{ system_hardening_hidepid_value }},gid={{ system_hardening_proc_group }}
       /proc
   register: _proc_remount
-  changed_when: _proc_remount.rc == 0
+  changed_when: false
   failed_when: false  # Containers restrict this; systemd will apply on next boot
   when:
     - system_hardening_hidepid_enabled | bool

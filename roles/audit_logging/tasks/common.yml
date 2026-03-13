@@ -101,9 +101,15 @@
 - name: common | Verify audit syscall rules are loaded
   ansible.builtin.assert:
     that:
-      - auditctl_check.stdout is search(item)
-    fail_msg: "Audit syscall rule not loaded: {{ item }}"
+      - auditctl_check.stdout is search('arch=' ~ _audit_rule_arch)
+      - auditctl_check.stdout is search('(^|\\s)' ~ _audit_rule_syscall ~ '(\\s|,|$)')
+    fail_msg: >-
+      Audit syscall rule not loaded: {{ item }}
+      (expected arch={{ _audit_rule_arch }}, syscall={{ _audit_rule_syscall }})
   loop: "{{ audit_logging_syscall_rules }}"
+  vars:
+    _audit_rule_arch: "{{ item | regex_replace('.*arch=([^ ]+).*', '\\1') }}"
+    _audit_rule_syscall: "{{ item | regex_replace('.*-S ([^ ]+).*', '\\1') }}"
   when:
     - auditctl_check.rc == 0
     - audit_logging_verify_syscalls | default(true)
