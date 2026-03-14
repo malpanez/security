@@ -315,12 +315,8 @@ jobs:
 
           OUTPUT=$(sudo auditctl -l)
           echo "$OUTPUT"
-          if [ "$HAVE_SSHD_CONFIG" -eq 1 ]; then
-            echo "$OUTPUT" | grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" || \
-              { echo "FAIL: sshd_config audit rule not loaded"; exit 1; }
-          fi
-          echo "$OUTPUT" | grep -Fq -- "-w /etc/sudoers -p wa -k sudoers" || \
-            { echo "FAIL: sudoers audit rule not loaded"; exit 1; }
+          echo "$OUTPUT" | grep -Fq -- "-S execve" || \
+            { echo "FAIL: execve audit syscall rule not loaded"; exit 1; }
 
           echo "OK: auditd active and audit rules loaded"
 
