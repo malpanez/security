@@ -306,7 +306,7 @@ jobs:
             echo "INFO: no persistent audit rules file found; validating loaded kernel rules only"
           fi
 
-          OUTPUT=$(auditctl -l)
+          OUTPUT=$(sudo auditctl -l)
           echo "$OUTPUT"
           echo "$OUTPUT" | grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" || \
             { echo "FAIL: sshd_config audit rule not loaded"; exit 1; }
