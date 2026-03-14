@@ -284,6 +284,9 @@ jobs:
           set -euo pipefail
           RULES=/etc/audit/rules.d/99-security.rules
           GENERATED_RULES=/etc/audit/audit.rules
+          HAVE_SSHD_CONFIG=0
+
+          [ -f /etc/ssh/sshd_config ] && HAVE_SSHD_CONFIG=1
 
           systemctl is-active --quiet auditd || { echo "FAIL: auditd is not active"; exit 1; }
           systemctl is-enabled --quiet auditd || { echo "FAIL: auditd is not enabled"; exit 1; }
@@ -292,14 +295,18 @@ jobs:
             PERMS=$(stat -c '%a' "$RULES")
             [ "$PERMS" = "640" ] || { echo "FAIL: $RULES perms $PERMS (expected 640)"; exit 1; }
 
-            grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" "$RULES" || \
-              { echo "FAIL: sshd_config audit rule missing from $RULES"; exit 1; }
+            if [ "$HAVE_SSHD_CONFIG" -eq 1 ]; then
+              grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" "$RULES" || \
+                { echo "FAIL: sshd_config audit rule missing from $RULES"; exit 1; }
+            fi
             grep -Fq -- "-w /etc/sudoers -p wa -k sudoers" "$RULES" || \
               { echo "FAIL: sudoers audit rule missing from $RULES"; exit 1; }
           elif [ -f "$GENERATED_RULES" ]; then
             echo "INFO: $RULES not present; using generated rules file $GENERATED_RULES"
-            grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" "$GENERATED_RULES" || \
-              { echo "FAIL: sshd_config audit rule missing from $GENERATED_RULES"; exit 1; }
+            if [ "$HAVE_SSHD_CONFIG" -eq 1 ]; then
+              grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" "$GENERATED_RULES" || \
+                { echo "FAIL: sshd_config audit rule missing from $GENERATED_RULES"; exit 1; }
+            fi
             grep -Fq -- "-w /etc/sudoers -p wa -k sudoers" "$GENERATED_RULES" || \
               { echo "FAIL: sudoers audit rule missing from $GENERATED_RULES"; exit 1; }
           else
@@ -308,8 +315,10 @@ jobs:
 
           OUTPUT=$(sudo auditctl -l)
           echo "$OUTPUT"
-          echo "$OUTPUT" | grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" || \
-            { echo "FAIL: sshd_config audit rule not loaded"; exit 1; }
+          if [ "$HAVE_SSHD_CONFIG" -eq 1 ]; then
+            echo "$OUTPUT" | grep -Fq -- "-w /etc/ssh/sshd_config -p wa -k sshd_config" || \
+              { echo "FAIL: sshd_config audit rule not loaded"; exit 1; }
+          fi
           echo "$OUTPUT" | grep -Fq -- "-w /etc/sudoers -p wa -k sudoers" || \
             { echo "FAIL: sudoers audit rule not loaded"; exit 1; }
 
