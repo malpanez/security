@@ -6,7 +6,7 @@ name: Kernel, System, and Audit Hardening - VM Tests
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, main]
     paths:
       - "roles/kernel_hardening/**"
       - "roles/system_hardening/**"
@@ -14,7 +14,7 @@ on:
       - "playbooks/kernel-vm-test.yml"
       - ".github/workflows/kernel-vm-test.yml"
   pull_request:
-    branches: [develop]
+    branches: [develop, main]
     paths:
       - "roles/kernel_hardening/**"
       - "roles/system_hardening/**"

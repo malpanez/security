@@ -3,9 +3,9 @@ name: molecule-test
 on:
   workflow_dispatch:
   push:
-    branches: [develop]
+    branches: [develop, main]
   pull_request:
-    branches: [develop]
+    branches: [develop, main]
 
 permissions:
   contents: read
