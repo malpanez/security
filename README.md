@@ -37,14 +37,16 @@ Override with `security_capabilities_auth_mode: sk_keys|pam_mfa|legacy|auto`.
 
 ## Platform support
 
-Tested with Molecule and Docker across:
+Public CI currently validates:
 
-| Family | Versions |
+| Validation path | Platforms |
 |--------|---------|
-| Ubuntu | 18.04, 20.04, 22.04, 24.04 |
-| Debian | 10, 11, 12 |
-| Rocky Linux | 8, 9 |
-| AlmaLinux | 8, 9 |
+| GitHub-hosted VM tests | Ubuntu 22.04, Ubuntu 24.04 |
+| Docker/container tests | Ubuntu 20.04, 22.04; Debian 11, 12, 13; Rocky Linux 8, 9 |
+
+Legacy or customer-specific targets may still be supported, but should be
+validated in self-hosted or private VM infrastructure instead of relying on
+GitHub-hosted runners.
 
 ## Installation
 
@@ -129,6 +131,7 @@ Runs read-only with tmpfs, minimal capabilities, and audit logging enabled.
 - [Compliance evidence](docs/compliance-evidence.md)
 - [Platform support](docs/PLATFORM_SUPPORT.md)
 - [Workflows](docs/WORKFLOWS.md)
+- [Publication strategy](docs/PUBLICATION_STRATEGY.md)
 
 ## Contributing
 

@@ -30,7 +30,7 @@ SSH keys are the most abused credential type in enterprise environments:
 
 **What this collection enforces:**
 
-- `sshd_hardening` deploys `/etc/ssh/sshd_config.d/99-hardening.conf` (drop-in,
+- `sshd_hardening` deploys `/etc/ssh/sshd_config.d/20-auth-hardening.conf` (drop-in,
   never overwrites the base config).
 - `AllowUsers` / `AllowGroups` gating — only explicitly authorized users/groups.
 - `MaxAuthTries 3`, `LoginGraceTime 30` — rate-limiting brute force.
