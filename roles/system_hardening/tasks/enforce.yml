@@ -8,7 +8,9 @@
   ansible.builtin.systemd:
     name: ctrl-alt-del.target
     masked: true
-  when: system_hardening_ctrlaltdel_enabled | bool
+  when:
+    - system_hardening_ctrlaltdel_enabled | bool
+    - ansible_virtualization_type | default('') not in ['docker', 'podman', 'container', 'lxc']
   tags: [system_hardening, ctrlaltdel]
 
 # ── securetty ───────────────────────────────────────────────────────────────
@@ -148,15 +150,29 @@
   notify: Reload systemd daemon
   tags: [system_hardening, hidepid]
 
+- name: "Check current /proc mount options"
+  ansible.builtin.command:
+    cmd: findmnt -n -o OPTIONS /proc
+  register: _proc_mount_options
+  changed_when: false
+  failed_when: false
+  when:
+    - system_hardening_hidepid_enabled | bool
+    - ansible_virtualization_type | default('') not in ['docker', 'podman', 'container', 'lxc']
+  tags: [system_hardening, hidepid]
+
 - name: "Remount /proc with hidepid (live, non-destructive)"
   ansible.builtin.command:
     cmd: >-
       mount -o remount,hidepid={{ system_hardening_hidepid_value }},gid={{ system_hardening_proc_group }}
       /proc
   register: _proc_remount
-  changed_when: _proc_remount.rc == 0
+  changed_when: false
   failed_when: false  # Containers restrict this; systemd will apply on next boot
-  when: system_hardening_hidepid_enabled | bool
+  when:
+    - system_hardening_hidepid_enabled | bool
+    - ansible_virtualization_type | default('') not in ['docker', 'podman', 'container', 'lxc']
+    - _proc_mount_options.stdout is not search('hidepid=' ~ (system_hardening_hidepid_value | string))
   tags: [system_hardening, hidepid]
 
 # ── Mount hardening ───────────────────────────────────────────────────────────

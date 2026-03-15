@@ -4,10 +4,14 @@
 
 - name: Converge - Apply Complete Security Baseline
   hosts: all
-  become: true
-  gather_facts: true
+  become: false
+  gather_facts: false
 
   pre_tasks:
+    - name: Gather facts without privilege escalation
+      ansible.builtin.setup:
+      become: false
+
     - name: Display test information
       ansible.builtin.debug:
         msg: |
@@ -45,19 +49,38 @@
         state: present
       when: ansible_os_family == 'RedHat'
 
+    - name: Ensure PAM module directories exist for MFA test mode
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /lib/security
+        - /usr/lib64/security
+      when: pam_mfa_enabled | default(false)
+
+    - name: Create fake PAM modules for MFA test mode
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: touch
+        mode: "0644"
+      loop:
+        - /lib/security/pam_fido2.so
+        - /lib/security/pam_u2f.so
+        - /lib/security/pam_google_authenticator.so
+        - /lib/security/pam_succeed_if.so
+        - /usr/lib64/security/pam_fido2.so
+        - /usr/lib64/security/pam_u2f.so
+        - /usr/lib64/security/pam_google_authenticator.so
+        - /usr/lib64/security/pam_succeed_if.so
+      changed_when: false
+      when: pam_mfa_enabled | default(false)
+
     - name: Ensure SSH service is enabled
       ansible.builtin.service:
         name: sshd
         enabled: true
         state: started
-
-    - name: Create test service account
-      ansible.builtin.user:
-        name: test_service_account
-        groups: test_service_accounts
-        shell: /bin/bash
-        create_home: true
-        state: present
 
     - name: Ensure MFA bypass group exists
       ansible.builtin.group:
@@ -67,6 +90,24 @@
     - name: Ensure admin group exists for sudoers defaults
       ansible.builtin.group:
         name: linux_admins
+        state: present
+
+    - name: Ensure test groups exist
+      ansible.builtin.group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - test_service_accounts
+        - test_human_users
+
+    - name: Create test service account
+      ansible.builtin.user:
+        name: test_service_account
+        groups:
+          - test_service_accounts
+          - "{{ pam_mfa_service_bypass_group }}"
+        shell: /bin/bash
+        create_home: true
         state: present
 
     - name: Create test admin user
@@ -87,34 +128,63 @@
         create_home: true
         state: present
 
+    - name: Ensure SSH directories exist for test users
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.owner }}"
+        mode: "0700"
+      loop:
+        - { owner: test_service_account, path: /home/test_service_account/.ssh }
+        - { owner: test_human, path: /home/test_human/.ssh }
+
     - name: Generate SSH key for test service account
       ansible.builtin.command:
         cmd: ssh-keygen -t ed25519 -f /home/test_service_account/.ssh/id_ed25519 -N ''
         creates: /home/test_service_account/.ssh/id_ed25519
-      become: true
-      become_user: test_service_account
 
     - name: Generate SSH key for test human
       ansible.builtin.command:
         cmd: ssh-keygen -t ed25519 -f /home/test_human/.ssh/id_ed25519 -N ''
         creates: /home/test_human/.ssh/id_ed25519
-      become: true
-      become_user: test_human
+
+    - name: Set ownership on generated SSH material
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        owner: "{{ item.owner }}"
+        group: "{{ item.owner }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { owner: test_service_account, path: /home/test_service_account/.ssh/id_ed25519, mode: "0600" }
+        - { owner: test_service_account, path: /home/test_service_account/.ssh/id_ed25519.pub, mode: "0644" }
+        - { owner: test_human, path: /home/test_human/.ssh/id_ed25519, mode: "0600" }
+        - { owner: test_human, path: /home/test_human/.ssh/id_ed25519.pub, mode: "0644" }
+
+    - name: Read generated public keys from remote hosts
+      ansible.builtin.slurp:
+        src: "{{ item.path }}"
+      loop:
+        - { name: test_service_account, path: /home/test_service_account/.ssh/id_ed25519.pub }
+        - { name: test_human, path: /home/test_human/.ssh/id_ed25519.pub }
+      register: test_public_keys
 
     - name: Add public keys to authorized_keys
       ansible.posix.authorized_key:
         user: "{{ item.user }}"
-        key: "{{ lookup('file', item.key) }}"
+        key: >-
+          {{
+            (
+              test_public_keys.results
+              | selectattr('item.name', 'equalto', item.key_name)
+              | map(attribute='content')
+              | first
+            ) | b64decode
+          }}
       loop:
-        - { user: test_service_account, key: /home/test_service_account/.ssh/id_ed25519.pub }
-        - { user: test_human, key: /home/test_human/.ssh/id_ed25519.pub }
-        - { user: test_admin, key: /home/test_service_account/.ssh/id_ed25519.pub }
-
-    - name: Add service account to MFA bypass group
-      ansible.builtin.user:
-        name: test_service_account
-        groups: "{{ pam_mfa_service_bypass_group }}"
-        append: true
+        - { user: test_service_account, key_name: test_service_account }
+        - { user: test_human, key_name: test_human }
+        - { user: test_admin, key_name: test_service_account }
 
   roles:
     # PHASE 1: Detect system capabilities

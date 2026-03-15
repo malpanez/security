@@ -3,6 +3,16 @@
 
 # ── sysctl ────────────────────────────────────────────────────────────────────
 
+- name: "[enforce] Ensure sysctl drop-in directory exists"
+  ansible.builtin.file:
+    path: "{{ kernel_hardening_sysctl_file | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: kernel_hardening_sysctl_enabled | bool
+  tags: [kernel_hardening, enforce]
+
 - name: "[enforce] Deploy sysctl hardening configuration"
   ansible.builtin.template:
     src: sysctl-security.conf.j2
@@ -29,6 +39,16 @@
   tags: [kernel_hardening, enforce]
 
 # ── Kernel modules — disable ─────────────────────────────────────────────────
+
+- name: "[enforce] Ensure modprobe drop-in directory exists"
+  ansible.builtin.file:
+    path: "{{ kernel_hardening_modprobe_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: kernel_hardening_modules_enabled | bool
+  tags: [kernel_hardening, enforce]
 
 - name: "[enforce] Deploy modprobe blacklist for disabled modules"
   ansible.builtin.template:
