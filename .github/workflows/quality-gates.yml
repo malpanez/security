@@ -222,7 +222,7 @@ jobs:
           molecule converge
           # Run again - should have no changes
           molecule converge | tee /tmp/output.txt
-          if grep -q "changed=0" /tmp/output.txt; then
+          if grep -qE "changed[=:] ?0" /tmp/output.txt; then
             echo "✅ Idempotent"
           else
             echo "❌ Not idempotent"
