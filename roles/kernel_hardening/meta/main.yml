@@ -9,11 +9,15 @@ galaxy_info:
   min_ansible_version: "2.16"
   galaxy_tags:
     - security
-    - compliance
     - hardening
     - kernel
     - sysctl
     - linux
+    - cis
+    - nist
+    - nis2
+    - pci
+    - compliance
   platforms:
     - name: Debian
       versions: [buster, bullseye, bookworm, trixie]

@@ -1,14 +1,32 @@
 ---
 galaxy_info:
   author: Miguel Alpañez
-  description: Configure PAM MFA (YubiKey + backup TOTP) with controlled exceptions.
+  description: >-
+    Production-grade PAM MFA: YubiKey/FIDO2 hardware tokens + TOTP backup (Google Authenticator).
+    Breakglass group, service account bypass, deadman switch anti-lockout, RHEL authselect support.
+    Review and enforce modes. Supports Debian/Ubuntu, RHEL/Rocky/Alma, SUSE/openSUSE.
   license: GPL-2.0-or-later
   min_ansible_version: "2.16"
   platforms:
     - name: Debian
-      versions: [buster, bullseye, bookworm]
+      versions: [buster, bullseye, bookworm, trixie]
     - name: Ubuntu
-      versions: [bionic, focal, jammy]
+      versions: [bionic, focal, jammy, noble]
     - name: EL
       versions: [all]
+    - name: opensuse
+      versions: ["15.5", "all"]
+  galaxy_tags:
+    - security
+    - hardening
+    - pam
+    - mfa
+    - yubikey
+    - totp
+    - authentication
+    - nis2
+    - nist
+    - cis
+    - compliance
+    - linux
 dependencies: []

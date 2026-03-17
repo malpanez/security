@@ -114,6 +114,23 @@ For RHEL 7 (kernel 3.10), set `system_hardening_hidepid_value: 1` — the `gid=p
 
 In review mode all SUID/SGID binaries are reported. In enforce mode with `system_hardening_suid_remove_unlisted: true`, any binary not in the whitelist loses the setuid/setgid bit. The default whitelist covers all standard system tools: `sudo`, `su`, `newgrp`, `passwd`, `chsh`, `chfn`, `gpasswd`, `ping`, `mount`, `umount`, `pkexec`, `ssh-keysign`, `dbus-daemon-launch-helper`, `unix_chkpwd`.
 
+## Design Philosophy
+
+This role is intentionally scoped to OS-level primitives: mounts, hidepid, accounts, SUID, and system-wide policies. It does **not** include PAM, SELinux, auditd, or SSH hardening — those are separate roles in the same collection.
+
+This composable approach means you can apply only what your stack needs:
+
+```yaml
+# Apply only what you need
+roles:
+  - malpanez.security.kernel_hardening    # sysctl + module blacklists
+  - malpanez.security.system_hardening    # mounts + accounts + SUID
+  - malpanez.security.audit_logging       # auditd rules
+  - malpanez.security.selinux_enforcement # SELinux (RHEL only)
+```
+
+If you want a single role that covers everything at once, consider `dev-sec.os_hardening`. If you want each control independently auditable, replaceable, and testable — use this role.
+
 ## Testing with Molecule
 
 ```bash

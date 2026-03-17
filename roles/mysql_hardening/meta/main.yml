@@ -2,7 +2,12 @@
 galaxy_info:
   role_name: mysql_hardening
   author: malpanez
-  description: "Harden mysql hardening — review and enforce mode, multi-platform"
+  description: >-
+    Harden MySQL and MariaDB: remove anonymous users and test DB, disable remote root,
+    enforce bind-address, disable local_infile, skip_show_database, file permissions,
+    password expiry, TLS, audit logging plugin, and MariaDB-specific controls.
+    Skips gracefully if MySQL/MariaDB is not installed. Review and enforce modes.
+    Supports Debian/Ubuntu, RHEL/Rocky/Alma, SUSE/openSUSE.
   license: GPL-2.0-or-later
   min_ansible_version: "2.16"
   platforms:
@@ -17,5 +22,12 @@ galaxy_info:
   galaxy_tags:
     - security
     - hardening
+    - mysql
+    - mariadb
+    - database
+    - cis
+    - pci
+    - compliance
+    - linux
 
 dependencies: []
