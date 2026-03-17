@@ -11,8 +11,9 @@ on:
         options:
           - complete_stack_ci
           - complete_stack
-  schedule:
-    - cron: "0 2 * * *"
+
+permissions:
+  contents: read
 
 jobs:
   complete-stack:
@@ -47,6 +48,7 @@ jobs:
       - name: Install Ansible Galaxy collections
         run: |
           ansible-galaxy collection install -r requirements.yml
+          ansible-galaxy collection install . -p .ansible/collections
           ansible-galaxy collection list
 
       - name: Wait for Docker daemon

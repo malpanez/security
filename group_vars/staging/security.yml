@@ -63,9 +63,11 @@ sudoers_baseline_groups:
       - /usr/bin/systemctl status *
 
   devops:
-    require_password: false
+    require_password: true
     commands:
-      - /usr/bin/docker *
+      - /usr/bin/docker ps
+      - /usr/bin/docker logs *
+      - /usr/bin/docker inspect *
 
 # ========================================
 # PAM MFA (FULL TESTING)

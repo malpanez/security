@@ -3,8 +3,18 @@ name: CodeQL
 on:
   push:
     branches: [develop, main]
+    paths:
+      - "scripts/**"
+      - "plugins/**"
+      - "**.py"
+      - ".github/workflows/codeql.yml"
   pull_request:
     branches: [develop, main]
+    paths:
+      - "scripts/**"
+      - "plugins/**"
+      - "**.py"
+      - ".github/workflows/codeql.yml"
   workflow_dispatch:
 
 permissions: read-all

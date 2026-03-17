@@ -6,8 +6,9 @@ useDefault = true
 [allowlist]
 description = "Ignore common non-secret placeholders"
 regexes = [
-  "CHANGEME",
   "example",
   "EXAMPLE",
   "placeholder",
 ]
+# NOTE: "CHANGEME" was intentionally removed from this allowlist.
+# It should never appear in deployed configuration — use variables instead.

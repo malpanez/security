@@ -260,15 +260,17 @@
 
 - name: Common | Validate PAM sshd includes succeed_if
   ansible.builtin.command: grep -q "pam_succeed_if.so" /etc/pam.d/sshd
+  register: _pam_mfa_sshd_succeed_if
   changed_when: false
-  failed_when: true
+  failed_when: _pam_mfa_sshd_succeed_if.rc != 0
   when: not pam_mfa_skip_module_validation
   tags: [enforce]
 
 - name: Common | Validate PAM sudo includes succeed_if
   ansible.builtin.command: grep -q "pam_succeed_if.so" /etc/pam.d/sudo
+  register: _pam_mfa_sudo_succeed_if
   changed_when: false
-  failed_when: true
+  failed_when: _pam_mfa_sudo_succeed_if.rc != 0
   when: not pam_mfa_skip_module_validation
   tags: [enforce]
 

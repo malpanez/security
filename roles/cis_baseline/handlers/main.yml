@@ -3,4 +3,3 @@
   ansible.builtin.service:
     name: "{{ cis_baseline_sshd_service_name }}"
     state: restarted
-  failed_when: false

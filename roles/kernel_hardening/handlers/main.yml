@@ -2,4 +2,4 @@
 - name: Reload sysctl
   ansible.builtin.command:
     cmd: sysctl --system
-  changed_when: false
+  changed_when: true

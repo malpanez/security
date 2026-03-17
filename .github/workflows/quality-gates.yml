@@ -3,8 +3,26 @@ name: Quality Gates
 on:
   pull_request:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "playbooks/**"
+      - "tasks/**"
+      - "plugins/**"
+      - "galaxy.yml"
+      - "requirements.yml"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/quality-gates.yml"
   push:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "playbooks/**"
+      - "tasks/**"
+      - "plugins/**"
+      - "galaxy.yml"
+      - "requirements.yml"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/quality-gates.yml"
   workflow_dispatch:
 
 permissions:

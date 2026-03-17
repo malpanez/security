@@ -22,9 +22,6 @@ on:
       - "playbooks/kernel-vm-test.yml"
       - ".github/workflows/kernel-vm-test.yml"
   workflow_dispatch:
-  schedule:
-    # Weekly Sunday 03:00 UTC — detect kernel/distro regressions early
-    - cron: "0 3 * * 0"
 
 permissions:
   contents: read
@@ -388,7 +385,7 @@ jobs:
             --tmpfs /tmp \
             --volume /sys/fs/cgroup:/sys/fs/cgroup:rw \
             --platform linux/amd64 \
-            geerlingguy/docker-rockylinux9-ansible:latest \
+            geerlingguy/docker-rockylinux9-ansible@sha256:09c1074489a704687b2b1f3d16a4f537b211b49b64eb7a5b6e4d6d1eae5b8ba9 \
             /lib/systemd/systemd
           # Wait for systemd to be ready
           sleep 5

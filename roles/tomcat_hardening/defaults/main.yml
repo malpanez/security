@@ -50,6 +50,9 @@ tomcat_hardening_http_port: 8080
 tomcat_hardening_https_port: 8443
 tomcat_hardening_ajp_enabled: false           # Disable AJP (CVE-2020-1938 Ghostcat)
 tomcat_hardening_ajp_port: 8009
+# AJP requiredSecret — MUST be overridden when tomcat_hardening_ajp_enabled: true.
+# An empty string here will cause an assert failure if AJP is enabled.
+tomcat_hardening_ajp_secret: ""
 
 # HTTPS connector
 tomcat_hardening_ssl_enabled: true

@@ -142,6 +142,7 @@ cython_debug/
 
 # Ansible specific
 *.retry
+*.bak
 .ansible/
 .collections/
 ansible_collections/

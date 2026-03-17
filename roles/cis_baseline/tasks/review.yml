@@ -1,6 +1,8 @@
 ---
 - name: Cis Review | Check sshd password auth disabled
-  ansible.builtin.command: sshd -T | grep -i passwordauthentication
+  ansible.builtin.shell:
+    cmd: set -o pipefail && sshd -T | grep -i passwordauthentication
+    executable: /bin/bash
   register: cis_baseline_sshd_passwordauth
   changed_when: false
   failed_when: false
@@ -15,7 +17,9 @@
   tags: [cis_review]
 
 - name: Cis Review | Check sudoers use_pty
-  ansible.builtin.command: grep -E '^Defaults.*use_pty' {{ cis_baseline_sudoers_path }} {{ cis_baseline_sudoers_dir }}/*
+  ansible.builtin.shell:
+    cmd: grep -E '^Defaults.*use_pty' {{ cis_baseline_sudoers_path }} {{ cis_baseline_sudoers_dir }}/*
+    executable: /bin/bash
   register: cis_baseline_sudo_use_pty
   changed_when: false
   failed_when: false

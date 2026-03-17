@@ -48,7 +48,8 @@
     <!-- AJP disabled — CVE-2020-1938 (Ghostcat) mitigation -->
 {% else %}
     <Connector protocol="AJP/1.3" port="{{ tomcat_hardening_ajp_port }}"
-               redirectPort="{{ tomcat_hardening_https_port }}" secret="CHANGEME" />
+               redirectPort="{{ tomcat_hardening_https_port }}"
+               secret="{{ tomcat_hardening_ajp_secret }}" />
 {% endif %}
 
     <Engine name="Catalina" defaultHost="localhost">

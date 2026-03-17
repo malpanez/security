@@ -3,8 +3,26 @@ name: CI with UV
 on:
   push:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "molecule/**"
+      - "playbooks/**"
+      - "tasks/**"
+      - "plugins/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/ci-uv.yml"
   pull_request:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "molecule/**"
+      - "playbooks/**"
+      - "tasks/**"
+      - "plugins/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/ci-uv.yml"
   workflow_dispatch:
 
 concurrency:
@@ -77,6 +95,7 @@ jobs:
         run: |
           source .venv/bin/activate
           ansible-galaxy collection install -r requirements.yml
+          ansible-galaxy collection install . -p .ansible/collections
 
       - name: Run ansible-lint
         run: |

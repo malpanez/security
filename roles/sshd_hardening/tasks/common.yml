@@ -140,9 +140,10 @@
 
 - name: common | Generate SSH host keys if missing
   ansible.builtin.command: ssh-keygen -A
+  register: _sshd_keygen
   when: security_mode | default('enforce') == 'enforce'
   failed_when: false
-  changed_when: false
+  changed_when: "'saved' in _sshd_keygen.stdout"
 
 - name: common | Ensure sshd config drop-in directory exists
   ansible.builtin.file:

@@ -2,11 +2,9 @@
 name: OpenSSF Scorecard
 
 on:
-  branch_protection_rule:
-  schedule:
-    - cron: '30 1 * * 1'  # Weekly on Monday at 1:30 AM
-  push:
-    branches: [main]
+  # OpenSSF Scorecard only works on public repositories.
+  # All automatic triggers are disabled while the repo is private.
+  # Re-enable branch_protection_rule, schedule, and push when repo goes public.
   workflow_dispatch:
 
 permissions: read-all
@@ -33,7 +31,8 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          publish_results: true
+          # publish_results requires a public repository — set to true when repo goes public
+          publish_results: false
 
       - name: Upload to code-scanning
         uses: github/codeql-action/upload-sarif@c793b717bc78562f491db7b0e93a3a178b099162 # v4.32.5

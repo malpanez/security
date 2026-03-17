@@ -1,4 +1,14 @@
 ---
+- name: Assert AJP secret is set when AJP is enabled
+  ansible.builtin.assert:
+    that:
+      - not tomcat_hardening_ajp_enabled or (tomcat_hardening_ajp_secret | length > 0)
+    fail_msg: >-
+      tomcat_hardening_ajp_secret must be set to a non-empty value when
+      tomcat_hardening_ajp_enabled is true. AJP with an empty secret is
+      exploitable (CVE-2020-1938 class). Set the secret in your vault or vars.
+  tags: [tomcat_hardening]
+
 - name: Remove default Tomcat webapps
   ansible.builtin.file:
     path: "{{ tomcat_hardening_webapps_dir }}/{{ item }}"

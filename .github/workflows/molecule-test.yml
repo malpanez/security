@@ -4,8 +4,20 @@ on:
   workflow_dispatch:
   push:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "molecule/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/molecule-test.yml"
   pull_request:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "molecule/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/molecule-test.yml"
 
 permissions:
   contents: read

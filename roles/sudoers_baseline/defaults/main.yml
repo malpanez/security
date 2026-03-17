@@ -25,14 +25,17 @@ sudoers_baseline_defaults:
   - "!visiblepw"
 
 sudoers_baseline_secure_path: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-sudoers_baseline_groups:
-  linux_admins:
-    require_password: true
-    commands:
-      - /usr/bin/systemctl status *
-  svc_automation:
-    require_password: false
-    commands:
-      - /usr/bin/systemctl restart myservice
+# Define sudo group rules in your inventory or playbook vars — never here.
+# Example (in group_vars or playbook vars):
+#   sudoers_baseline_groups:
+#     linux_admins:
+#       require_password: true
+#       commands:
+#         - /usr/bin/systemctl status *
+#     deploy_svc:
+#       require_password: true
+#       commands:
+#         - /usr/bin/systemctl restart myapp
+sudoers_baseline_groups: {}
 sudoers_baseline_sudoers_path: /etc/sudoers
 sudoers_baseline_files_path: /etc/sudoers.d
