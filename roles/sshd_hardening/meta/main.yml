@@ -16,7 +16,7 @@ galaxy_info:
     - name: EL
       versions: [all]
     - name: opensuse
-      versions: ["15.5", "all"]
+      versions: [all]
   galaxy_tags:
     - security
     - hardening

@@ -128,7 +128,7 @@ Tests verify: drop-in file exists, `PasswordAuthentication no` present, `PermitR
 
 ## License
 
-MIT
+GPL-2.0-or-later
 
 ## Author
 
