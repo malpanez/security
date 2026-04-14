@@ -1,0 +1,194 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Verify | sshd -t exits 0 after role applies
+      ansible.builtin.command:
+        cmd: /usr/sbin/sshd -t
+      register: _verify_sshd_t
+      changed_when: false
+      failed_when: _verify_sshd_t.rc != 0
+
+    - name: Verify | AllowGroups line exists in drop-in
+      ansible.builtin.command:
+        cmd: >-
+          grep -r 'AllowGroups' /etc/ssh/sshd_config.d/
+      register: _verify_allowgroups
+      changed_when: false
+      failed_when: _verify_allowgroups.rc != 0
+
+    - name: Verify | AllowGroups contains expected AD groups
+      ansible.builtin.assert:
+        that:
+          - "'linux-admins' in _verify_allowgroups.stdout"
+          - "'linux-users' in _verify_allowgroups.stdout"
+          - "'linux-service' in _verify_allowgroups.stdout"
+          - "'linux-readonly' in _verify_allowgroups.stdout"
+          - "'ansible-deploy' in _verify_allowgroups.stdout"
+        fail_msg: "AllowGroups missing expected group(s): {{ _verify_allowgroups.stdout }}"
+
+    - name: Verify | Each sshd drop-in file exists
+      ansible.builtin.stat:
+        path: "/etc/ssh/sshd_config.d/{{ item }}"
+      register: _verify_dropin_stat
+      loop:
+        - 20-access-control.conf
+        - 30-network-zones.conf
+        - 40-group-admins.conf
+        - 41-group-users.conf
+        - 42-group-service.conf
+        - 43-group-readonly.conf
+
+    - name: Verify | Assert all drop-in files exist
+      ansible.builtin.assert:
+        that: item.stat.exists
+        fail_msg: "Missing drop-in file: {{ item.item }}"
+      loop: "{{ _verify_dropin_stat.results }}"
+
+    - name: Verify | Drop-in files have correct permissions (0600)
+      ansible.builtin.assert:
+        that:
+          - item.stat.mode == '0600'
+          - item.stat.pw_name == 'root'
+          - item.stat.gr_name == 'root'
+        fail_msg: "Wrong permissions on {{ item.item }}: {{ item.stat.mode }} {{ item.stat.pw_name }}:{{ item.stat.gr_name }}"
+      loop: "{{ _verify_dropin_stat.results }}"
+
+    - name: Verify | 30-network-zones.conf contains expected Match Address blocks
+      ansible.builtin.command:
+        cmd: grep -c 'Match Address' /etc/ssh/sshd_config.d/30-network-zones.conf
+      register: _verify_match_blocks
+      changed_when: false
+      failed_when: _verify_match_blocks.stdout | int < 2
+
+    - name: Verify | 43-group-readonly.conf contains ChrootDirectory and ForceCommand
+      ansible.builtin.shell:
+        cmd: >-
+          set -o pipefail &&
+          grep -q 'ChrootDirectory' /etc/ssh/sshd_config.d/43-group-readonly.conf &&
+          grep -q 'ForceCommand internal-sftp' /etc/ssh/sshd_config.d/43-group-readonly.conf
+        executable: /bin/bash
+      changed_when: false
+      failed_when: false
+      register: _verify_readonly
+
+    - name: Verify | Assert readonly drop-in has chroot directives
+      ansible.builtin.assert:
+        that: _verify_readonly.rc == 0
+        fail_msg: "43-group-readonly.conf missing ChrootDirectory or ForceCommand"
+
+    - name: Verify | ChrootDirectory exists with correct ownership
+      ansible.builtin.stat:
+        path: /data/readonly
+      register: _verify_chroot
+
+    - name: Verify | Assert ChrootDirectory ownership
+      ansible.builtin.assert:
+        that:
+          - _verify_chroot.stat.exists
+          - _verify_chroot.stat.pw_name == 'root'
+          - _verify_chroot.stat.gr_name == 'root'
+          - _verify_chroot.stat.mode == '0755'
+        fail_msg: >-
+          ChrootDirectory /data/readonly: exists={{ _verify_chroot.stat.exists }},
+          owner={{ _verify_chroot.stat.pw_name | default('?') }},
+          mode={{ _verify_chroot.stat.mode | default('?') }}
+
+    - name: Verify | linux-admins sudoers drop-in exists and passes visudo
+      ansible.builtin.command:
+        cmd: visudo -cf /etc/sudoers.d/50-linux-admins
+      register: _verify_sudoers_admins
+      changed_when: false
+      failed_when: _verify_sudoers_admins.rc != 0
+
+    - name: Verify | linux-users sudoers drop-in exists and passes visudo
+      ansible.builtin.command:
+        cmd: visudo -cf /etc/sudoers.d/51-linux-users
+      register: _verify_sudoers_users
+      changed_when: false
+      failed_when: _verify_sudoers_users.rc != 0
+
+    - name: Verify | No linux-service sudoers drop-in (fail closed)
+      ansible.builtin.stat:
+        path: /etc/sudoers.d/52-linux-service
+      register: _verify_no_service_sudoers
+
+    - name: Verify | Assert linux-service has no sudoers file
+      ansible.builtin.assert:
+        that: not _verify_no_service_sudoers.stat.exists
+        fail_msg: "linux-service should have no sudoers file — fail closed"
+
+    - name: Verify | pam_access.conf exists
+      ansible.builtin.stat:
+        path: /etc/security/access.conf
+      register: _verify_pam_access
+
+    - name: Verify | Assert pam_access.conf exists
+      ansible.builtin.assert:
+        that: _verify_pam_access.stat.exists
+        fail_msg: "/etc/security/access.conf not created"
+
+    - name: Verify | pam_access.conf contains expected entries
+      ansible.builtin.shell:
+        cmd: >-
+          set -o pipefail &&
+          grep -q '@linux-admins' /etc/security/access.conf &&
+          grep -q '@linux-users' /etc/security/access.conf &&
+          grep -q '^-:ALL:ALL' /etc/security/access.conf
+        executable: /bin/bash
+      register: _verify_pam_content
+      changed_when: false
+      failed_when: _verify_pam_content.rc != 0
+
+    - name: Verify | pam_access.so is active in the PAM sshd stack
+      ansible.builtin.shell:
+        cmd: >-
+          set -o pipefail &&
+          grep -r pam_access.so /etc/pam.d/sshd /etc/pam.d/system-auth
+          /etc/pam.d/password-auth 2>/dev/null | grep -v '^#'
+        executable: /bin/bash
+      register: _verify_pam_active
+      changed_when: false
+      failed_when: false
+
+    - name: Verify | Assert pam_access.so is present in PAM stack
+      ansible.builtin.assert:
+        that: _verify_pam_active.rc == 0 and _verify_pam_active.stdout | length > 0
+        fail_msg: >-
+          pam_access.so not found in PAM sshd stack.
+          access.conf is deployed but the enforcement layer is NOT active.
+          Check /etc/pam.d/sshd and /etc/pam.d/system-auth.
+
+    - name: Verify | sshd service is running
+      ansible.builtin.service_facts:
+
+    - name: Verify | Assert sshd is running
+      ansible.builtin.assert:
+        that: >-
+          ('ssh.service' in ansible_facts.services and
+           ansible_facts.services['ssh.service'].state == 'running')
+          or
+          ('sshd.service' in ansible_facts.services and
+           ansible_facts.services['sshd.service'].state == 'running')
+        fail_msg: "sshd is not running after role application"
+
+    - name: Verify | Each AD group resolves via NSS
+      ansible.builtin.command:
+        cmd: "getent group {{ item }}"
+      register: _verify_group_nss
+      loop:
+        - linux-admins
+        - linux-users
+        - linux-service
+        - linux-readonly
+      changed_when: false
+      failed_when: _verify_group_nss.rc != 0
+
+    - name: Verify | Each AD group has at least one member
+      ansible.builtin.assert:
+        that: item.stdout.split(':')[3] | default('') | length > 0
+        fail_msg: >-
+          Group {{ item.item }} resolves via NSS but has NO MEMBERS.
+          In production this means AllowGroups gates nobody in this tier.
+      loop: "{{ _verify_group_nss.results }}"

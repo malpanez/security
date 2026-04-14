@@ -1,0 +1,46 @@
+---
+- name: Pam_activate | Enable pam_access via pam-auth-update (Debian)
+  ansible.builtin.command:
+    cmd: pam-auth-update --enable access
+  changed_when: false
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Pam_activate | Check if pam_access.so already active (RedHat)
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail &&
+      grep -r pam_access.so /etc/pam.d/sshd 2>/dev/null | grep -v '^#'
+    executable: /bin/bash
+  register: _pam_activate_rh_check
+  changed_when: false
+  failed_when: false
+  when: ansible_facts['os_family'] == 'RedHat'
+  tags: [sshd, ssh, access-control]
+
+- name: Pam_activate | Insert pam_access.so into /etc/pam.d/sshd (RedHat, if missing)
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/sshd
+    line: "account    required     pam_access.so"
+    insertbefore: "^account.*pam_unix.so"
+    state: present
+  when:
+    - ansible_facts['os_family'] == 'RedHat'
+    - _pam_activate_rh_check.stdout | length == 0
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Pam_activate | Verify pam_access.so is present in effective PAM sshd stack
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail &&
+      grep -r pam_access.so /etc/pam.d/sshd /etc/pam.d/system-auth
+      /etc/pam.d/password-auth 2>/dev/null | grep -v '^#'
+    executable: /bin/bash
+  register: _pam_activate_verify
+  changed_when: false
+  failed_when: _pam_activate_verify.rc != 0 or _pam_activate_verify.stdout | length == 0
+  when: security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
