@@ -32,13 +32,13 @@ dev = [
     "yamllint>=1.35.1",
     "molecule>=24.7.0",
     "molecule-plugins[docker]>=23.5.0",
-    "pytest>=8.0.0",
+    "pytest>=9.0.3",
     "pytest-testinfra>=10.0.0",
     "pre-commit>=4.0.0",
 ]
 
 test = [
-    "pytest>=8.0.0",
+    "pytest>=9.0.3",
     "pytest-testinfra>=10.0.0",
     "pytest-cov>=4.1.0",
     "pytest-xdist>=3.5.0",
