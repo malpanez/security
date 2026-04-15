@@ -1,0 +1,76 @@
+---
+- name: Enforce | Install chrony (RedHat)
+  ansible.builtin.dnf:
+    name: "{{ ntp_hardening_package }}"
+    state: present
+  when: ansible_os_family == 'RedHat'
+  tags: [install]
+
+- name: Enforce | Install chrony (Debian)
+  ansible.builtin.apt:
+    name: "{{ ntp_hardening_package }}"
+    state: present
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+  tags: [install]
+
+- name: Enforce | Install chrony (Suse)
+  community.general.zypper:
+    name: "{{ ntp_hardening_package }}"
+    state: present
+  when: ansible_os_family == 'Suse'
+  tags: [install]
+
+- name: Enforce | Disable systemd-timesyncd (Debian)
+  ansible.builtin.systemd:
+    name: systemd-timesyncd
+    enabled: false
+    state: stopped
+  failed_when: false
+  when: ansible_os_family == 'Debian'
+  tags: [configure]
+
+- name: Enforce | Disable legacy ntpd (RedHat)
+  ansible.builtin.systemd:
+    name: ntpd
+    enabled: false
+    state: stopped
+  failed_when: false
+  when: ansible_os_family == 'RedHat'
+  tags: [configure]
+
+- name: Enforce | Create chrony log directory
+  ansible.builtin.file:
+    path: "{{ ntp_hardening_logdir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  tags: [configure]
+
+- name: Enforce | Deploy chrony.conf
+  ansible.builtin.template:
+    src: chrony.conf.j2
+    dest: "{{ ntp_hardening_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify: Restart chronyd
+  tags: [configure]
+
+- name: Enforce | Enable and start chronyd
+  ansible.builtin.systemd:
+    name: "{{ ntp_hardening_service }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: not _ntp_in_container | bool
+  tags: [service]
+
+- name: Enforce | Verify chrony tracking
+  ansible.builtin.command:
+    cmd: chronyc tracking
+  changed_when: false
+  when: not _ntp_in_container | bool
+  tags: [verify]
