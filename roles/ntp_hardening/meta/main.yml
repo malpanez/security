@@ -1,0 +1,29 @@
+---
+galaxy_info:
+  author: Miguel Alpanez
+  description: >-
+    NTP hardening with chrony. Installs chrony, disables competing time daemons,
+    deploys a hardened chrony.conf, and enables the service. Supports review mode
+    (audit-only) and enforce mode. PCI-DSS 10.6.1, NIS2 Art.21, SOC2 CC6.1.
+  license: GPL-2.0-or-later
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - security
+    - hardening
+    - ntp
+    - chrony
+    - timesync
+    - linux
+    - pci
+    - nis2
+    - soc2
+    - hipaa
+    - compliance
+  platforms:
+    - name: Debian
+      versions: [buster, bullseye, bookworm]
+    - name: Ubuntu
+      versions: [bionic, focal, jammy]
+    - name: EL
+      versions: [all]
+dependencies: []

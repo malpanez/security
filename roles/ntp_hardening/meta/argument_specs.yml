@@ -1,0 +1,77 @@
+---
+argument_specs:
+  main:
+    short_description: NTP hardening with chrony
+    options:
+      ntp_hardening_enabled:
+        type: bool
+        default: false
+        description: >-
+          Gate variable. Set to true with security_mode=enforce to install and
+          configure chrony. Review tasks always run regardless.
+      ntp_hardening_servers:
+        type: list
+        elements: str
+        description: >-
+          List of NTP server directives passed to chrony.conf. Each entry is a
+          full chrony server line (e.g. '0.pool.ntp.org iburst').
+        default:
+          - 0.pool.ntp.org iburst
+          - 1.pool.ntp.org iburst
+          - 2.pool.ntp.org iburst
+          - 3.pool.ntp.org iburst
+      ntp_hardening_makestep:
+        type: str
+        default: "1.0 3"
+        description: >-
+          chrony makestep directive value. Format is 'threshold limit'. Allows
+          stepping the clock by the threshold if the adjustment is larger, for
+          the first 'limit' clock updates after startup.
+      ntp_hardening_rtcsync:
+        type: bool
+        default: true
+        description: >-
+          When true, enables the rtcsync directive in chrony.conf so the kernel
+          synchronises the hardware clock (RTC) every 11 minutes.
+      ntp_hardening_maxdistance:
+        type: float
+        default: 1.5
+        description: >-
+          Maximum allowed root distance (seconds). chrony will not use a source
+          whose root distance exceeds this value.
+      ntp_hardening_minsources:
+        type: int
+        default: 1
+        description: >-
+          Minimum number of selectable sources required before chrony will
+          update the system clock.
+      ntp_hardening_allow:
+        type: list
+        elements: str
+        description: >-
+          List of subnets or hosts that are allowed to use chrony as an NTP
+          server. Empty list means chrony runs in client-only mode (no serving).
+        default: []
+      ntp_hardening_deny_all:
+        type: bool
+        default: true
+        description: >-
+          When true, adds a 'deny all' directive after any allow entries to
+          explicitly block all other NTP clients. Only relevant when
+          ntp_hardening_allow is non-empty.
+      ntp_hardening_leapsectz:
+        type: str
+        default: "right/UTC"
+        description: >-
+          Timezone for leap second handling. 'right/UTC' uses the IANA
+          right/UTC timezone which embeds leap second information.
+      ntp_hardening_logdir:
+        type: str
+        default: /var/log/chrony
+        description: Directory where chrony writes its log files.
+      ntp_hardening_logchange:
+        type: float
+        default: 0.5
+        description: >-
+          Threshold (seconds) above which a clock change is logged. chrony logs
+          any offset larger than this value when it updates the system clock.

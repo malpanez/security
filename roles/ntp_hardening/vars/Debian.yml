@@ -1,0 +1,5 @@
+---
+ntp_hardening_package: chrony
+ntp_hardening_service: chrony
+ntp_hardening_config_file: /etc/chrony/chrony.conf
+ntp_hardening_conf_d: /etc/chrony/conf.d
