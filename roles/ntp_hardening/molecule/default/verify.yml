@@ -1,0 +1,118 @@
+---
+- name: Verify ntp_hardening
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Detect container environment
+      ansible.builtin.command:
+        cmd: systemd-detect-virt --container
+      register: _virt_check
+      changed_when: false
+      failed_when: false
+
+    - name: Set container flag
+      ansible.builtin.set_fact:
+        _in_container: "{{ _virt_check.rc == 0 }}"
+
+    - name: Verify chrony package installed
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert chrony is installed
+      ansible.builtin.assert:
+        that:
+          - "'chrony' in ansible_facts.packages"
+        fail_msg: chrony package is not installed
+        quiet: true
+
+    - name: Set config path for verification
+      ansible.builtin.set_fact:
+        _ntp_config_path: >-
+          {{ '/etc/chrony/chrony.conf' if ansible_os_family == 'Debian'
+             else '/etc/chrony.conf' }}
+
+    - name: Check config file exists
+      ansible.builtin.stat:
+        path: "{{ _ntp_config_path }}"
+      register: _config_stat
+
+    - name: Assert config file exists
+      ansible.builtin.assert:
+        that:
+          - _config_stat.stat.exists
+        fail_msg: "chrony config file not found at {{ _ntp_config_path }}"
+        quiet: true
+
+    - name: Check for monitor/cmdallow directive (CVE-2013-5211)
+      ansible.builtin.command:
+        cmd: "grep -iE '^\\s*(monitor|cmdallow)' {{ _ntp_config_path }}"
+      register: _monitor_check
+      changed_when: false
+      failed_when: false
+
+    - name: Assert no monitor/cmdallow directive
+      ansible.builtin.assert:
+        that:
+          - _monitor_check.rc != 0
+        fail_msg: 'SECURITY: monitor or cmdallow directive found in chrony config (CVE-2013-5211)'
+        quiet: true
+
+    - name: Check config contains server entries
+      ansible.builtin.command:
+        cmd: "grep -c '^server' {{ _ntp_config_path }}"
+      register: _srv_count
+      changed_when: false
+
+    - name: Assert server entries present
+      ansible.builtin.assert:
+        that:
+          - _srv_count.stdout | int > 0
+        fail_msg: No server entries found in chrony config
+        quiet: true
+
+    - name: Check log directory exists
+      ansible.builtin.stat:
+        path: /var/log/chrony
+      register: _logdir_stat
+
+    - name: Assert log directory exists
+      ansible.builtin.assert:
+        that:
+          - _logdir_stat.stat.exists
+          - _logdir_stat.stat.isdir
+        fail_msg: /var/log/chrony directory does not exist
+        quiet: true
+
+    - name: Check service enabled (non-container only)
+      ansible.builtin.command:
+        cmd: "systemctl is-enabled {{ 'chrony' if ansible_os_family == 'Debian' else 'chronyd' }}"
+      register: _svc_enabled
+      changed_when: false
+      failed_when: false
+      when: not _in_container | bool
+
+    - name: Assert service enabled
+      ansible.builtin.assert:
+        that:
+          - _svc_enabled.stdout in ['enabled']
+        fail_msg: chronyd service is not enabled
+        quiet: true
+      when: not _in_container | bool
+
+    - name: Check service active (non-container only)
+      ansible.builtin.command:
+        cmd: "systemctl is-active {{ 'chrony' if ansible_os_family == 'Debian' else 'chronyd' }}"
+      register: _svc_active
+      changed_when: false
+      failed_when: false
+      when: not _in_container | bool
+
+    - name: Assert service active
+      ansible.builtin.assert:
+        that:
+          - _svc_active.stdout == 'active'
+        fail_msg: chronyd service is not active
+        quiet: true
+      when: not _in_container | bool

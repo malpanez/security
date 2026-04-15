@@ -1,0 +1,15 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Include ntp_hardening role
+      ansible.builtin.include_role:
+        name: malpanez.security.ntp_hardening
+      vars:
+        ntp_hardening_enabled: true
+        security_mode: enforce
+        ntp_hardening_servers:
+          - 0.pool.ntp.org iburst
