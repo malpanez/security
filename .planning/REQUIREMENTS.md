@@ -26,7 +26,7 @@
 
 - [ ] **NTP-01**: review.yml reports chrony/ntpd status, time drift, NTP servers, stratum
 - [ ] **NTP-02**: enforce.yml installs chrony (preferred) or ntpd
-- [ ] **NTP-03**: Deploys chrony.conf drop-in with configurable NTP servers
+- [x] **NTP-03**: Deploys chrony.conf drop-in with configurable NTP servers
 - [ ] **NTP-04**: Enables and starts chronyd service
 - [ ] **NTP-05**: Container-aware: skip drift check and service assertions in containers
 - [x] **NTP-06**: Compliance tags: PCI-DSS 10.6.1, NIS2 Art.21, SOC2 CC6.1, HIPAA §164.312(b)
@@ -118,7 +118,7 @@
 | STD-14 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
 | NTP-01 | Phase 1 | Pending |
 | NTP-02 | Phase 1 | Pending |
-| NTP-03 | Phase 1 | Pending |
+| NTP-03 | Phase 1 | Complete |
 | NTP-04 | Phase 1 | Pending |
 | NTP-05 | Phase 1 | Pending |
 | NTP-06 | Phase 1 | Complete |
