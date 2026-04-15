@@ -1,0 +1,63 @@
+---
+- name: Review | Check chrony package (RedHat/Suse)
+  ansible.builtin.command:
+    cmd: rpm -q chrony
+  register: _ntp_pkg_check
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family in ['RedHat', 'Suse']
+  tags: [ntp_hardening, review]
+
+- name: Review | Check chrony package (Debian)
+  ansible.builtin.command:
+    cmd: dpkg-query -W chrony
+  register: _ntp_pkg_check
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family == 'Debian'
+  tags: [ntp_hardening, review]
+
+- name: Review | Check chronyd service status
+  ansible.builtin.command:
+    cmd: systemctl is-active {{ ntp_hardening_service }}
+  register: _ntp_svc_check
+  changed_when: false
+  failed_when: false
+  tags: [ntp_hardening, review]
+
+- name: Review | Check chronyc tracking
+  ansible.builtin.command:
+    cmd: chronyc tracking
+  register: _ntp_tracking
+  changed_when: false
+  failed_when: false
+  when: not _ntp_in_container | bool
+  tags: [ntp_hardening, review]
+
+- name: Review | Check chronyc sources
+  ansible.builtin.command:
+    cmd: chronyc sources -v
+  register: _ntp_sources
+  changed_when: false
+  failed_when: false
+  when: not _ntp_in_container | bool
+  tags: [ntp_hardening, review]
+
+- name: 'Review | Check for CVE-2013-5211 risk (monitor directive)'
+  ansible.builtin.command:
+    cmd: grep -iE '^\s*(monitor|cmdallow)' {{ ntp_hardening_config_file }}
+  register: _ntp_monitor_check
+  changed_when: false
+  failed_when: false
+  tags: [ntp_hardening, review]
+
+- name: Review | Report NTP review findings
+  ansible.builtin.debug:
+    msg:
+      - 'Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})'
+      - 'Package installed: {{ _ntp_pkg_check.rc == 0 }}'
+      - 'Service active: {{ _ntp_svc_check.stdout | default("unknown") }}'
+      - 'Tracking: {{ _ntp_tracking.stdout_lines | default(["skipped - container"]) }}'
+      - 'Sources: {{ _ntp_sources.stdout_lines | default(["skipped - container"]) }}'
+      - 'CVE-2013-5211 risk (monitor directive present): {{ _ntp_monitor_check.rc == 0 }}'
+  tags: [ntp_hardening, review]
