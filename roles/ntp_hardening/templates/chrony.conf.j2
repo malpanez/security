@@ -1,0 +1,32 @@
+# Managed by Ansible — malpanez.security.ntp_hardening
+# Do not edit manually.
+
+{% for server in ntp_hardening_servers %}
+server {{ server }}
+{% endfor %}
+
+{% if ntp_hardening_allow %}
+{% for net in ntp_hardening_allow %}
+allow {{ net }}
+{% endfor %}
+{% endif %}
+{% if ntp_hardening_deny_all %}
+deny all
+{% endif %}
+
+makestep {{ ntp_hardening_makestep }}
+{% if ntp_hardening_rtcsync %}
+rtcsync
+{% endif %}
+maxdistance {{ ntp_hardening_maxdistance }}
+minsources {{ ntp_hardening_minsources }}
+{% if ntp_hardening_leapsectz %}
+leapsectz {{ ntp_hardening_leapsectz }}
+{% endif %}
+
+logdir {{ ntp_hardening_logdir }}
+log tracking measurements statistics
+logchange {{ ntp_hardening_logchange }}
+
+# CVE-2013-5211: amplification attack mitigation.
+# Do NOT add cmdallow directives to this file.
