@@ -4,8 +4,8 @@ milestone: v1.2.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 02-user-audit/02-05-PLAN.md
-last_updated: "2026-04-15T00:00:00.000Z"
-last_activity: 2026-04-15
+last_updated: "2026-04-17T17:39:00.000Z"
+last_activity: 2026-04-17
 progress:
   total_phases: 6
   completed_phases: 1
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-ntp-hardening P01-05 | 5 | 1 tasks | 2 files |
 | Phase 02 P02-01 | 670 | 1 tasks | 11 files |
 | Phase 02 P02-02 | 7 | 1 tasks | 1 files |
+| Phase 02 P02-04 | 10 | 1 tasks | 4 files |
 | Phase 02 P02-05 | 180 | 1 tasks | 2 files |
 
 ## Accumulated Context
@@ -78,6 +79,8 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 02]: user_audit: fix_service_shells defaults false — opt-in only, shell changes are destructive
 - [Phase 02]: user_audit review.yml: lastlog --before (not --time) — --before returns accounts inactive longer than N days; --time returns recently-active (inverted set)
 - [Phase 02]: user_audit review.yml: intersect(_ua_human_account_list) in inactive report — lastlog --before includes system accounts; intersection scopes to human accounts only
+- [Phase 02 P02-04]: user_audit molecule: nsswitch fix applied to all platforms (failed_when:false, no-op on Debian) — simpler than when:RedHat guard
+- [Phase 02 P02-04]: user_audit molecule: verify.yml asserts maxdays == 90 (positive) not != -1 (negative) — proves enforce ran correctly
 
 ### Pending Todos
 
