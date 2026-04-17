@@ -33,12 +33,12 @@
 
 ### user_audit
 
-- [ ] **USR-01**: review.yml reports accounts with no password expiry, UID 0 non-root, inactive accounts (>90 days), service accounts with login shells
+- [x] **USR-01**: review.yml reports accounts with no password expiry, UID 0 non-root, inactive accounts (>90 days), service accounts with login shells
 - [ ] **USR-02**: enforce.yml locks accounts inactive beyond threshold (usermod -L)
 - [ ] **USR-03**: enforce.yml sets password expiry via chage (max_days, min_days, warn_days)
 - [ ] **USR-04**: Never touches root account or system accounts (UID < 1000) — hard-coded guard
 - [ ] **USR-05**: Idempotent: repeated runs produce no changes on already-compliant accounts
-- [ ] **USR-06**: Compliance tags: SOC2 CC6.2/CC6.3, HIPAA §164.312(a)(2)(i), PCI-DSS 8.1.4/8.3.6, NIS2
+- [x] **USR-06**: Compliance tags: SOC2 CC6.2/CC6.3, HIPAA §164.312(a)(2)(i), PCI-DSS 8.1.4/8.3.6, NIS2
 
 ### rsyslog_forwarding
 
@@ -127,7 +127,7 @@
 | USR-03 | Phase 2 | Pending |
 | USR-04 | Phase 2 | Pending |
 | USR-05 | Phase 2 | Pending |
-| USR-06 | Phase 2 | Pending |
+| USR-06 | Phase 2 | Complete |
 | LOG-01 | Phase 3 | Pending |
 | LOG-02 | Phase 3 | Pending |
 | LOG-03 | Phase 3 | Pending |

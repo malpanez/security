@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-user-audit/02-01-PLAN.md
-last_updated: "2026-04-17T16:02:40.984Z"
+stopped_at: Completed 02-user-audit/02-02-PLAN.md
+last_updated: "2026-04-17T16:10:00.000Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 6
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 02 (user-audit) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-04-17
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-ntp-hardening P01-03 | 5 | 1 tasks | 1 files |
 | Phase 01-ntp-hardening P01-05 | 5 | 1 tasks | 2 files |
 | Phase 02 P02-01 | 670 | 1 tasks | 11 files |
+| Phase 02 P02-02 | 7 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 01-ntp-hardening]: chrony.conf.j2: monitor/cmdallow absent by omission (CVE-2013-5211), leapsectz conditional on non-empty value
 - [Phase 02]: user_audit: skip_users defaults to [root, halt, sync, shutdown] — system accounts never locked/modified
 - [Phase 02]: user_audit: fix_service_shells defaults false — opt-in only, shell changes are destructive
+- [Phase 02]: user_audit review.yml: lastlog --before (not --time) — --before returns accounts inactive longer than N days; --time returns recently-active (inverted set)
+- [Phase 02]: user_audit review.yml: intersect(_ua_human_account_list) in inactive report — lastlog --before includes system accounts; intersection scopes to human accounts only
 
 ### Pending Todos
 
@@ -86,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T16:02:40.968Z
-Stopped at: Completed 02-user-audit/02-01-PLAN.md
+Last session: 2026-04-17T16:10:00.000Z
+Stopped at: Completed 02-user-audit/02-02-PLAN.md
 Resume file: None
