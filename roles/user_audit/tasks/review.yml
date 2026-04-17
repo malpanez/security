@@ -1,0 +1,96 @@
+---
+- name: Review | Collect human local accounts (UID >= 1000)
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail &&
+      getent passwd |
+      awk -F: '$3 >= 1000 && $7 !~ /nologin|false/ {print $1}'
+    executable: /bin/bash
+  register: _ua_human_accounts
+  changed_when: false
+  failed_when: false
+  tags: [user_audit, review]
+
+- name: Review | Set human accounts list fact
+  ansible.builtin.set_fact:
+    _ua_human_account_list: "{{ _ua_human_accounts.stdout_lines | default([]) }}"
+  tags: [user_audit, review]
+
+- name: Review | Check password expiry for each human account
+  ansible.builtin.command:
+    cmd: chage -l {{ item }}
+  loop: "{{ _ua_human_account_list }}"
+  register: _ua_chage_results
+  changed_when: false
+  failed_when: false
+  tags: [user_audit, review]
+
+- name: Review | Identify accounts with no password expiry
+  ansible.builtin.set_fact:
+    _ua_no_expiry: >-
+      {{
+        _ua_chage_results.results | default([])
+        | selectattr('stdout', 'defined')
+        | selectattr('stdout', 'search', 'Password expires\s*:\s*never')
+        | map(attribute='item')
+        | list
+      }}
+  tags: [user_audit, review]
+
+- name: Review | Find UID 0 non-root accounts
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail &&
+      awk -F: '$3 == 0 && $1 != "root" {print $1}' /etc/passwd
+    executable: /bin/bash
+  register: _ua_uid0_nonroot
+  changed_when: false
+  failed_when: false
+  tags: [user_audit, review]
+
+- name: Review | Find accounts inactive longer than threshold
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail &&
+      lastlog --before {{ user_audit_inactive_days }} |
+      awk 'NR > 1 && $1 != "" && $1 != "Username" {print $1}'
+    executable: /bin/bash
+  register: _ua_inactive_by_days
+  changed_when: false
+  failed_when: false
+  tags: [user_audit, review]
+
+- name: Review | Find service accounts with interactive login shells
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail &&
+      awk -F: '$3 > 0 && $3 < 1000 && $7 ~ /bash|\/sh$|zsh/ {print $1}' /etc/passwd
+    executable: /bin/bash
+  register: _ua_service_login_shells
+  changed_when: false
+  failed_when: false
+  tags: [user_audit, review]
+
+- name: Review | Check passwd/shadow consistency
+  ansible.builtin.command:
+    cmd: pwck -r -q
+  register: _ua_pwck_result
+  changed_when: false
+  failed_when: false
+  tags: [user_audit, review]
+
+- name: Review | User account audit report
+  ansible.builtin.debug:
+    msg:
+      human_accounts: "{{ _ua_human_account_list }}"
+      accounts_no_expiry: "{{ _ua_no_expiry | default([]) }}"
+      uid0_nonroot: "{{ _ua_uid0_nonroot.stdout_lines | default([]) }}"
+      inactive_accounts: >-
+        {{
+          _ua_inactive_by_days.stdout_lines | default([])
+          | intersect(_ua_human_account_list)
+        }}
+      service_login_shells: "{{ _ua_service_login_shells.stdout_lines | default([]) }}"
+      pwck_rc: "{{ _ua_pwck_result.rc | default('n/a') }}"
+      pwck_output: "{{ _ua_pwck_result.stdout_lines | default([]) }}"
+  tags: [user_audit, review]
