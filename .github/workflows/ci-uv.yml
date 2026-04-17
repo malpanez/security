@@ -129,6 +129,9 @@ jobs:
           - service_accounts_transfer
           - compliance_evidence
           - cis_baseline
+          - grype_scanner
+          - aide
+          - ntp_hardening
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -182,6 +185,7 @@ jobs:
         run: |
           source .venv/bin/activate
           ansible-galaxy collection install -r requirements.yml
+          ansible-galaxy collection install . -p .ansible/collections
 
       - name: Run Molecule test
         run: |
@@ -256,6 +260,7 @@ jobs:
         run: |
           source .venv/bin/activate
           ansible-galaxy collection install -r requirements.yml
+          ansible-galaxy collection install . -p .ansible/collections
 
       - name: Run Molecule test
         run: |

@@ -162,38 +162,37 @@ jobs:
         run: |
           python3 scripts/validate-no-log.py
 
-  scan-trivy:
-    name: Trivy Security Scan
+  scan-grype:
+    name: Grype Security Scan
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Run Trivy
-        uses: aquasecurity/trivy-action@97e0b3872f55f89b95b2f65b3dbab56962816478 # 0.34.2
+      - name: Run Grype
+        uses: anchore/scan-action@7037fa011853d5a11690026fb85feee79f4c946c # v7.3.2
+        id: grype-scan
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          scanners: 'vuln,secret,misconfig'
+          path: '.'
+          fail-build: false
+          severity-cutoff: medium
+          output-format: sarif
 
       - name: Upload to GitHub Security
         uses: github/codeql-action/upload-sarif@c793b717bc78562f491db7b0e93a3a178b099162 # v4.32.5
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
-          category: 'trivy'
+          sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+          category: grype
 
-      - name: Trivy summary
-        uses: aquasecurity/trivy-action@97e0b3872f55f89b95b2f65b3dbab56962816478 # 0.34.2
+      - name: Grype summary
+        uses: anchore/scan-action@7037fa011853d5a11690026fb85feee79f4c946c # v7.3.2
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
+          path: '.'
+          fail-build: false
+          severity-cutoff: high
+          output-format: table
 
   # ============================================
   # STAGE 3: QUALITY CHECKS
@@ -333,6 +332,9 @@ jobs:
           - audit_logging
           - compliance_evidence
           - cis_baseline
+          - grype_scanner
+          - aide
+          - ntp_hardening
 
     env:
       DOCKER_DEFAULT_PLATFORM: linux/amd64
@@ -356,6 +358,7 @@ jobs:
       - name: Install Galaxy collections
         run: |
           ansible-galaxy collection install -r requirements.yml
+          ansible-galaxy collection install . -p .ansible/collections
 
       - name: Run Molecule test
         run: |
@@ -461,7 +464,7 @@ jobs:
   build-collection:
     name: Build Collection
     runs-on: ubuntu-latest
-    needs: [test-molecule, test-docker-platforms, scan-trivy]
+    needs: [test-molecule, test-docker-platforms, scan-grype]
 
     steps:
       - name: Checkout
@@ -527,7 +530,7 @@ jobs:
       - lint-yaml
       - lint-ansible
       - scan-secrets
-      - scan-trivy
+      - scan-grype
       - check-security-practices
       - check-documentation
       - check-role-structure
@@ -552,7 +555,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Stage 2: Security" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Secret scanning (Gitleaks)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Vulnerability scanning (Trivy)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Vulnerability scanning (Grype)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Code analysis (CodeQL)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Stage 3: Quality" >> $GITHUB_STEP_SUMMARY
@@ -562,7 +565,7 @@ jobs:
           echo "- ✅ Version validation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Stage 4: Testing" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Molecule tests (9 roles)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Molecule tests (11 roles)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Platform tests (8 OS versions)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Stage 5: Build" >> $GITHUB_STEP_SUMMARY
