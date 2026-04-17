@@ -1,0 +1,3 @@
+---
+user_audit_shadow_utils_package: login
+user_audit_nologin_shell: /usr/sbin/nologin
