@@ -335,6 +335,7 @@ jobs:
           - grype_scanner
           - aide
           - ntp_hardening
+          - user_audit
 
     env:
       DOCKER_DEFAULT_PLATFORM: linux/amd64
