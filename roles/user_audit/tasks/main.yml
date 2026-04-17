@@ -1,2 +1,31 @@
 ---
-# tasks file for roles/user_audit
+- name: Gather minimum facts if not already collected
+  ansible.builtin.setup:
+    gather_subset: [min]
+  when: ansible_facts == {}
+  tags: [always]
+
+- name: Assert supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ['Debian', 'RedHat', 'Suse']
+    fail_msg: >-
+      user_audit: unsupported OS family '{{ ansible_os_family }}'.
+      Supported: Debian, RedHat, Suse.
+    quiet: true
+  tags: [always]
+
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+  tags: [always]
+
+- name: Review local user accounts
+  ansible.builtin.include_tasks: review.yml
+  tags: [user_audit, review]
+
+- name: Enforce user account controls
+  ansible.builtin.include_tasks: enforce.yml
+  when:
+    - user_audit_enabled | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [user_audit, enforce]
