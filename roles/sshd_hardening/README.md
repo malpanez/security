@@ -106,6 +106,31 @@ None. Optionally consumes `security_capabilities_human_groups` and `security_cap
 
 The role writes **only** `/etc/ssh/sshd_config.d/20-auth-hardening.conf`. The OS-shipped `sshd_config` is never modified. To revert all changes, delete the drop-in file and reload sshd.
 
+### Lexicographic load order
+
+OpenSSH loads `sshd_config.d/*.conf` in **lexicographic (alphabetical) order** before the main `sshd_config`. For most directives, **the first definition wins** — a later file cannot override an earlier one.
+
+Files are numbered to control precedence:
+
+| Range | Owner | Examples |
+|-------|-------|---------|
+| `00–09` | OS vendor / cloud-init | `00-cloud-init.conf` (AWS, Azure) |
+| `10–49` | Security hardening | **`20-auth-hardening.conf`** (this role) |
+| `50–89` | Application / team config | `60-jumphost.conf` |
+| `90–99` | Local admin overrides | `99-local.conf` |
+
+**Why `20`?** The role sits above vendor defaults (which typically use `00–09`) so our settings are not silently overridden, while remaining below `50+` so team-level overrides can still take effect. If you need this role to always win, set:
+
+```yaml
+sshd_hardening_dropin_path: /etc/ssh/sshd_config.d/10-hardening.conf
+```
+
+**Conflict detection:** The role runs `sshd -t` after writing the drop-in and rolls back if validation fails. However, it does not scan for existing drop-ins that may conflict. Before enforcing, audit with:
+
+```bash
+grep -rh 'PasswordAuthentication\|PermitRootLogin\|AuthorizedKeysFile' /etc/ssh/sshd_config.d/
+```
+
 ## Testing with Molecule
 
 ```bash
