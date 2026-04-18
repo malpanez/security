@@ -19,7 +19,7 @@ The milestone closes with a version bump from 1.1.0 to 1.2.0.
 - [ ] **Phase 1: ntp_hardening** - NTP/chrony hardening with review and enforce mode (PCI-DSS 10.6.1, NIS2, SOC2 CC6.1)
 - [ ] **Phase 2: user_audit** - Local user account audit and lockout enforcement (SOC2 CC6.2, HIPAA, PCI-DSS 8.x)
 - [x] **Phase 3: rsyslog_forwarding** - Centralised log forwarding via rsyslog drop-in with optional TLS (NIS2, SOC2 CC7.2, PCI-DSS 10.5) (completed 2026-04-18)
-- [ ] **Phase 4: antivirus** - ClamAV installation, freshclam updates, and scheduled scan timer (PCI-DSS 5.2, NIS2, SOC2 CC6.8)
+- [x] **Phase 4: antivirus** - ClamAV installation, freshclam updates, and scheduled scan timer (PCI-DSS 5.2, NIS2, SOC2 CC6.8) (completed 2026-04-18)
 - [ ] **Phase 5: tls_hardening** - System-wide TLS version and cipher enforcement (PCI-DSS 4.2.1, HIPAA, NIS2)
 - [ ] **Phase 6: usbguard** - USB device control with block-by-default policy (PCI-DSS 12.3.4, HIPAA, NIS2)
 
@@ -113,7 +113,7 @@ Plans:
 - [x] 04-02: Tasks — tasks/main.yml (standard pattern, include_vars, set_fact _antivirus_in_container, include review/enforce); tasks/review.yml (stat /usr/bin/clamscan, command clamscan --version changed_when:false failed_when:false when binary exists, stat antivirus_db_dir/main.cvd, stat antivirus_db_dir/daily.cld, command systemctl is-active clamd_service changed_when:false failed_when:false, stat scan_log, slurp scan_log if exists, debug report); tasks/enforce.yml (set_fact _antivirus_in_container, dnf install EPEL RPM URL when RedHat+epel_required using ansible_distribution_major_version, apt install Debian, dnf install RedHat, zypper install Suse, file log_dir 0750 owner clamd_user, template clamd.conf.j2 notify:Restart clamd, template freshclam.conf.j2 notify:Restart freshclam, command restorecon -Rv scan_dirs loop when RedHat+selinux_contexts changed_when:'Relabeled' in stdout failed_when:false, command freshclam register changed_when:'Database updated' in stdout failed_when:rc not in [0,1] when antivirus_update_db, systemd enable+start freshclam when not container, systemd enable+start clamd when not container, template clamav-scan.service.j2 notify:Reload systemd when scan_enabled, template clamav-scan.timer.j2 notify:Reload systemd when scan_enabled, systemd enable+start clamav-scan.timer daemon_reload:true when scan_enabled+not container, stat clamd_config assert exists, warn debug if db absent+update_db false)
 - [x] 04-03: Templates — templates/clamd.conf.j2 (LogFile, LogTime yes, LogRotate yes, PidFile /run/clamd.scan/clamd.pid, TemporaryDirectory /var/tmp, DatabaseDirectory, LocalSocket /run/clamd.scan/clamd.sock, User clamd_user, MaxFileSize/MaxScanSize, ScanPE/ELF/OLE2/Mail/Archive yes, DetectPUA yes, FollowFileSymlinks/FollowDirectorySymlinks false); templates/freshclam.conf.j2 (DatabaseOwner, UpdateLogFile, LogRotate yes, LogTime yes, DatabaseDirectory, DatabaseMirror database.clamav.net, Checks freshclam_checks, NotifyClamd pointing to clamd_config); templates/clamav-scan.service.j2 ([Unit] After clamd services ConditionPathExists=/usr/bin/clamscan; [Service] Type=oneshot User=root ExecStart=/usr/bin/clamscan --recursive --infected --log=scan_log scan_dirs); templates/clamav-scan.timer.j2 ([Timer] OnCalendar scan_schedule Persistent=true; [Install] WantedBy=timers.target)
 - [x] 04-04: Molecule — molecule.yml (ubuntu2204 + rockylinux9, privileged:true); prepare.yml (Rocky 9 nsswitch fix); converge.yml (antivirus_enabled:true, security_mode:enforce, antivirus_update_db:false — skips 200MB download in CI, antivirus_scan_enabled:true); verify.yml (assert clamav package installed via package_facts, assert clamd.conf deployed, assert freshclam.conf deployed, assert clamav-scan.service and .timer deployed when scan_enabled, skip service state assertions when _antivirus_in_container, skip db presence assertion when antivirus_update_db false)
-- [ ] 04-05: CI integration — add antivirus to ci-uv.yml and ci-cd-enterprise.yml matrices; reinstall collection; run yamllint and ansible-lint --profile production confirming 0 errors; verify EPEL URL pattern uses ansible_distribution_major_version (not hardcoded 9)
+- [x] 04-05: CI integration — add antivirus to ci-uv.yml and ci-cd-enterprise.yml matrices; reinstall collection; run yamllint and ansible-lint --profile production confirming 0 errors; verify EPEL URL pattern uses ansible_distribution_major_version (not hardcoded 9)
 
 ---
 
@@ -186,6 +186,6 @@ See REQUIREMENTS.md Traceability section for full requirement-to-phase mapping.
 | 1. ntp_hardening | 1/5 | In Progress|  |
 | 2. user_audit | 1/5 | In Progress|  |
 | 3. rsyslog_forwarding | 5/5 | Complete   | 2026-04-18 |
-| 4. antivirus | 3/5 | In Progress|  |
+| 4. antivirus | 5/5 | Complete   | 2026-04-18 |
 | 5. tls_hardening | 0/5 | Not started | - |
 | 6. usbguard | 0/5 | Not started | - |
