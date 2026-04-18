@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-rsyslog-forwarding 03-01-PLAN.md
-last_updated: "2026-04-18T10:42:34.305Z"
+stopped_at: Completed 03-rsyslog-forwarding 03-02-PLAN.md
+last_updated: "2026-04-18T10:46:59.143Z"
 last_activity: 2026-04-18
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 15
-  completed_plans: 10
+  completed_plans: 11
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 03 (rsyslog-forwarding) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-04-18
 
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P02-04 | 10 | 1 tasks | 4 files |
 | Phase 02 P02-05 | 180 | 1 tasks | 2 files |
 | Phase 03-rsyslog-forwarding P03-01 | 12 | 1 tasks | 12 files |
+| Phase 03-rsyslog-forwarding P03-02 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,8 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 02 P02-04]: user_audit molecule: verify.yml asserts maxdays == 90 (positive) not != -1 (negative) — proves enforce ran correctly
 - [Phase 03-rsyslog-forwarding]: rsyslog_forwarding: Suse uses rsyslog-module-gtls (not rsyslog-gnutls) for TLS — different package name on openSUSE/SLES
 - [Phase 03-rsyslog-forwarding]: rsyslog_forwarding: _rsyslog_in_container bool guard in handler matches _ntp_in_container pattern from ntp_hardening
+- [Phase 03-rsyslog-forwarding]: rsyslog_forwarding enforce.yml: all tasks carry rsyslog_forwarding + section-level tags (install/configure/service/verify) for fine-grained --tags targeting
+- [Phase 03-rsyslog-forwarding]: rsyslog_forwarding: TLS pre-flight assertions (anonymous blocked, UDP blocked, CA cert existence checked) run before package install to fail fast
 
 ### Pending Todos
 
@@ -96,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-18T10:42:34.297Z
-Stopped at: Completed 03-rsyslog-forwarding 03-01-PLAN.md
+Last session: 2026-04-18T10:46:59.135Z
+Stopped at: Completed 03-rsyslog-forwarding 03-02-PLAN.md
 Resume file: None
