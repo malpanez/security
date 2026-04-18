@@ -1,0 +1,65 @@
+---
+argument_specs:
+  main:
+    short_description: ClamAV antivirus installation and configuration
+    options:
+      antivirus_enabled:
+        type: bool
+        default: false
+        description: >-
+          Gate variable. Set to true with security_mode=enforce to install and
+          configure ClamAV. Review tasks always run regardless.
+      antivirus_update_db:
+        type: bool
+        default: true
+        description: >-
+          Run freshclam to update the virus database during role execution.
+          Set false in CI to skip the 200MB freshclam download.
+      antivirus_scan_enabled:
+        type: bool
+        default: true
+        description: >-
+          Deploy a systemd scan timer that runs clamscan on a schedule.
+      antivirus_scan_dirs:
+        type: list
+        elements: str
+        description: >-
+          List of directories to scan with clamscan.
+        default:
+          - /home
+          - /tmp
+          - /var/tmp
+      antivirus_scan_schedule:
+        type: str
+        default: daily
+        description: >-
+          systemd OnCalendar value for the scan timer. Accepts any systemd
+          calendar expression (e.g. 'daily', '*-*-* 02:00:00').
+      antivirus_scan_log:
+        type: str
+        default: /var/log/clamav/scan.log
+        description: Path to the clamscan output log file.
+      antivirus_freshclam_checks:
+        type: int
+        default: 12
+        description: >-
+          Value for the freshclam Checks directive. Controls how many times
+          per day freshclam checks for database updates.
+      antivirus_max_file_size:
+        type: str
+        default: 25M
+        description: >-
+          MaxFileSize directive for ClamAV. Files larger than this are not
+          scanned. Accepts size suffixes (M, K).
+      antivirus_max_scan_size:
+        type: str
+        default: 100M
+        description: >-
+          MaxScanSize directive for ClamAV. Maximum data to scan from a file
+          (for compressed/archive scanning). Accepts size suffixes (M, K).
+      antivirus_selinux_contexts:
+        type: bool
+        default: true
+        description: >-
+          When true, restore SELinux file contexts and set the
+          antivirus_can_scan_system SELinux boolean on RHEL-family hosts.

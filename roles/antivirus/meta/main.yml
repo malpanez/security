@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  author: Miguel Alpanez
+  description: >-
+    ClamAV antivirus installation, freshclam updates, and scheduled scan timer.
+    Supports review mode (audit-only) and enforce mode. PCI-DSS 5.2,
+    NIS2 Art.21(2)(e), SOC2 CC6.8.
+  license: MIT
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - antivirus
+    - clamav
+    - security
+    - hardening
+    - compliance
+    - pci-dss
+    - nis2
+    - soc2
+  platforms:
+    - name: Debian
+      versions: [buster, bullseye, bookworm]
+    - name: Ubuntu
+      versions: [bionic, focal, jammy]
+    - name: EL
+      versions: [all]
+dependencies: []

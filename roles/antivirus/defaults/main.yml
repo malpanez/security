@@ -1,0 +1,23 @@
+---
+antivirus_enabled: false
+
+antivirus_update_db: true
+
+antivirus_scan_enabled: true
+
+antivirus_scan_dirs:
+  - /home
+  - /tmp
+  - /var/tmp
+
+antivirus_scan_schedule: daily
+
+antivirus_scan_log: /var/log/clamav/scan.log
+
+antivirus_freshclam_checks: 12
+
+antivirus_max_file_size: 25M
+
+antivirus_max_scan_size: 100M
+
+antivirus_selinux_contexts: true
