@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-antivirus 04-03-PLAN.md
-last_updated: "2026-04-18T19:34:00.616Z"
+stopped_at: Completed 04-antivirus 04-04-PLAN.md
+last_updated: "2026-04-18T19:38:00.265Z"
 last_activity: 2026-04-18
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 21
-  completed_plans: 18
+  completed_plans: 19
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 04 (antivirus) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-04-18
 
@@ -69,6 +69,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 04-antivirus P04-01 | 19 | 1 tasks | 8 files |
 | Phase 04-antivirus P04-02 | 8 | 3 tasks | 3 files |
 | Phase 04-antivirus P04-03 | 4 | 1 tasks | 4 files |
+| Phase 04-antivirus P04-04 | 3 | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,8 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 04-antivirus]: antivirus: SELinux boolean antivirus_can_scan_system set persistently + restorecon on log dir and scan dirs
 - [Phase 04-antivirus]: antivirus templates: clamav-scan.service.j2 uses Jinja2 for loop with loop.last backslash continuation for ExecStart multi-dir args
 - [Phase 04-antivirus]: antivirus templates: freshclam NotifyClamd uses antivirus_clamd_config (config file path, not socket path)
+- [Phase 04-antivirus]: antivirus molecule: antivirus_update_db:false in converge.yml skips 200MB freshclam download in CI containers
+- [Phase 04-antivirus]: antivirus molecule: include_vars OS-family in verify.yml resolves OS-specific config paths for assertions
 
 ### Pending Todos
 
@@ -117,6 +120,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-18T19:34:00.608Z
-Stopped at: Completed 04-antivirus 04-03-PLAN.md
+Last session: 2026-04-18T19:38:00.158Z
+Stopped at: Completed 04-antivirus 04-04-PLAN.md
 Resume file: None
