@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 03-rsyslog-forwarding 03-06-PLAN.md
-last_updated: "2026-04-18T11:37:34.527Z"
+status: executing
+stopped_at: Completed 04-antivirus 04-01-PLAN.md
+last_updated: "2026-04-18T19:22:04.997Z"
 last_activity: 2026-04-18
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 16
-  completed_plans: 15
+  total_plans: 21
+  completed_plans: 16
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-14)
 
 **Core value:** Each new role shows the auditor the deficiency first (review mode) then fixes it (enforce mode)
-**Current focus:** Phase 03 — rsyslog-forwarding
+**Current focus:** Phase 04 — antivirus
 
 ## Current Position
 
-Phase: 03 (rsyslog-forwarding) — EXECUTING
-Plan: 1 of 1
-Status: Phase complete — ready for verification
+Phase: 04 (antivirus) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
 Last activity: 2026-04-18
 
 Progress: [░░░░░░░░░░] 0%
@@ -66,6 +66,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03-rsyslog-forwarding P03-04 | 3 | 1 tasks | 4 files |
 | Phase 03-rsyslog-forwarding P03-05 | 5 | 1 tasks | 2 files |
 | Phase 03-rsyslog-forwarding P06 | 3 | 1 tasks | 1 files |
+| Phase 04-antivirus P04-01 | 19 | 1 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,8 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 03-rsyslog-forwarding]: rsyslog_forwarding molecule: verify.yml container-aware guards (not _in_container) for rsyslogd -N1 and systemctl checks
 - [Phase 03-rsyslog-forwarding]: rsyslog_forwarding inserted after user_audit in both CI matrices — maintains consistent ordering of new roles
 - [Phase 03-rsyslog-forwarding]: _rsyslog_configured_dest: regex_search extracts Target= from b64decoded drop-in; default('not configured') when drop-in absent (LOG-01 gap closure)
+- [Phase 04-antivirus]: antivirus: antivirus_update_db:false in Molecule CI (skip 200MB freshclam download) — analogous to aide_init_db:false pattern
+- [Phase 04-antivirus]: antivirus: _antivirus_in_container bool guard in handlers matches ntp_hardening/_rsyslog pattern
 
 ### Pending Todos
 
@@ -108,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-18T11:37:34.513Z
-Stopped at: Completed 03-rsyslog-forwarding 03-06-PLAN.md
+Last session: 2026-04-18T19:22:04.977Z
+Stopped at: Completed 04-antivirus 04-01-PLAN.md
 Resume file: None

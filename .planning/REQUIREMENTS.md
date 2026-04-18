@@ -52,12 +52,12 @@
 ### antivirus (ClamAV)
 
 - [ ] **AV-01**: review.yml reports ClamAV installation status, DB age, clamd running state, last scan date
-- [ ] **AV-02**: enforce.yml installs clamav + daemon packages (names vary per OS)
+- [x] **AV-02**: enforce.yml installs clamav + daemon packages (names vary per OS)
 - [ ] **AV-03**: Deploys freshclam config and enables freshclam timer/service for DB updates
 - [ ] **AV-04**: Deploys systemd timer for periodic scans, reports to /var/log/clamav/
-- [ ] **AV-05**: antivirus_update_db (default true) — set false in CI molecule to skip 200MB download
-- [ ] **AV-06**: Container-aware: skip freshclam and scan in containers
-- [ ] **AV-07**: Compliance tags: PCI-DSS 5.2.1/5.3.2, NIS2 Art.21(2)(e), SOC2 CC6.8
+- [x] **AV-05**: antivirus_update_db (default true) — set false in CI molecule to skip 200MB download
+- [x] **AV-06**: Container-aware: skip freshclam and scan in containers
+- [x] **AV-07**: Compliance tags: PCI-DSS 5.2.1/5.3.2, NIS2 Art.21(2)(e), SOC2 CC6.8
 
 ### tls_hardening
 
@@ -135,12 +135,12 @@
 | LOG-05 | Phase 3 | Complete |
 | LOG-06 | Phase 3 | Complete |
 | AV-01 | Phase 4 | Pending |
-| AV-02 | Phase 4 | Pending |
+| AV-02 | Phase 4 | Complete |
 | AV-03 | Phase 4 | Pending |
 | AV-04 | Phase 4 | Pending |
-| AV-05 | Phase 4 | Pending |
-| AV-06 | Phase 4 | Pending |
-| AV-07 | Phase 4 | Pending |
+| AV-05 | Phase 4 | Complete |
+| AV-06 | Phase 4 | Complete |
+| AV-07 | Phase 4 | Complete |
 | TLS-01 | Phase 5 | Pending |
 | TLS-02 | Phase 5 | Pending |
 | TLS-03 | Phase 5 | Pending |
