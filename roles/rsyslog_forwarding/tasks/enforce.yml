@@ -1,0 +1,150 @@
+---
+- name: Enforce | Assert forwarding host is defined
+  ansible.builtin.assert:
+    that:
+      - rsyslog_forwarding_host | length > 0
+    fail_msg: "rsyslog_forwarding_host must be set to a non-empty string."
+    quiet: true
+  tags: [rsyslog_forwarding, enforce, configure]
+
+- name: Enforce | Assert TLS protocol is tcp
+  ansible.builtin.assert:
+    that:
+      - rsyslog_forwarding_protocol == 'tcp'
+    fail_msg: "TLS requires protocol=tcp; UDP is not supported by GnuTLS."
+    quiet: true
+  when: rsyslog_forwarding_tls_enabled | bool
+  tags: [rsyslog_forwarding, enforce, configure]
+
+- name: Enforce | Assert TLS auth mode is not anonymous
+  ansible.builtin.assert:
+    that:
+      - rsyslog_forwarding_tls_auth_mode != 'anonymous'
+    fail_msg: "anonymous TLS auth mode is explicitly blocked."
+    quiet: true
+  when: rsyslog_forwarding_tls_enabled | bool
+  tags: [rsyslog_forwarding, enforce, configure]
+
+- name: Enforce | Stat CA cert on managed host
+  ansible.builtin.stat:
+    path: "{{ rsyslog_forwarding_tls_ca_cert }}"
+  register: _rsyslog_ca_cert_stat
+  when: rsyslog_forwarding_tls_enabled | bool
+  tags: [rsyslog_forwarding, enforce, configure]
+
+- name: Enforce | Assert CA cert exists
+  ansible.builtin.assert:
+    that:
+      - _rsyslog_ca_cert_stat.stat.exists
+    fail_msg: "CA cert not found at {{ rsyslog_forwarding_tls_ca_cert }}."
+    quiet: true
+  when: rsyslog_forwarding_tls_enabled | bool
+  tags: [rsyslog_forwarding, enforce, configure]
+
+- name: Enforce | Install rsyslog (RedHat)
+  ansible.builtin.dnf:
+    name: "{{ rsyslog_forwarding_package }}"
+    state: present
+  when: ansible_os_family == 'RedHat'
+  tags: [rsyslog_forwarding, enforce, install]
+
+- name: Enforce | Install rsyslog (Debian)
+  ansible.builtin.apt:
+    name: "{{ rsyslog_forwarding_package }}"
+    state: present
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+  tags: [rsyslog_forwarding, enforce, install]
+
+- name: Enforce | Install rsyslog (Suse)
+  community.general.zypper:
+    name: "{{ rsyslog_forwarding_package }}"
+    state: present
+  when: ansible_os_family == 'Suse'
+  tags: [rsyslog_forwarding, enforce, install]
+
+- name: Enforce | Install rsyslog TLS package (RedHat)
+  ansible.builtin.dnf:
+    name: "{{ rsyslog_forwarding_tls_package }}"
+    state: present
+  when:
+    - ansible_os_family == 'RedHat'
+    - rsyslog_forwarding_tls_enabled | bool
+  tags: [rsyslog_forwarding, enforce, install]
+
+- name: Enforce | Install rsyslog TLS package (Debian)
+  ansible.builtin.apt:
+    name: "{{ rsyslog_forwarding_tls_package }}"
+    state: present
+    cache_valid_time: 3600
+  when:
+    - ansible_os_family == 'Debian'
+    - rsyslog_forwarding_tls_enabled | bool
+  tags: [rsyslog_forwarding, enforce, install]
+
+- name: Enforce | Install rsyslog TLS package (Suse)
+  community.general.zypper:
+    name: "{{ rsyslog_forwarding_tls_package }}"
+    state: present
+  when:
+    - ansible_os_family == 'Suse'
+    - rsyslog_forwarding_tls_enabled | bool
+  tags: [rsyslog_forwarding, enforce, install]
+
+- name: Enforce | Ensure drop-in directory exists
+  ansible.builtin.file:
+    path: "{{ rsyslog_forwarding_dropin_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [rsyslog_forwarding, enforce, configure]
+
+- name: Enforce | Deploy forwarding drop-in
+  ansible.builtin.template:
+    src: 99-forwarding.conf.j2
+    dest: "{{ rsyslog_forwarding_dropin_dir }}/99-forwarding.conf"
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "rsyslogd -N1 -f %s"
+    backup: true
+  notify: Restart rsyslog
+  tags: [rsyslog_forwarding, enforce, configure]
+
+- name: Enforce | Deploy logrotate stanza
+  ansible.builtin.template:
+    src: rsyslog-logrotate.j2
+    dest: /etc/logrotate.d/rsyslog-forwarding
+    owner: root
+    group: root
+    mode: "0644"
+  when: rsyslog_forwarding_logrotate_enabled | bool
+  tags: [rsyslog_forwarding, enforce, configure]
+
+- name: Enforce | Enable and start rsyslog
+  ansible.builtin.systemd:
+    name: "{{ rsyslog_forwarding_service }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  when: not _rsyslog_in_container | bool
+  tags: [rsyslog_forwarding, enforce, service]
+
+- name: Enforce | Run rsyslogd syntax check
+  ansible.builtin.command:
+    cmd: rsyslogd -N1 -f {{ rsyslog_forwarding_dropin_dir }}/99-forwarding.conf
+  register: _rsyslog_syntax_check
+  changed_when: false
+  failed_when: _rsyslog_syntax_check.rc != 0
+  when: not _rsyslog_in_container | bool
+  tags: [rsyslog_forwarding, enforce, verify]
+
+- name: Enforce | Assert rsyslog service is active
+  ansible.builtin.command:
+    cmd: systemctl is-active {{ rsyslog_forwarding_service }}
+  register: _rsyslog_svc_active
+  changed_when: false
+  failed_when: _rsyslog_svc_active.stdout != 'active'
+  when: not _rsyslog_in_container | bool
+  tags: [rsyslog_forwarding, enforce, verify]
