@@ -33,16 +33,21 @@
         fail_msg: 'aide binary not found at /usr/bin/aide or /usr/sbin/aide'
         quiet: true
 
-    - name: Check aide config exists
+    - name: Check aide config exists (Debian path)
       ansible.builtin.stat:
-        path: "{{ aide_config_file | default('/etc/aide/aide.conf') }}"
-      register: _aide_cfg
+        path: /etc/aide/aide.conf
+      register: _aide_cfg_deb
+
+    - name: Check aide config exists (RedHat/Suse path)
+      ansible.builtin.stat:
+        path: /etc/aide.conf
+      register: _aide_cfg_rh
 
     - name: Assert aide config deployed
       ansible.builtin.assert:
         that:
-          - _aide_cfg.stat.exists
-        fail_msg: 'aide config not found'
+          - _aide_cfg_deb.stat.exists or _aide_cfg_rh.stat.exists
+        fail_msg: 'aide config not found at /etc/aide/aide.conf or /etc/aide.conf'
         quiet: true
 
     - name: Check aide-check service unit exists
@@ -85,9 +90,13 @@
         quiet: true
       when: not _in_container
 
+    - name: Set resolved aide config path
+      ansible.builtin.set_fact:
+        _aide_resolved_cfg: "{{ '/etc/aide.conf' if _aide_cfg_rh.stat.exists else '/etc/aide/aide.conf' }}"
+
     - name: Verify aide config contains expected paths
       ansible.builtin.command:
-        cmd: grep -c '/etc' "{{ aide_config_file | default('/etc/aide/aide.conf') }}"
+        cmd: grep -c '/etc' "{{ _aide_resolved_cfg }}"
       register: _cfg_paths
       changed_when: false
 
