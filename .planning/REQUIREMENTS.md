@@ -34,10 +34,10 @@
 ### user_audit
 
 - [x] **USR-01**: review.yml reports accounts with no password expiry, UID 0 non-root, inactive accounts (>90 days), service accounts with login shells
-- [ ] **USR-02**: enforce.yml locks accounts inactive beyond threshold (usermod -L)
-- [ ] **USR-03**: enforce.yml sets password expiry via chage (max_days, min_days, warn_days)
-- [ ] **USR-04**: Never touches root account or system accounts (UID < 1000) — hard-coded guard
-- [ ] **USR-05**: Idempotent: repeated runs produce no changes on already-compliant accounts
+- [x] **USR-02**: enforce.yml locks accounts inactive beyond threshold (usermod -L)
+- [x] **USR-03**: enforce.yml sets password expiry via chage (max_days, min_days, warn_days)
+- [x] **USR-04**: Never touches root account or system accounts (UID < 1000) — hard-coded guard
+- [x] **USR-05**: Idempotent: repeated runs produce no changes on already-compliant accounts
 - [x] **USR-06**: Compliance tags: SOC2 CC6.2/CC6.3, HIPAA §164.312(a)(2)(i), PCI-DSS 8.1.4/8.3.6, NIS2
 
 ### rsyslog_forwarding
@@ -54,7 +54,7 @@
 - [x] **AV-01**: review.yml reports ClamAV installation status, DB age, clamd running state, last scan date
 - [x] **AV-02**: enforce.yml installs clamav + daemon packages (names vary per OS)
 - [x] **AV-03**: Deploys freshclam config and enables freshclam timer/service for DB updates
-- [ ] **AV-04**: Deploys systemd timer for periodic scans, reports to /var/log/clamav/
+- [x] **AV-04**: Deploys systemd timer for periodic scans, reports to /var/log/clamav/
 - [x] **AV-05**: antivirus_update_db (default true) — set false in CI molecule to skip 200MB download
 - [x] **AV-06**: Container-aware: skip freshclam and scan in containers
 - [x] **AV-07**: Compliance tags: PCI-DSS 5.2.1/5.3.2, NIS2 Art.21(2)(e), SOC2 CC6.8
@@ -123,10 +123,10 @@
 | NTP-05 | Phase 1 | Pending |
 | NTP-06 | Phase 1 | Complete |
 | USR-01 | Phase 2 | Pending |
-| USR-02 | Phase 2 | Pending |
-| USR-03 | Phase 2 | Pending |
-| USR-04 | Phase 2 | Pending |
-| USR-05 | Phase 2 | Pending |
+| USR-02 | Phase 2 | Complete |
+| USR-03 | Phase 2 | Complete |
+| USR-04 | Phase 2 | Complete |
+| USR-05 | Phase 2 | Complete |
 | USR-06 | Phase 2 | Complete |
 | LOG-01 | Phase 3 | Complete |
 | LOG-02 | Phase 3 | Complete |
@@ -137,7 +137,7 @@
 | AV-01 | Phase 4 | Complete |
 | AV-02 | Phase 4 | Complete |
 | AV-03 | Phase 4 | Complete |
-| AV-04 | Phase 4 | Pending |
+| AV-04 | Phase 4 | Complete |
 | AV-05 | Phase 4 | Complete |
 | AV-06 | Phase 4 | Complete |
 | AV-07 | Phase 4 | Complete |
