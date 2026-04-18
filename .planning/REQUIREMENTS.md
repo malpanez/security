@@ -11,7 +11,7 @@
 - [ ] **STD-02**: tasks/main.yml uses review/enforce gate pattern (security_mode + role_enabled)
 - [ ] **STD-03**: review.yml contains only read-only tasks (command with changed_when: false, debug)
 - [ ] **STD-04**: enforce.yml split into tagged sections: install / configure / service / verify
-- [ ] **STD-05**: All modules use FQCN (ansible.builtin.*, community.general.*, ansible.posix.*)
+- [x] **STD-05**: All modules use FQCN (ansible.builtin.*, community.general.*, ansible.posix.*)
 - [x] **STD-06**: Multi-OS via ansible_os_family + vars/Debian.yml + vars/RedHat.yml + vars/Suse.yml
 - [x] **STD-07**: meta/main.yml valid Galaxy schema (EL versions: [all], Debian: buster/bullseye/bookworm, Ubuntu: bionic/focal/jammy)
 - [x] **STD-08**: meta/argument_specs.yml documents all defaults variables
@@ -46,8 +46,8 @@
 - [ ] **LOG-02**: enforce.yml deploys /etc/rsyslog.d/99-forwarding.conf drop-in (never touches rsyslog.conf)
 - [ ] **LOG-03**: Supports TCP (default) and UDP forwarding
 - [ ] **LOG-04**: Optional TLS via RsyslogGnuTLS (rsyslog_forwarding_tls_enabled)
-- [ ] **LOG-05**: Configurable remote host (rsyslog_forwarding_host required), port (default 514)
-- [ ] **LOG-06**: Compliance tags: NIS2 Art.21, SOC2 CC7.2, PCI-DSS 10.5.1/10.5.4, HIPAA §164.312(b)
+- [x] **LOG-05**: Configurable remote host (rsyslog_forwarding_host required), port (default 514)
+- [x] **LOG-06**: Compliance tags: NIS2 Art.21, SOC2 CC7.2, PCI-DSS 10.5.1/10.5.4, HIPAA §164.312(b)
 
 ### antivirus (ClamAV)
 
@@ -106,7 +106,7 @@
 | STD-02 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Pending |
 | STD-03 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Pending |
 | STD-04 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Pending |
-| STD-05 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Pending |
+| STD-05 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
 | STD-06 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
 | STD-07 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
 | STD-08 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
@@ -132,8 +132,8 @@
 | LOG-02 | Phase 3 | Pending |
 | LOG-03 | Phase 3 | Pending |
 | LOG-04 | Phase 3 | Pending |
-| LOG-05 | Phase 3 | Pending |
-| LOG-06 | Phase 3 | Pending |
+| LOG-05 | Phase 3 | Complete |
+| LOG-06 | Phase 3 | Complete |
 | AV-01 | Phase 4 | Pending |
 | AV-02 | Phase 4 | Pending |
 | AV-03 | Phase 4 | Pending |

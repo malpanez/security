@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-user-audit/02-05-PLAN.md
-last_updated: "2026-04-17T17:39:00.000Z"
-last_activity: 2026-04-17
+stopped_at: Completed 03-rsyslog-forwarding 03-01-PLAN.md
+last_updated: "2026-04-18T10:42:34.305Z"
+last_activity: 2026-04-18
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 10
-  completed_plans: 6
+  total_plans: 15
+  completed_plans: 10
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-14)
 
 **Core value:** Each new role shows the auditor the deficiency first (review mode) then fixes it (enforce mode)
-**Current focus:** Phase 02 — user-audit
+**Current focus:** Phase 03 — rsyslog-forwarding
 
 ## Current Position
 
-Phase: 02 (user-audit) — EXECUTING
-Plan: 5 of 5 (COMPLETE)
-Status: Phase complete
-Last activity: 2026-04-15
+Phase: 03 (rsyslog-forwarding) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-04-18
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P02-02 | 7 | 1 tasks | 1 files |
 | Phase 02 P02-04 | 10 | 1 tasks | 4 files |
 | Phase 02 P02-05 | 180 | 1 tasks | 2 files |
+| Phase 03-rsyslog-forwarding P03-01 | 12 | 1 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 02]: user_audit review.yml: intersect(_ua_human_account_list) in inactive report — lastlog --before includes system accounts; intersection scopes to human accounts only
 - [Phase 02 P02-04]: user_audit molecule: nsswitch fix applied to all platforms (failed_when:false, no-op on Debian) — simpler than when:RedHat guard
 - [Phase 02 P02-04]: user_audit molecule: verify.yml asserts maxdays == 90 (positive) not != -1 (negative) — proves enforce ran correctly
+- [Phase 03-rsyslog-forwarding]: rsyslog_forwarding: Suse uses rsyslog-module-gtls (not rsyslog-gnutls) for TLS — different package name on openSUSE/SLES
+- [Phase 03-rsyslog-forwarding]: rsyslog_forwarding: _rsyslog_in_container bool guard in handler matches _ntp_in_container pattern from ntp_hardening
 
 ### Pending Todos
 
@@ -93,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-15T00:00:00.000Z
-Stopped at: Completed 02-user-audit/02-05-PLAN.md
+Last session: 2026-04-18T10:42:34.297Z
+Stopped at: Completed 03-rsyslog-forwarding 03-01-PLAN.md
 Resume file: None
