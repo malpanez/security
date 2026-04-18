@@ -16,17 +16,21 @@
       ansible.builtin.set_fact:
         _in_container: "{{ _virt_check.rc == 0 }}"
 
-    - name: Check aide binary present
+    - name: Check aide binary present (Debian path)
       ansible.builtin.stat:
         path: /usr/bin/aide
-      register: _aide_bin
+      register: _aide_bin_usr
+
+    - name: Check aide binary present (RedHat path)
+      ansible.builtin.stat:
+        path: /usr/sbin/aide
+      register: _aide_bin_sbin
 
     - name: Assert aide binary installed
       ansible.builtin.assert:
         that:
-          - _aide_bin.stat.exists
-          - _aide_bin.stat.executable
-        fail_msg: 'aide binary not found at /usr/bin/aide'
+          - _aide_bin_usr.stat.exists or _aide_bin_sbin.stat.exists
+        fail_msg: 'aide binary not found at /usr/bin/aide or /usr/sbin/aide'
         quiet: true
 
     - name: Check aide config exists

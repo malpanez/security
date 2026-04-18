@@ -2,6 +2,19 @@
 - name: Load OS-specific variables
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
 
+- name: Detect containerized environment
+  ansible.builtin.command:
+    cmd: systemd-detect-virt --container
+  register: _cis_virt_check
+  changed_when: false
+  failed_when: false
+  tags: [always]
+
+- name: Set container fact
+  ansible.builtin.set_fact:
+    _cis_in_container: "{{ _cis_virt_check.rc == 0 }}"
+  tags: [always]
+
 - name: Execute CIS baseline tasks when enabled
   when: cis_baseline_enabled | bool
   block:

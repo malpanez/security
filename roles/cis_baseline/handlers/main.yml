@@ -3,3 +3,5 @@
   ansible.builtin.service:
     name: "{{ cis_baseline_sshd_service_name }}"
     state: restarted
+  when: not _cis_in_container | default(false) | bool
+  changed_when: true
