@@ -1,0 +1,108 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Detect container environment
+      ansible.builtin.command:
+        cmd: systemd-detect-virt --container
+      register: _virt_check
+      changed_when: false
+      failed_when: false
+
+    - name: Set container flag
+      ansible.builtin.set_fact:
+        _in_container: "{{ _virt_check.rc == 0 }}"
+
+    - name: Check aide binary present
+      ansible.builtin.stat:
+        path: /usr/bin/aide
+      register: _aide_bin
+
+    - name: Assert aide binary installed
+      ansible.builtin.assert:
+        that:
+          - _aide_bin.stat.exists
+          - _aide_bin.stat.executable
+        fail_msg: 'aide binary not found at /usr/bin/aide'
+        quiet: true
+
+    - name: Check aide config exists
+      ansible.builtin.stat:
+        path: "{{ aide_config_file | default('/etc/aide/aide.conf') }}"
+      register: _aide_cfg
+
+    - name: Assert aide config deployed
+      ansible.builtin.assert:
+        that:
+          - _aide_cfg.stat.exists
+        fail_msg: 'aide config not found'
+        quiet: true
+
+    - name: Check aide-check service unit exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/aide-check.service
+      register: _aide_svc
+
+    - name: Assert aide-check service unit present
+      ansible.builtin.assert:
+        that:
+          - _aide_svc.stat.exists
+        fail_msg: 'aide-check.service not found'
+        quiet: true
+
+    - name: Check aide-check timer unit exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/aide-check.timer
+      register: _aide_timer
+
+    - name: Assert aide-check timer unit present
+      ansible.builtin.assert:
+        that:
+          - _aide_timer.stat.exists
+        fail_msg: 'aide-check.timer not found'
+        quiet: true
+
+    - name: Check aide-check timer is enabled
+      ansible.builtin.command:
+        cmd: systemctl is-enabled aide-check.timer
+      register: _timer_state
+      changed_when: false
+      failed_when: false
+      when: not _in_container
+
+    - name: Assert aide-check timer enabled
+      ansible.builtin.assert:
+        that:
+          - _timer_state.stdout in ['enabled', 'static']
+        fail_msg: 'aide-check.timer is not enabled (got: {{ _timer_state.stdout }})'
+        quiet: true
+      when: not _in_container
+
+    - name: Verify aide config contains expected paths
+      ansible.builtin.command:
+        cmd: grep -c '/etc' "{{ aide_config_file | default('/etc/aide/aide.conf') }}"
+      register: _cfg_paths
+      changed_when: false
+
+    - name: Assert aide config has watched paths
+      ansible.builtin.assert:
+        that:
+          - _cfg_paths.stdout | int > 0
+        fail_msg: 'aide config has no watched paths defined'
+        quiet: true
+
+    - name: Check aide log directory exists
+      ansible.builtin.stat:
+        path: /var/log/aide
+      register: _aide_log_dir
+
+    - name: Assert aide log directory present
+      ansible.builtin.assert:
+        that:
+          - _aide_log_dir.stat.exists
+          - _aide_log_dir.stat.isdir
+        fail_msg: '/var/log/aide directory not found'
+        quiet: true

@@ -54,7 +54,7 @@
   ansible.builtin.debug:
     msg:
       - "Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
-      - "rsyslog installed: {{ _rsyslog_pkg_check.rc == 0 }}"
+      - "rsyslog installed: {{ (_rsyslog_pkg_check.rc | default(-1)) == 0 }}"
       - "Forwarding drop-in exists: {{ _rsyslog_dropin_stat.stat.exists }}"
       - "Destination: {{ _rsyslog_configured_dest | default('not configured') }}"
       - "Service status: {{ _rsyslog_svc_check.stdout | default('unknown') }}"

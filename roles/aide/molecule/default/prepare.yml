@@ -1,0 +1,12 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Fix Rocky 9 nsswitch for sudo/PAM in containers
+      ansible.builtin.command:
+        cmd: sed -i 's/ sss//g' /etc/nsswitch.conf
+      changed_when: true
+      failed_when: false

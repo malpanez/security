@@ -1,0 +1,8 @@
+---
+aide_package: aide
+aide_service_prefix: aide
+aide_config_file: /etc/aide.conf
+aide_init_cmd: aide --init
+aide_db_path: /var/lib/aide/aide.db.gz
+aide_db_new_path: /var/lib/aide/aide.db.new.gz
+aide_init_db_path: /var/lib/aide/aide.db.new.gz

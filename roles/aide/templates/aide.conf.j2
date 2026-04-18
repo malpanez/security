@@ -1,0 +1,45 @@
+{{ ansible_managed | comment }}
+# /etc/aide/aide.conf (or /etc/aide.conf on EL)
+# Managed by malpanez.security.aide role
+# Frameworks: CIS Benchmark 1.3 / NIST SP 800-53 SI-7 / NIS2 Article 21
+
+# ── Database paths ─────────────────────────────────────────────────────────────
+database=file:{{ aide_db_path }}
+database_out=file:{{ aide_db_new_path }}
+
+# ── Output ─────────────────────────────────────────────────────────────────────
+report_url=stdout
+report_url=file:{{ aide_report_file }}
+verbose=5
+summarize_changes=yes
+grouped=yes
+
+# ── Rule macros ────────────────────────────────────────────────────────────────
+# FIPSR: CIS/FIPS-aligned — hash + metadata, no atime
+FIPSR=p+i+n+u+g+s+m+c+acl+selinux+xattrs+sha256
+# DATAONLY: hash and size only (logs, runtime data)
+DATAONLY=p+n+u+g+s+sha256
+# PERMS: ownership/mode only (directories)
+PERMS=p+n+u+g+acl+selinux
+
+# ── Watched paths ──────────────────────────────────────────────────────────────
+{% for entry in aide_monitored_paths %}
+{{ entry.path }} FIPSR
+{% endfor %}
+
+# ── Excluded paths ─────────────────────────────────────────────────────────────
+{% for path in aide_excluded_paths %}
+!{{ path }}
+{% endfor %}
+
+# Exclude volatile files under /etc
+!/etc/adjtime
+!/etc/ld.so.cache
+!/etc/hostname
+
+# Exclude package manager state
+!/var/lib/dpkg
+!/var/lib/rpm
+
+# Exclude kernel module index
+!/lib/modules

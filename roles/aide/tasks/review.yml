@@ -1,0 +1,31 @@
+---
+- name: Review | Check if aide is installed
+  ansible.builtin.stat:
+    path: /usr/bin/aide
+  register: _aide_binary
+  tags: [review]
+
+- name: Review | Check if aide database exists
+  ansible.builtin.stat:
+    path: "{{ aide_db_path }}"
+  register: _aide_db
+  tags: [review]
+
+- name: Review | Check if aide timer is active
+  ansible.builtin.command:
+    cmd: systemctl is-enabled aide-check.timer
+  register: _aide_timer_state
+  changed_when: false
+  failed_when: false
+  tags: [review]
+
+- name: Review | Report aide status
+  ansible.builtin.debug:
+    msg:
+      - "Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
+      - "AIDE installed: {{ _aide_binary.stat.exists }}"
+      - "AIDE database present: {{ _aide_db.stat.exists }}"
+      - "AIDE timer enabled: {{ _aide_timer_state.stdout | default('unknown') }}"
+      - "Config file: {{ aide_config_file }}"
+      - "Log directory: {{ aide_log_dir }}"
+  tags: [review]

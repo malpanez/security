@@ -1,0 +1,185 @@
+---
+- name: Install aide (Debian)
+  ansible.builtin.apt:
+    name: "{{ aide_package }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+  tags: [install]
+
+- name: Install aide (RedHat)
+  ansible.builtin.dnf:
+    name: "{{ aide_package }}"
+    state: present
+  when: ansible_os_family == 'RedHat'
+  tags: [install]
+
+- name: Install aide (Suse)
+  community.general.zypper:
+    name: "{{ aide_package }}"
+    state: present
+  when: ansible_os_family == 'Suse'
+  tags: [install]
+
+- name: Create aide log directory
+  ansible.builtin.file:
+    path: "{{ aide_log_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  tags: [install, configure]
+
+- name: Create aide db directory
+  ansible.builtin.file:
+    path: "{{ aide_db_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  tags: [install, configure]
+
+- name: Detect container environment
+  ansible.builtin.set_fact:
+    _aide_in_container: >-
+      {{
+        ansible_facts.virtualization_type | default('') in ['docker', 'podman', 'container', 'lxc']
+      }}
+  tags: [configure]
+
+- name: Deploy aide configuration
+  ansible.builtin.template:
+    src: aide.conf.j2
+    dest: "{{ aide_config_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+    backup: true
+  tags: [configure]
+
+- name: Check if aide database already exists
+  ansible.builtin.stat:
+    path: "{{ aide_db_path }}"
+  register: _aide_db_existing
+  tags: [configure]
+
+- name: Initialise aide database
+  ansible.builtin.command:
+    cmd: "{{ aide_init_cmd }} --config {{ aide_config_file }}"
+  register: _aide_init
+  changed_when: true
+  failed_when: _aide_init.rc != 0
+  when:
+    - aide_init_db | bool
+    - not _aide_db_existing.stat.exists
+    - not _aide_in_container | bool
+  tags: [configure]
+
+- name: Promote new database to active (RedHat/Suse)
+  ansible.builtin.copy:
+    src: "{{ aide_init_db_path }}"
+    dest: "{{ aide_db_path }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0600"
+  when:
+    - aide_init_db | bool
+    - not _aide_db_existing.stat.exists
+    - not _aide_in_container | bool
+    - ansible_os_family in ['RedHat', 'Suse']
+  tags: [configure]
+
+- name: Promote new database to active (Debian)
+  ansible.builtin.command:
+    cmd: update-aide.conf
+  register: _aide_update_conf
+  changed_when: _aide_update_conf.rc == 0
+  failed_when: false
+  when:
+    - aide_init_db | bool
+    - not _aide_db_existing.stat.exists
+    - not _aide_in_container | bool
+    - ansible_os_family == 'Debian'
+  tags: [configure]
+
+- name: Copy new database to active path (Debian fallback)
+  ansible.builtin.copy:
+    src: "{{ aide_init_db_path }}"
+    dest: "{{ aide_db_path }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0600"
+  when:
+    - aide_init_db | bool
+    - not _aide_db_existing.stat.exists
+    - not _aide_in_container | bool
+    - ansible_os_family == 'Debian'
+  failed_when: false
+  tags: [configure]
+
+- name: Deploy aide-check systemd service unit
+  ansible.builtin.template:
+    src: aide-check.service.j2
+    dest: /etc/systemd/system/aide-check.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: aide_timer_enabled | bool
+  notify: Reload systemd
+  tags: [service]
+
+- name: Deploy aide-check systemd timer unit
+  ansible.builtin.template:
+    src: aide-check.timer.j2
+    dest: /etc/systemd/system/aide-check.timer
+    owner: root
+    group: root
+    mode: "0644"
+  when: aide_timer_enabled | bool
+  notify: Reload systemd
+  tags: [service]
+
+- name: Enable aide-check timer
+  ansible.builtin.systemd:
+    name: aide-check.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when:
+    - aide_timer_enabled | bool
+    - not _aide_in_container | bool
+  tags: [service]
+
+- name: Verify aide binary is executable
+  ansible.builtin.command:
+    cmd: aide --version
+  register: _aide_version_check
+  changed_when: false
+  failed_when: _aide_version_check.rc not in [0, 1]
+  tags: [verify]
+
+- name: Assert aide configuration file exists
+  ansible.builtin.stat:
+    path: "{{ aide_config_file }}"
+  register: _aide_cfg_stat
+  tags: [verify]
+
+- name: Assert aide config deployed
+  ansible.builtin.assert:
+    that:
+      - _aide_cfg_stat.stat.exists
+    fail_msg: 'aide config not found at {{ aide_config_file }}'
+    quiet: true
+  tags: [verify]
+
+- name: Assert aide database present (skip in containers)
+  ansible.builtin.assert:
+    that:
+      - _aide_db_existing.stat.exists or (aide_init_db | bool and not _aide_in_container | bool)
+    fail_msg: 'aide database not found and init was not performed'
+    quiet: true
+  when: not _aide_in_container | bool
+  tags: [verify]

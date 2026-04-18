@@ -1,0 +1,22 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  changed_when: true
+
+- name: Rebuild aide database
+  ansible.builtin.command:
+    cmd: "{{ aide_init_cmd }} --config {{ aide_config_file }}"
+  changed_when: true
+  register: _aide_rebuild
+
+- name: Promote rebuilt aide database (non-Debian)
+  ansible.builtin.copy:
+    src: "{{ aide_init_db_path }}"
+    dest: "{{ aide_db_path }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0600"
+  when: ansible_os_family != 'Debian'
+  changed_when: true

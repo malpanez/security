@@ -1,0 +1,28 @@
+---
+galaxy_info:
+  author: Miguel Alpañez
+  description: >-
+    Install and configure Grype vulnerability scanner for filesystem and container
+    image scanning. Architecture-aware binary install with optional systemd timer
+    for periodic scans. Supports Debian/Ubuntu, RHEL/Rocky/Alma, and SUSE/openSUSE.
+  license: GPL-2.0-or-later
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - security
+    - vulnerability
+    - scanner
+    - grype
+    - anchore
+    - linux
+    - cis
+    - nist
+    - nis2
+    - compliance
+  platforms:
+    - name: Debian
+      versions: [buster, bullseye, bookworm]
+    - name: Ubuntu
+      versions: [bionic, focal, jammy]
+    - name: EL
+      versions: [all]
+dependencies: []

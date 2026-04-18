@@ -19,7 +19,7 @@
   when:
     - pam_mfa_should_configure
     - not pam_mfa_use_debian13_stack
-    - security_mode | default('review') == 'enforce'
+    - security_mode | default('enforce') == 'enforce'
   tags: [enforce]
 
 - name: Resolve platform-specific MFA task

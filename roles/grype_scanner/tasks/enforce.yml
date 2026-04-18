@@ -1,0 +1,137 @@
+---
+- name: Set grype architecture
+  ansible.builtin.set_fact:
+    _grype_arch: "{{ 'linux_arm64' if ansible_architecture == 'aarch64' else 'linux_amd64' }}"
+  tags: [install]
+
+- name: Install prerequisites (Debian)
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - tar
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+  tags: [install]
+
+- name: Install prerequisites (RedHat)
+  ansible.builtin.dnf:
+    name:
+      - ca-certificates
+      - curl
+      - tar
+    state: present
+  when: ansible_os_family == 'RedHat'
+  tags: [install]
+
+- name: Install prerequisites (Suse)
+  community.general.zypper:
+    name:
+      - ca-certificates
+      - curl
+      - tar
+    state: present
+  when: ansible_os_family == 'Suse'
+  tags: [install]
+
+- name: Create grype directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ grype_config_dir }}"
+    - "{{ grype_db_dir }}"
+    - "{{ grype_log_dir }}"
+  tags: [install, configure]
+
+- name: Download grype tarball
+  ansible.builtin.get_url:
+    url: >-
+      https://github.com/anchore/grype/releases/download/v{{ grype_version }}/grype_{{ grype_version }}_{{ _grype_arch }}.tar.gz
+    dest: /tmp/grype_{{ grype_version }}_{{ _grype_arch }}.tar.gz
+    mode: "0644"
+    force: false
+  tags: [install]
+
+- name: Extract grype binary
+  ansible.builtin.unarchive:
+    src: /tmp/grype_{{ grype_version }}_{{ _grype_arch }}.tar.gz
+    dest: "{{ grype_install_dir }}"
+    include: [grype]
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [install]
+
+- name: Deploy grype configuration
+  ansible.builtin.template:
+    src: grype.yaml.j2
+    dest: "{{ grype_config_dir }}/config.yaml"
+    owner: root
+    group: root
+    mode: "0644"
+  tags: [configure]
+
+- name: Update grype vulnerability database
+  ansible.builtin.command:
+    cmd: "{{ grype_install_dir }}/grype db update"
+  environment:
+    GRYPE_DB_CACHE_DIR: "{{ grype_db_dir }}"
+  register: _grype_db_update
+  changed_when: "'Updated' in _grype_db_update.stdout"
+  failed_when: _grype_db_update.rc != 0
+  tags: [configure]
+
+- name: Deploy grype scan timer unit
+  ansible.builtin.template:
+    src: grype-scan.timer.j2
+    dest: /etc/systemd/system/grype-scan.timer
+    owner: root
+    group: root
+    mode: "0644"
+  when: grype_scheduled_scan | bool
+  notify: Reload systemd
+  tags: [configure]
+
+- name: Deploy grype scan service unit
+  ansible.builtin.template:
+    src: grype-scan.service.j2
+    dest: /etc/systemd/system/grype-scan.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: grype_scheduled_scan | bool
+  notify: Reload systemd
+  tags: [configure]
+
+- name: Enable grype scan timer
+  ansible.builtin.systemd:
+    name: grype-scan.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: grype_scheduled_scan | bool
+  tags: [configure]
+
+- name: Verify grype binary is executable
+  ansible.builtin.command:
+    cmd: "{{ grype_install_dir }}/grype version"
+  register: _grype_verify
+  changed_when: false
+  tags: [verify]
+
+- name: Assert grype version matches desired
+  ansible.builtin.assert:
+    that:
+      - grype_version in _grype_verify.stdout
+    fail_msg: >-
+      grype version mismatch: expected {{ grype_version }}, got:
+      {{ _grype_verify.stdout }}
+    quiet: true
+  tags: [verify]

@@ -107,7 +107,6 @@
     owner: root
     group: root
     mode: "0644"
-    validate: "rsyslogd -N1 -f %s"
     backup: true
   notify: Restart rsyslog
   tags: [rsyslog_forwarding, enforce, configure]

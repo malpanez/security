@@ -1,0 +1,72 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Check grype binary exists
+      ansible.builtin.stat:
+        path: /usr/local/bin/grype
+      register: _grype_bin
+
+    - name: Assert grype binary present
+      ansible.builtin.assert:
+        that:
+          - _grype_bin.stat.exists
+          - _grype_bin.stat.executable
+        fail_msg: 'grype binary not found or not executable at /usr/local/bin/grype'
+        quiet: true
+
+    - name: Check grype config exists
+      ansible.builtin.stat:
+        path: /etc/grype/config.yaml
+      register: _grype_cfg
+
+    - name: Assert grype config present
+      ansible.builtin.assert:
+        that:
+          - _grype_cfg.stat.exists
+        fail_msg: 'grype config not found at /etc/grype/config.yaml'
+        quiet: true
+
+    - name: Verify grype config contains expected values
+      ansible.builtin.command:
+        cmd: grep -E 'fail-on-severity|cache-dir' /etc/grype/config.yaml
+      register: _grype_cfg_check
+      changed_when: false
+
+    - name: Assert grype config key fields present
+      ansible.builtin.assert:
+        that:
+          - "'fail-on-severity' in _grype_cfg_check.stdout"
+          - "'cache-dir' in _grype_cfg_check.stdout"
+        fail_msg: 'grype config missing expected fields'
+        quiet: true
+
+    - name: Check grype db directory exists
+      ansible.builtin.stat:
+        path: /var/lib/grype/db
+      register: _grype_db
+
+    - name: Assert grype db directory present
+      ansible.builtin.assert:
+        that:
+          - _grype_db.stat.exists
+          - _grype_db.stat.isdir
+        fail_msg: 'grype db directory not found at /var/lib/grype/db'
+        quiet: true
+
+    - name: Run grype version check
+      ansible.builtin.command:
+        cmd: /usr/local/bin/grype version
+      register: _grype_version
+      changed_when: false
+
+    - name: Assert grype version output is valid
+      ansible.builtin.assert:
+        that:
+          - _grype_version.rc == 0
+          - "'grype' in _grype_version.stdout | lower or 'version' in _grype_version.stdout | lower"
+        fail_msg: 'grype version command failed'
+        quiet: true

@@ -1,0 +1,29 @@
+---
+galaxy_info:
+  author: Miguel Alpañez
+  description: >-
+    File Integrity Monitoring (FIM) with AIDE. Installs AIDE, deploys a hardened
+    configuration monitoring critical system paths, builds the initial database,
+    and schedules periodic integrity checks via a systemd timer with reports to
+    /var/log/aide/. Supports Debian/Ubuntu, RHEL/Rocky/Alma, and SUSE/openSUSE.
+  license: GPL-2.0-or-later
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - security
+    - hardening
+    - fim
+    - aide
+    - integrity
+    - linux
+    - cis
+    - nist
+    - nis2
+    - compliance
+  platforms:
+    - name: Debian
+      versions: [buster, bullseye, bookworm]
+    - name: Ubuntu
+      versions: [bionic, focal, jammy]
+    - name: EL
+      versions: [all]
+dependencies: []

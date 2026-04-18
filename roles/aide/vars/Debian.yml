@@ -1,0 +1,5 @@
+---
+aide_package: aide
+aide_service_prefix: aide
+aide_init_cmd: aideinit
+aide_init_db_path: /var/lib/aide/aide.db.new

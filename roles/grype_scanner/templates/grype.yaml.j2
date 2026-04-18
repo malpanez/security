@@ -1,0 +1,20 @@
+{{ ansible_managed | comment }}
+# /etc/grype/config.yaml
+# Managed by malpanez.security.grype_scanner role
+
+db:
+  cache-dir: {{ grype_db_dir }}
+  auto-update: false
+
+output: {{ grype_output_format }}
+file: ""
+
+fail-on-severity: {{ grype_severity_fail }}
+
+ignore:
+{% if grype_ignore_unfixed | bool %}
+  - fix-state: unknown
+  - fix-state: not-fixed
+{% else %}
+  []
+{% endif %}
