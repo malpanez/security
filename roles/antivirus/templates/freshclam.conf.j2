@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+DatabaseOwner {{ antivirus_clamd_user }}
+UpdateLogFile {{ antivirus_log_dir }}/freshclam.log
+LogRotate yes
+LogTime yes
+DatabaseDirectory {{ antivirus_db_dir }}
+DatabaseMirror database.clamav.net
+Checks {{ antivirus_freshclam_checks }}
+NotifyClamd {{ antivirus_clamd_config }}

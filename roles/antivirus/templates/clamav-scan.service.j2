@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+[Unit]
+Description=ClamAV virus scan
+Documentation=man:clamscan(1)
+After=network.target
+ConditionPathExists=/usr/bin/clamscan
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/bin/clamscan \
+  --recursive \
+  --infected \
+  --log={{ antivirus_scan_log }} \
+{% for dir in antivirus_scan_dirs %}
+  {{ dir }}{% if not loop.last %} \{% endif %}
+
+{% endfor %}
