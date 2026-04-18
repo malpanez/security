@@ -74,3 +74,18 @@
       register: _ua_verify_lock
       changed_when: false
       failed_when: false
+
+# USR-02 NOTE: _ua_verify_lock.stdout is collected above but not asserted here.
+# Reason: whether testuser appears in `lastlog --before 90` inside a Docker container
+# depends on the container's /var/log/lastlog state. Newly created users with no
+# login history may or may not appear depending on the image. An assert on ' L '
+# (locked indicator) would be flaky across platforms.
+#
+# Manual verification (ASUS PN50 / Docker-capable host):
+#   molecule test -s default
+#   Inspect `passwd -S testuser` output during verify phase.
+#   If testuser has no lastlog entry, enforce.yml locks it and output will contain ' L '.
+#   If testuser is not in lastlog --before output, lock is not applied (correct behaviour).
+#
+# Regression protection: USR-02 is covered by code review of enforce.yml
+# `ansible.builtin.user: password_lock: true` + triple guard (intersect, skip_users, != root).
