@@ -44,12 +44,19 @@
   when: _rsyslog_dropin_stat.stat.exists
   tags: [rsyslog_forwarding, review]
 
+- name: Review | Set configured destination from drop-in
+  ansible.builtin.set_fact:
+    _rsyslog_configured_dest: "{{ (_rsyslog_dropin_content.content | b64decode | regex_search('Target=\"([^\"]+)\"', '\\1') | first) | default('unknown') }}"
+  when: _rsyslog_dropin_stat.stat.exists
+  tags: [rsyslog_forwarding, review]
+
 - name: Review | Report rsyslog_forwarding findings
   ansible.builtin.debug:
     msg:
       - "Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
       - "rsyslog installed: {{ _rsyslog_pkg_check.rc == 0 }}"
       - "Forwarding drop-in exists: {{ _rsyslog_dropin_stat.stat.exists }}"
+      - "Destination: {{ _rsyslog_configured_dest | default('not configured') }}"
       - "Service status: {{ _rsyslog_svc_check.stdout | default('unknown') }}"
       - "TLS configured: {{ _rsyslog_tls_present | default(false) }}"
   tags: [rsyslog_forwarding, review]
