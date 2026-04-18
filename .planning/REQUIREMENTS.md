@@ -122,7 +122,7 @@
 | NTP-04 | Phase 1 | Pending |
 | NTP-05 | Phase 1 | Pending |
 | NTP-06 | Phase 1 | Complete |
-| USR-01 | Phase 2 | Pending |
+| USR-01 | Phase 2 | Complete |
 | USR-02 | Phase 2 | Complete |
 | USR-03 | Phase 2 | Complete |
 | USR-04 | Phase 2 | Complete |
