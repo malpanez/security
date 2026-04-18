@@ -1,11 +1,26 @@
 ---
-- name: Pam_activate | Enable pam_access via pam-auth-update (Debian)
-  ansible.builtin.command:
-    cmd: pam-auth-update --enable access
+- name: Pam_activate | Check if pam_access already active (Debian)
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail &&
+      grep -r pam_access.so /etc/pam.d/ 2>/dev/null | grep -v '^#'
+    executable: /bin/bash
+  register: _pam_activate_deb_check
   changed_when: false
+  failed_when: false
   when:
     - ansible_facts['os_family'] == 'Debian'
     - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Pam_activate | Enable pam_access via pam-auth-update (Debian)
+  ansible.builtin.command:
+    cmd: pam-auth-update --enable access
+  changed_when: true
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - security_mode | default('review') == 'enforce'
+    - _pam_activate_deb_check.stdout | length == 0
   tags: [sshd, ssh, access-control]
 
 - name: Pam_activate | Check if pam_access.so already active (RedHat)

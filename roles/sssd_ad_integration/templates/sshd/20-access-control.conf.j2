@@ -1,0 +1,30 @@
+{{ ansible_managed | comment }}
+# 20-access-control.conf — AllowGroups global whitelist
+#
+# This is the outermost gate: only members of these groups can attempt SSH
+# login at all.  Applied BEFORE any Match block is evaluated.
+#
+# File ordering note: sshd includes drop-ins lexicographically.  First
+# occurrence of a directive wins.  This file sets AllowGroups globally;
+# Match blocks in 30-43 further restrict per zone and per group.
+#
+# If ssh_local_fallback_group is set, that group is always included to
+# prevent Ansible automation lockout when AD is unreachable.
+
+{% set _groups = [] %}
+{% if ssh_enable_group_admins | bool %}
+{%   set _ = _groups.append(ssh_ad_groups.admins) %}
+{% endif %}
+{% if ssh_enable_group_users | bool %}
+{%   set _ = _groups.append(ssh_ad_groups.users) %}
+{% endif %}
+{% if ssh_enable_group_service | bool %}
+{%   set _ = _groups.append(ssh_ad_groups.service) %}
+{% endif %}
+{% if ssh_enable_group_readonly | bool %}
+{%   set _ = _groups.append(ssh_ad_groups.readonly) %}
+{% endif %}
+{% if ssh_local_fallback_group | length > 0 %}
+{%   set _ = _groups.append(ssh_local_fallback_group) %}
+{% endif %}
+AllowGroups {{ _groups | join(' ') }}

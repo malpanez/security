@@ -1,0 +1,106 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Prepare | Fix nsswitch.conf (remove sss — Rocky 9 PAM/sudo failure in containers)
+      ansible.builtin.shell:
+        cmd: >-
+          set -o pipefail &&
+          sed -i 's/ sss//g' /etc/nsswitch.conf
+        executable: /bin/bash
+      changed_when: false
+      failed_when: false
+
+    - name: Prepare | Install Python
+      ansible.builtin.raw: |
+        command -v python3 || (apt-get update -qq && apt-get install -y -qq python3) || \
+        (dnf install -y python3 2>/dev/null || yum install -y python3 2>/dev/null)
+      changed_when: false
+
+    - name: Prepare | Install baseline packages (Debian)
+      ansible.builtin.apt:
+        name:
+          - sudo
+          - openssh-server
+          - openssh-client
+          - procps
+          - systemd
+          - libpam-runtime
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_facts['os_family'] | default('') == 'Debian'
+      failed_when: false
+
+    - name: Prepare | Install baseline packages (RedHat)
+      ansible.builtin.package:
+        name:
+          - sudo
+          - openssh-server
+          - openssh-clients
+          - procps-ng
+          - systemd
+        state: present
+      when: ansible_facts['os_family'] | default('') == 'RedHat'
+      failed_when: false
+
+    - name: Prepare | Create local groups simulating AD groups (no real DC needed)
+      ansible.builtin.group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - linux-admins
+        - linux-users
+        - linux-service
+        - linux-readonly
+        - ansible-deploy
+
+    - name: Prepare | Create test users in each group
+      ansible.builtin.user:
+        name: "testuser-{{ item }}"
+        groups: "{{ item }}"
+        shell: /bin/bash
+        create_home: true
+      loop:
+        - linux-admins
+        - linux-users
+        - linux-service
+        - linux-readonly
+
+    - name: Prepare | Ensure sshd privilege separation directory
+      ansible.builtin.file:
+        path: /run/sshd
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Prepare | Generate host keys if missing
+      ansible.builtin.command:
+        cmd: ssh-keygen -A
+      changed_when: false
+      failed_when: false
+
+    - name: Prepare | Ensure sshd_config includes drop-in directory
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        line: "Include /etc/ssh/sshd_config.d/*.conf"
+        insertbefore: BOF
+        state: present
+      failed_when: false
+
+    - name: Prepare | Ensure sshd_config.d exists
+      ansible.builtin.file:
+        path: /etc/ssh/sshd_config.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Prepare | Start sshd
+      ansible.builtin.service:
+        name: "{{ 'ssh' if ansible_facts['os_family'] | default('') == 'Debian' else 'sshd' }}"
+        state: started
+        enabled: true
+      failed_when: false

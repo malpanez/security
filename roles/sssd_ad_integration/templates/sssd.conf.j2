@@ -1,0 +1,39 @@
+{{ ansible_managed | comment }}
+# /etc/sssd/sssd.conf — managed by Ansible (malpanez.security.sssd_ad_integration)
+# Mode 0600 required — SSSD refuses to start if permissions are too open.
+#
+# sudo_provider = sssd means SSSD exposes the sudoers NSS source, but rules
+# live in /etc/sudoers.d/ (not in AD schema).  This avoids the requirement
+# for AD schema extensions and works with every AD version.
+#
+# Offline credentials: expiration={{ sssd_offline_credentials_expiration }} days
+# (0 = never).  Teams MUST decide this explicitly.
+# See docs/ssh-ad-integration.md — "Offline Credentials Expiration".
+
+[sssd]
+domains = {{ sssd_ad_domain }}
+services = nss, pam, ssh
+config_file_version = 2
+
+[domain/{{ sssd_ad_domain }}]
+id_provider = ad
+auth_provider = ad
+access_provider = ad
+sudo_provider = sssd
+
+ad_domain = {{ sssd_ad_domain }}
+ad_server = {{ sssd_ad_server }}
+krb5_realm = {{ sssd_ad_realm | upper }}
+
+cache_credentials = {{ sssd_cache_credentials | bool | lower }}
+offline_credentials_expiration = {{ sssd_offline_credentials_expiration }}
+
+use_fully_qualified_names = {{ sssd_use_fully_qualified_names | bool | lower }}
+fallback_homedir = {{ sssd_home_dir_template }}
+default_shell = {{ sssd_default_shell }}
+ldap_id_mapping = {{ sssd_ldap_id_mapping | bool | lower }}
+enumerate = {{ sssd_enumerate_users | bool | lower }}
+
+{% if sssd_access_filter | length > 0 %}
+ad_access_filter = {{ sssd_access_filter }}
+{% endif %}

@@ -1,0 +1,43 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Converge | Set up tmp directory
+      ansible.builtin.file:
+        path: /tmp/ansible-tmp
+        state: directory
+        mode: "0777"
+
+    - name: Converge | Apply sssd_ad_integration role (sshd zones + sudoers + pam)
+      ansible.builtin.include_role:
+        name: sssd_ad_integration
+      vars:
+        security_mode: enforce
+        sssd_ad_configure: false
+        ssh_backup_config: false
+        ssh_pam_access_configure: true
+        ssh_local_fallback_group: ansible-deploy
+        ssh_network_zones:
+          corp: "10.10.0.0/16"
+          vpn: "10.8.0.0/24"
+          bastion: "192.168.99.1"
+        ssh_ad_groups:
+          admins: linux-admins
+          users: linux-users
+          service: linux-service
+          readonly: linux-readonly
+        ssh_enable_group_admins: true
+        ssh_enable_group_users: true
+        ssh_enable_group_service: true
+        ssh_enable_group_readonly: true
+        ssh_service_allowed_sources:
+          - "10.10.5.10"
+        ssh_sudoers_admins_timestamp_timeout: 15
+        ssh_sudoers_users_nopasswd_commands:
+          - "/usr/bin/systemctl status *"
+          - "/usr/bin/journalctl"
+        ssh_sudoers_users_passwd_commands:
+          - "/usr/bin/systemctl restart *"
+        ssh_verify_ad_groups: true
+        ssh_verify_ad_groups_strict: true

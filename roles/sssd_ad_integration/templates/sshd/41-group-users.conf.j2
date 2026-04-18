@@ -1,0 +1,13 @@
+{{ ansible_managed | comment }}
+# 41-group-users.conf — Match Group {{ ssh_ad_groups.users }}
+#
+# Interactive shell without forwarding or tunneling.
+# No AuthenticationMethods override — inherits from 30-network-zones
+# (corp: publickey, vpn: publickey) or global default (internet: pubkey only).
+
+Match Group {{ ssh_ad_groups.users }}
+    AllowTcpForwarding no
+    AllowAgentForwarding no
+    PermitTunnel no
+    X11Forwarding no
+    PermitTTY yes

@@ -1,0 +1,6 @@
+---
+- name: Test sssd_ad_integration
+  hosts: localhost
+  remote_user: root
+  roles:
+    - malpanez.security.sssd_ad_integration

@@ -1,0 +1,33 @@
+---
+- name: Pam | Build AllowGroups list for pam_access
+  ansible.builtin.set_fact:
+    _sssd_ad_pam_groups:
+      - group: "{{ ssh_ad_groups.admins }}"
+        sources: >-
+          {{ ([ssh_network_zones.corp, ssh_network_zones.vpn]
+              + ([ssh_network_zones.bastion] if ssh_network_zones.bastion | length > 0 else []))
+             | select | list }}
+        enabled: "{{ ssh_enable_group_admins | bool }}"
+      - group: "{{ ssh_ad_groups.users }}"
+        sources:
+          - "{{ ssh_network_zones.corp }}"
+          - "{{ ssh_network_zones.vpn }}"
+        enabled: "{{ ssh_enable_group_users | bool }}"
+      - group: "{{ ssh_ad_groups.service }}"
+        sources: "{{ ssh_service_allowed_sources }}"
+        enabled: "{{ ssh_enable_group_service | bool }}"
+      - group: "{{ ssh_ad_groups.readonly }}"
+        sources:
+          - "{{ ssh_network_zones.corp }}"
+        enabled: "{{ ssh_enable_group_readonly | bool }}"
+  tags: [sshd, ssh, access-control]
+
+- name: Pam | Deploy pam_access.conf
+  ansible.builtin.template:
+    src: pam_access.conf.j2
+    dest: "{{ ssh_pam_access_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]

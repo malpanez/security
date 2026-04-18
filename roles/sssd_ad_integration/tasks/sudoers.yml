@@ -1,0 +1,50 @@
+---
+- name: Sudoers | Ensure /etc/sudoers.d directory exists
+  ansible.builtin.file:
+    path: /etc/sudoers.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  when: security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sudoers | Deploy linux-admins sudoers drop-in
+  ansible.builtin.template:
+    src: sudoers/linux-admins.j2
+    dest: "/etc/sudoers.d/50-linux-admins"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  when:
+    - ssh_enable_group_admins | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sudoers | Remove linux-admins sudoers drop-in when disabled
+  ansible.builtin.file:
+    path: /etc/sudoers.d/50-linux-admins
+    state: absent
+  when: not (ssh_enable_group_admins | bool)
+  tags: [sshd, ssh, access-control]
+
+- name: Sudoers | Deploy linux-users sudoers drop-in
+  ansible.builtin.template:
+    src: sudoers/linux-users.j2
+    dest: "/etc/sudoers.d/51-linux-users"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  when:
+    - ssh_enable_group_users | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sudoers | Remove linux-users sudoers drop-in when disabled
+  ansible.builtin.file:
+    path: /etc/sudoers.d/51-linux-users
+    state: absent
+  when: not (ssh_enable_group_users | bool)
+  tags: [sshd, ssh, access-control]

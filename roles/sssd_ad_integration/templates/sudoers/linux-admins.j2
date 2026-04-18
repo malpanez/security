@@ -1,0 +1,15 @@
+{{ ansible_managed | comment(decoration='# ') }}
+# /etc/sudoers.d/50-linux-admins
+# Managed by Ansible — malpanez.security.sssd_ad_integration
+# CIS 5.3 / NIST AC-6 / NIS2 Art.21(2)(i)
+#
+# Full sudo with audit trail.  requiretty forces an interactive TTY — this
+# prevents sudo invocations from cron, scripts, or SSRF chains.
+# timestamp_timeout={{ ssh_sudoers_admins_timestamp_timeout }} minutes.
+#
+# No ! negation anywhere — do not add NOPASSWD:ALL and then deny subsets.
+# Grant only what is needed; add new rules rather than negating existing ones.
+
+Defaults:%{{ ssh_ad_groups.admins }} timestamp_timeout={{ ssh_sudoers_admins_timestamp_timeout }},requiretty
+
+%{{ ssh_ad_groups.admins }} ALL=(ALL:ALL) ALL
