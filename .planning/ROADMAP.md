@@ -184,7 +184,7 @@ See REQUIREMENTS.md Traceability section for full requirement-to-phase mapping.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. ntp_hardening | 1/5 | In Progress|  |
-| 2. user_audit | 5/5 | Complete   | 2026-04-18 |
+| 2. user_audit | 7/7 | Complete   | 2026-04-18 |
 | 3. rsyslog_forwarding | 5/5 | Complete   | 2026-04-18 |
 | 4. antivirus | 5/5 | Complete   | 2026-04-18 |
 | 5. tls_hardening | 0/5 | Not started | - |
