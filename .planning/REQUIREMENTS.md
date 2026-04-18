@@ -51,9 +51,9 @@
 
 ### antivirus (ClamAV)
 
-- [ ] **AV-01**: review.yml reports ClamAV installation status, DB age, clamd running state, last scan date
+- [x] **AV-01**: review.yml reports ClamAV installation status, DB age, clamd running state, last scan date
 - [x] **AV-02**: enforce.yml installs clamav + daemon packages (names vary per OS)
-- [ ] **AV-03**: Deploys freshclam config and enables freshclam timer/service for DB updates
+- [x] **AV-03**: Deploys freshclam config and enables freshclam timer/service for DB updates
 - [ ] **AV-04**: Deploys systemd timer for periodic scans, reports to /var/log/clamav/
 - [x] **AV-05**: antivirus_update_db (default true) — set false in CI molecule to skip 200MB download
 - [x] **AV-06**: Container-aware: skip freshclam and scan in containers
@@ -134,9 +134,9 @@
 | LOG-04 | Phase 3 | Complete |
 | LOG-05 | Phase 3 | Complete |
 | LOG-06 | Phase 3 | Complete |
-| AV-01 | Phase 4 | Pending |
+| AV-01 | Phase 4 | Complete |
 | AV-02 | Phase 4 | Complete |
-| AV-03 | Phase 4 | Pending |
+| AV-03 | Phase 4 | Complete |
 | AV-04 | Phase 4 | Pending |
 | AV-05 | Phase 4 | Complete |
 | AV-06 | Phase 4 | Complete |

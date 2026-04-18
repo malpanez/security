@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-antivirus 04-01-PLAN.md
-last_updated: "2026-04-18T19:22:04.997Z"
+stopped_at: Completed 04-antivirus 04-02-PLAN.md
+last_updated: "2026-04-18T19:29:39.478Z"
 last_activity: 2026-04-18
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 21
-  completed_plans: 16
+  completed_plans: 17
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 04 (antivirus) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-04-18
 
@@ -67,6 +67,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03-rsyslog-forwarding P03-05 | 5 | 1 tasks | 2 files |
 | Phase 03-rsyslog-forwarding P06 | 3 | 1 tasks | 1 files |
 | Phase 04-antivirus P04-01 | 19 | 1 tasks | 8 files |
+| Phase 04-antivirus P04-02 | 8 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,8 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 03-rsyslog-forwarding]: _rsyslog_configured_dest: regex_search extracts Target= from b64decoded drop-in; default('not configured') when drop-in absent (LOG-01 gap closure)
 - [Phase 04-antivirus]: antivirus: antivirus_update_db:false in Molecule CI (skip 200MB freshclam download) — analogous to aide_init_db:false pattern
 - [Phase 04-antivirus]: antivirus: _antivirus_in_container bool guard in handlers matches ntp_hardening/_rsyslog pattern
+- [Phase 04-antivirus]: antivirus: freshclam failed_when rc not in [0,1] — rc=1 means DB already current, not a failure
+- [Phase 04-antivirus]: antivirus: SELinux boolean antivirus_can_scan_system set persistently + restorecon on log dir and scan dirs
 
 ### Pending Todos
 
@@ -111,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-18T19:22:04.977Z
-Stopped at: Completed 04-antivirus 04-01-PLAN.md
+Last session: 2026-04-18T19:29:39.365Z
+Stopped at: Completed 04-antivirus 04-02-PLAN.md
 Resume file: None
