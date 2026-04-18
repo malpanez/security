@@ -1,0 +1,7 @@
+---
+- name: Restart rsyslog
+  ansible.builtin.systemd:
+    name: "{{ rsyslog_forwarding_service }}"
+    state: restarted
+  changed_when: true
+  when: not _rsyslog_in_container | bool

@@ -1,0 +1,6 @@
+---
+- name: Test rsyslog_forwarding role
+  hosts: localhost
+  gather_facts: true
+  roles:
+    - role: malpanez.security.rsyslog_forwarding

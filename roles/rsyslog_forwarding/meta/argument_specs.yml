@@ -1,0 +1,126 @@
+---
+argument_specs:
+  main:
+    short_description: Centralised log forwarding via rsyslog drop-in
+    options:
+      rsyslog_forwarding_enabled:
+        type: bool
+        default: false
+        description: >-
+          Gate variable. Set to true with security_mode=enforce to install and
+          configure rsyslog forwarding. Review tasks always run regardless.
+      rsyslog_forwarding_host:
+        type: str
+        default: ""
+        description: >-
+          Hostname or IP address of the remote syslog server. Required when
+          rsyslog_forwarding_enabled is true.
+      rsyslog_forwarding_port:
+        type: int
+        default: 514
+        description: >-
+          TCP or UDP port of the remote syslog server. Default 514 is the
+          standard syslog port.
+      rsyslog_forwarding_protocol:
+        type: str
+        default: tcp
+        description: >-
+          Transport protocol for forwarding. Valid values: tcp, udp.
+          TCP is strongly preferred for reliability and TLS support.
+      rsyslog_forwarding_selector:
+        type: str
+        default: "*.*"
+        description: >-
+          Rsyslog selector filter applied before forwarding. Follows
+          facility.severity syntax (e.g. '*.* ' forwards all messages).
+      rsyslog_forwarding_queue_type:
+        type: str
+        default: LinkedList
+        description: >-
+          Rsyslog queue type for the forwarding action. LinkedList is an
+          in-memory linked list queue. Use Disk or LinkedList-DA for
+          disk-assisted spooling.
+      rsyslog_forwarding_queue_size:
+        type: int
+        default: 10000
+        description: >-
+          Maximum number of messages to hold in the forwarding queue before
+          dropping or blocking, depending on queue full action policy.
+      rsyslog_forwarding_queue_spool_dir:
+        type: str
+        default: /var/spool/rsyslog/forwarding
+        description: >-
+          Filesystem directory used for disk-assisted queue spool files.
+          Must exist and be writable by the rsyslog user.
+      rsyslog_forwarding_queue_file_name:
+        type: str
+        default: fwd-queue
+        description: >-
+          Base filename prefix for disk queue spool files. Files will be
+          created as fwd-queue.NN in the spool directory.
+      rsyslog_forwarding_resume_retry_count:
+        type: int
+        default: -1
+        description: >-
+          Number of retries when the remote endpoint is unavailable before
+          discarding messages. -1 means retry indefinitely.
+      rsyslog_forwarding_tls_enabled:
+        type: bool
+        default: false
+        description: >-
+          When true, enables GnuTLS transport encryption for the forwarding
+          action. Requires rsyslog_forwarding_tls_ca_cert to be set.
+      rsyslog_forwarding_tls_ca_cert:
+        type: str
+        default: ""
+        description: >-
+          Path to the CA certificate file on the managed host used to verify
+          the remote syslog server TLS certificate.
+      rsyslog_forwarding_tls_auth_mode:
+        type: str
+        default: x509/name
+        description: >-
+          GnuTLS authentication mode for the TLS connection. x509/name
+          validates the server certificate CN/SAN against the target hostname.
+      rsyslog_forwarding_tls_client_cert:
+        type: str
+        default: ""
+        description: >-
+          Path to the client TLS certificate on the managed host. Required
+          for mutual TLS (mTLS) authentication to the remote syslog server.
+      rsyslog_forwarding_tls_client_key:
+        type: str
+        default: ""
+        description: >-
+          Path to the client TLS private key on the managed host. Required
+          for mutual TLS (mTLS) authentication to the remote syslog server.
+      rsyslog_forwarding_logrotate_enabled:
+        type: bool
+        default: true
+        description: >-
+          When true, deploys a logrotate drop-in for rsyslog log files
+          in the rsyslog_forwarding_log_dir directory.
+      rsyslog_forwarding_logrotate_rotate:
+        type: int
+        default: 4
+        description: >-
+          Number of rotated log files to retain before deletion.
+          Applies to the logrotate configuration deployed by this role.
+      rsyslog_forwarding_logrotate_size:
+        type: str
+        default: 50M
+        description: >-
+          Maximum log file size before rotation is triggered. Follows
+          logrotate size syntax (e.g. 50M, 100M, 1G).
+      rsyslog_forwarding_log_dir:
+        type: str
+        default: /var/log
+        description: >-
+          Base directory for rsyslog log files managed by logrotate.
+          Typically /var/log on all supported platforms.
+      rsyslog_forwarding_file_create_mode:
+        type: str
+        default: "0640"
+        description: >-
+          File creation mode (octet string) for new log files created by
+          rsyslog. 0640 restricts read access to the rsyslog group.

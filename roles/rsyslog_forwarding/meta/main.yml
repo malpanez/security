@@ -1,0 +1,32 @@
+---
+galaxy_info:
+  author: Miguel Alpanez
+  description: >-
+    Centralised log forwarding via rsyslog drop-in. Deploys
+    /etc/rsyslog.d/99-forwarding.conf with RainerScript action() syntax,
+    optional GnuTLS TLS, and disk-assisted queue. Supports review mode
+    (audit-only) and enforce mode. NIS2 Art.21, SOC2 CC7.2, PCI-DSS 10.5.
+  license: GPL-2.0-or-later
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - security
+    - hardening
+    - rsyslog
+    - logging
+    - syslog
+    - forwarding
+    - tls
+    - linux
+    - pci
+    - nis2
+    - soc2
+    - hipaa
+    - compliance
+  platforms:
+    - name: Debian
+      versions: [buster, bullseye, bookworm]
+    - name: Ubuntu
+      versions: [bionic, focal, jammy]
+    - name: EL
+      versions: [all]
+dependencies: []
