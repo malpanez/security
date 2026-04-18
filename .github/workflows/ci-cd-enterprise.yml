@@ -337,6 +337,7 @@ jobs:
           - ntp_hardening
           - user_audit
           - rsyslog_forwarding
+          - antivirus
 
     env:
       DOCKER_DEFAULT_PLATFORM: linux/amd64
