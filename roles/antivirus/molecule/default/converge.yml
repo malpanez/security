@@ -1,0 +1,14 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Include antivirus role
+      ansible.builtin.include_role:
+        name: malpanez.security.antivirus
+      vars:
+        antivirus_enabled: true
+        security_mode: enforce
+        antivirus_update_db: false
+        antivirus_scan_enabled: true
