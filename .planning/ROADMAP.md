@@ -18,7 +18,7 @@ The milestone closes with a version bump from 1.1.0 to 1.2.0.
 
 - [ ] **Phase 1: ntp_hardening** - NTP/chrony hardening with review and enforce mode (PCI-DSS 10.6.1, NIS2, SOC2 CC6.1)
 - [ ] **Phase 2: user_audit** - Local user account audit and lockout enforcement (SOC2 CC6.2, HIPAA, PCI-DSS 8.x)
-- [ ] **Phase 3: rsyslog_forwarding** - Centralised log forwarding via rsyslog drop-in with optional TLS (NIS2, SOC2 CC7.2, PCI-DSS 10.5)
+- [x] **Phase 3: rsyslog_forwarding** - Centralised log forwarding via rsyslog drop-in with optional TLS (NIS2, SOC2 CC7.2, PCI-DSS 10.5) (completed 2026-04-18)
 - [ ] **Phase 4: antivirus** - ClamAV installation, freshclam updates, and scheduled scan timer (PCI-DSS 5.2, NIS2, SOC2 CC6.8)
 - [ ] **Phase 5: tls_hardening** - System-wide TLS version and cipher enforcement (PCI-DSS 4.2.1, HIPAA, NIS2)
 - [ ] **Phase 6: usbguard** - USB device control with block-by-default policy (PCI-DSS 12.3.4, HIPAA, NIS2)
@@ -90,7 +90,7 @@ Plans:
 - [x] 03-02: Tasks — tasks/main.yml (standard pattern with set_fact _rsyslog_in_container, include review.yml, include enforce.yml when enabled+enforce mode); tasks/review.yml (stat /usr/sbin/rsyslogd, systemctl is-active rsyslog changed_when:false failed_when:false, stat /etc/rsyslog.d/99-forwarding.conf, slurp if exists, set_fact _rsyslog_configured_dest from b64decoded content, set_fact _rsyslog_tls_present via 'StreamDriverMode' in content, debug report with all findings); tasks/enforce.yml (assert rsyslog_forwarding_host length > 0, assert TLS CA cert path set when TLS enabled, stat CA cert on target assert exists when TLS enabled, assert protocol==tcp when TLS enabled, package install rsyslog, conditional TLS package install, file ensure dropin_dir 0755, template 99-forwarding.conf.j2 validate:'rsyslogd -N1 -f %s' notify:Restart rsyslog, template rsyslog-logrotate.j2 when logrotate_enabled, systemd enable+start rsyslog when not _rsyslog_in_container, command rsyslogd -N1 changed_when:false failed_when:rc!=0, command systemctl is-active rsyslog changed_when:false failed_when:stdout!='active')
 - [x] 03-03: Templates — templates/99-forwarding.conf.j2 (Ansible-managed header; conditional GnuTLS module(load="imtls") + global() block with CA cert and optional mTLS certs when tls_enabled; $FileCreateMode directive; action() block using omfwd with target/port/protocol, TLS StreamDriver/Mode/AuthMode when enabled, queue.type/size, action.resumeRetryCount; use RainerScript action() syntax — NOT legacy @@host:port which cannot express queues or TLS inline); templates/rsyslog-logrotate.j2 (logrotate stanza for log_dir/*.log with rotate/size/missingok/compress/delaycompress/sharedscripts/postrotate systemctl kill -s HUP rsyslog.service)
 - [x] 03-04: Molecule — molecule.yml (ubuntu2204 + rockylinux9, privileged:true); prepare.yml (Rocky 9 nsswitch fix); converge.yml (rsyslog_forwarding_enabled:true, security_mode:enforce, rsyslog_forwarding_host:"127.0.0.1", rsyslog_forwarding_tls_enabled:false — no TLS in CI to avoid cert chain requirement); verify.yml (assert /etc/rsyslog.d/99-forwarding.conf exists and mode 0640, assert rsyslogd binary present, assert rsyslogd -N1 exits 0 when not container, assert rsyslog active when not container using systemd-detect-virt or _rsyslog_in_container fact)
-- [ ] 03-05: CI integration — add rsyslog_forwarding to ci-uv.yml and ci-cd-enterprise.yml matrices; reinstall collection; run yamllint and ansible-lint --profile production confirming 0 errors
+- [x] 03-05: CI integration — add rsyslog_forwarding to ci-uv.yml and ci-cd-enterprise.yml matrices; reinstall collection; run yamllint and ansible-lint --profile production confirming 0 errors
 
 ---
 
@@ -185,7 +185,7 @@ See REQUIREMENTS.md Traceability section for full requirement-to-phase mapping.
 |-------|----------------|--------|-----------|
 | 1. ntp_hardening | 1/5 | In Progress|  |
 | 2. user_audit | 1/5 | In Progress|  |
-| 3. rsyslog_forwarding | 4/5 | In Progress|  |
+| 3. rsyslog_forwarding | 5/5 | Complete   | 2026-04-18 |
 | 4. antivirus | 0/5 | Not started | - |
 | 5. tls_hardening | 0/5 | Not started | - |
 | 6. usbguard | 0/5 | Not started | - |

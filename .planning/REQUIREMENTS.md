@@ -18,8 +18,8 @@
 - [x] **STD-09**: tests/test.yml has play name + FQCN role reference
 - [x] **STD-10**: molecule/default/ scenario with ubuntu2204 + rockylinux9, prepare.yml for EL
 - [x] **STD-11**: molecule/default/verify.yml asserts key outcomes (binary present, config exists, service enabled)
-- [ ] **STD-12**: yamllint and ansible-lint --profile production pass with 0 errors
-- [ ] **STD-13**: Role added to ci-uv.yml test-roles matrix and ci-cd-enterprise.yml test-molecule matrix
+- [x] **STD-12**: yamllint and ansible-lint --profile production pass with 0 errors
+- [x] **STD-13**: Role added to ci-uv.yml test-roles matrix and ci-cd-enterprise.yml test-molecule matrix
 - [x] **STD-14**: Collection reinstalled after role creation
 
 ### ntp_hardening
@@ -113,8 +113,8 @@
 | STD-09 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
 | STD-10 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
 | STD-11 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
-| STD-12 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Pending |
-| STD-13 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Pending |
+| STD-12 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
+| STD-13 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
 | STD-14 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
 | NTP-01 | Phase 1 | Pending |
 | NTP-02 | Phase 1 | Pending |
