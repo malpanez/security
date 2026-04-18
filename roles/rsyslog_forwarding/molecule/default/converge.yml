@@ -1,0 +1,16 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Include rsyslog_forwarding role
+      ansible.builtin.include_role:
+        name: malpanez.security.rsyslog_forwarding
+      vars:
+        rsyslog_forwarding_enabled: true
+        security_mode: enforce
+        rsyslog_forwarding_host: "127.0.0.1"
+        rsyslog_forwarding_port: 514
+        rsyslog_forwarding_tls_enabled: false
