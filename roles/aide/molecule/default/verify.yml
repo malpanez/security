@@ -90,20 +90,15 @@
         quiet: true
       when: not _in_container
 
-    - name: Set resolved aide config path
-      ansible.builtin.set_fact:
-        _aide_resolved_cfg: "{{ '/etc/aide.conf' if _aide_cfg_rh.stat.exists else '/etc/aide/aide.conf' }}"
-
-    - name: Verify aide config contains expected paths
-      ansible.builtin.command:
-        cmd: grep -c '/etc' "{{ _aide_resolved_cfg }}"
-      register: _cfg_paths
-      changed_when: false
+    - name: Slurp aide config content
+      ansible.builtin.slurp:
+        src: "{{ '/etc/aide.conf' if _aide_cfg_rh.stat.exists else '/etc/aide/aide.conf' }}"
+      register: _aide_cfg_content
 
     - name: Assert aide config has watched paths
       ansible.builtin.assert:
         that:
-          - _cfg_paths.stdout | int > 0
+          - _aide_cfg_content.content | b64decode | regex_search('/etc')
         fail_msg: 'aide config has no watched paths defined'
         quiet: true
 
