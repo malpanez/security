@@ -1,0 +1,81 @@
+---
+- name: Review | Get OpenSSL version
+  ansible.builtin.command:
+    cmd: openssl version
+  register: _tls_openssl_version
+  changed_when: false
+  failed_when: false
+  tags: [tls_hardening, review]
+
+- name: Review | Read FIPS state
+  ansible.builtin.slurp:
+    src: /proc/sys/crypto/fips_enabled
+  register: _tls_fips_review
+  changed_when: false
+  failed_when: false
+  tags: [tls_hardening, review]
+
+- name: Review | Set FIPS active fact
+  ansible.builtin.set_fact:
+    _tls_fips_active: "{{ (_tls_fips_review.content | default('MA==') | b64decode | trim) == '1' }}"
+  tags: [tls_hardening, review]
+
+- name: Review | Get current crypto policy (RHEL 8/9)
+  ansible.builtin.command:
+    cmd: update-crypto-policies --show
+  register: _tls_rhel_policy
+  changed_when: false
+  failed_when: false
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution_major_version | int >= 8
+    - not _tls_in_container | bool
+  tags: [tls_hardening, review]
+
+- name: Review | Slurp openssl.cnf (Debian/Suse/RHEL<8)
+  ansible.builtin.slurp:
+    src: "{{ tls_hardening_openssl_cnf }}"
+  register: _tls_openssl_cnf_review
+  changed_when: false
+  failed_when: false
+  when: >-
+    ansible_os_family in ['Debian', 'Suse'] or
+    (ansible_os_family == 'RedHat' and ansible_distribution_major_version | int < 8)
+  tags: [tls_hardening, review]
+
+- name: Review | Extract current MinProtocol
+  ansible.builtin.set_fact:
+    _tls_current_min_protocol: >-
+      {{ (_tls_openssl_cnf_review.content | b64decode)
+         | regex_search('MinProtocol\s*=\s*(\S+)', '\1')
+         | first | default('NOT_SET') }}
+  when: _tls_openssl_cnf_review.content is defined
+  tags: [tls_hardening, review]
+
+- name: Review | Extract current CipherString
+  ansible.builtin.set_fact:
+    _tls_current_cipher_string: >-
+      {{ (_tls_openssl_cnf_review.content | b64decode)
+         | regex_search('CipherString\s*=\s*(.+)', '\1')
+         | first | default('NOT_SET') }}
+  when: _tls_openssl_cnf_review.content is defined
+  tags: [tls_hardening, review]
+
+- name: Review | Report TLS review findings
+  ansible.builtin.debug:
+    msg:
+      - "Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
+      - "OpenSSL version: {{ _tls_openssl_version.stdout | default('unknown') }}"
+      - "FIPS active: {{ _tls_fips_active | default(false) }}"
+      - "RHEL crypto policy: {{ _tls_rhel_policy.stdout | default('N/A (not RHEL 8/9 or container)') }}"
+      - "Target RHEL policy: {{ tls_hardening_rhel_policy }}"
+      - "RHEL policy change needed: {{ (_tls_rhel_policy.stdout | default('')) != tls_hardening_rhel_policy }}"
+      - "TLS 1.0 currently blocked (RHEL): {{ 'NO-TLSv1' in (_tls_rhel_policy.stdout | default('')) or 'TLSv1.2' in (_tls_rhel_policy.stdout | default('')) }}"
+      - "TLS 1.1 currently blocked (RHEL): {{ 'NO-TLSv1.1' in (_tls_rhel_policy.stdout | default('')) or 'TLSv1.2' in (_tls_rhel_policy.stdout | default('')) }}"
+      - "openssl.cnf MinProtocol: {{ _tls_current_min_protocol | default('N/A') }}"
+      - "openssl.cnf CipherString: {{ _tls_current_cipher_string | default('N/A') }}"
+      - "TLS 1.0 currently blocked (openssl.cnf): {{ (_tls_current_min_protocol | default('NOT_SET')) in ['TLSv1.2', 'TLSv1.3'] }}"
+      - "TLS 1.1 currently blocked (openssl.cnf): {{ (_tls_current_min_protocol | default('NOT_SET')) in ['TLSv1.2', 'TLSv1.3'] }}"
+      - "Target MinProtocol: {{ tls_hardening_min_protocol }}"
+      - "Target CipherString: {{ tls_hardening_openssl_cipher_string }}"
+  tags: [tls_hardening, review]
