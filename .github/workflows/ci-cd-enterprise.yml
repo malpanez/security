@@ -338,6 +338,7 @@ jobs:
           - user_audit
           - rsyslog_forwarding
           - antivirus
+          - tls_hardening
 
     env:
       DOCKER_DEFAULT_PLATFORM: linux/amd64
