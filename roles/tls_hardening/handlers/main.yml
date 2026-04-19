@@ -1,0 +1,3 @@
+---
+# tls_hardening: no service restarts — policy changes apply to new connections.
+# Callers must reload their own daemons after applying tls_hardening.

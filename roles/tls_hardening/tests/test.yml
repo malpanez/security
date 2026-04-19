@@ -1,0 +1,7 @@
+---
+- name: Test tls_hardening role
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: malpanez.security.tls_hardening

@@ -1,0 +1,34 @@
+---
+argument_specs:
+  main:
+    short_description: System-wide TLS and crypto policy hardening
+    options:
+      tls_hardening_enabled:
+        type: bool
+        default: false
+        description: >-
+          Gate variable. Set to true with security_mode=enforce to apply TLS
+          hardening. Review tasks always run regardless.
+      tls_hardening_rhel_policy:
+        type: str
+        default: "DEFAULT:NO-SHA1"
+        description: >-
+          RHEL 8/9 crypto-policies policy string passed to
+          update-crypto-policies --set. Common values: DEFAULT, DEFAULT:NO-SHA1,
+          FUTURE, LEGACY. Has no effect on Debian, SUSE, or RHEL < 8.
+      tls_hardening_min_protocol:
+        type: str
+        default: "TLSv1.2"
+        description: >-
+          Minimum TLS protocol version written to MinProtocol in openssl.cnf
+          on Debian, SUSE, and RHEL < 8.
+        choices:
+          - TLSv1.2
+          - TLSv1.3
+      tls_hardening_openssl_cipher_string:
+        type: str
+        default: "HIGH:!aNULL:!MD5:!RC4:!3DES"
+        description: >-
+          OpenSSL CipherString written to openssl.cnf on Debian, SUSE, and
+          RHEL < 8. Passed directly to the CipherString directive in the
+          [system_default_sect] section.
