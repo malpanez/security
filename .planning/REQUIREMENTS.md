@@ -61,10 +61,10 @@
 
 ### tls_hardening
 
-- [ ] **TLS-01**: review.yml reports current TLS policy/min version, openssl default settings
-- [ ] **TLS-02**: enforce.yml on RHEL: calls update-crypto-policies to set configurable policy
-- [ ] **TLS-03**: enforce.yml on Debian/SUSE: deploys openssl.cnf drop-in with MinProtocol + CipherString
-- [ ] **TLS-04**: Disable TLS 1.0 and 1.1 by default (configurable)
+- [x] **TLS-01**: review.yml reports current TLS policy/min version, openssl default settings
+- [x] **TLS-02**: enforce.yml on RHEL: calls update-crypto-policies to set configurable policy
+- [x] **TLS-03**: enforce.yml on Debian/SUSE: deploys openssl.cnf drop-in with MinProtocol + CipherString
+- [x] **TLS-04**: Disable TLS 1.0 and 1.1 by default (configurable)
 - [x] **TLS-05**: Minimum TLS version configurable (default TLSv1.2)
 - [x] **TLS-06**: Compliance tags: PCI-DSS 4.2.1, HIPAA, NIS2 Art.21, SOC2
 
@@ -141,10 +141,10 @@
 | AV-05 | Phase 4 | Complete |
 | AV-06 | Phase 4 | Complete |
 | AV-07 | Phase 4 | Complete |
-| TLS-01 | Phase 5 | Pending |
-| TLS-02 | Phase 5 | Pending |
-| TLS-03 | Phase 5 | Pending |
-| TLS-04 | Phase 5 | Pending |
+| TLS-01 | Phase 5 | Complete |
+| TLS-02 | Phase 5 | Complete |
+| TLS-03 | Phase 5 | Complete |
+| TLS-04 | Phase 5 | Complete |
 | TLS-05 | Phase 5 | Complete |
 | TLS-06 | Phase 5 | Complete |
 | USB-01 | Phase 6 | Pending |
