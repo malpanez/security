@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Include tls_hardening role
+      ansible.builtin.include_role:
+        name: malpanez.security.tls_hardening
+      vars:
+        tls_hardening_enabled: true
+        security_mode: enforce
