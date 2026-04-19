@@ -1,2 +1,38 @@
 ---
-# tasks file for roles/tls_hardening
+- name: Gather minimum facts if not already collected
+  ansible.builtin.setup:
+    gather_subset: [min]
+  when: ansible_facts == {}
+  tags: [always]
+
+- name: Assert supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ['Debian', 'RedHat', 'Suse']
+    fail_msg: >-
+      tls_hardening: unsupported OS family '{{ ansible_os_family }}'.
+      Supported: Debian, RedHat, Suse.
+    quiet: true
+  tags: [always]
+
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+  tags: [always]
+
+- name: Detect container environment
+  ansible.builtin.set_fact:
+    _tls_in_container: >-
+      {{ ansible_facts.virtualization_type | default('') in
+         ['docker', 'podman', 'container', 'lxc'] }}
+  tags: [always]
+
+- name: Review TLS configuration
+  ansible.builtin.include_tasks: review.yml
+  tags: [tls_hardening, review]
+
+- name: Enforce TLS hardening
+  ansible.builtin.include_tasks: enforce.yml
+  when:
+    - tls_hardening_enabled | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [tls_hardening, enforce]
