@@ -65,8 +65,8 @@
 - [ ] **TLS-02**: enforce.yml on RHEL: calls update-crypto-policies to set configurable policy
 - [ ] **TLS-03**: enforce.yml on Debian/SUSE: deploys openssl.cnf drop-in with MinProtocol + CipherString
 - [ ] **TLS-04**: Disable TLS 1.0 and 1.1 by default (configurable)
-- [ ] **TLS-05**: Minimum TLS version configurable (default TLSv1.2)
-- [ ] **TLS-06**: Compliance tags: PCI-DSS 4.2.1, HIPAA, NIS2 Art.21, SOC2
+- [x] **TLS-05**: Minimum TLS version configurable (default TLSv1.2)
+- [x] **TLS-06**: Compliance tags: PCI-DSS 4.2.1, HIPAA, NIS2 Art.21, SOC2
 
 ### usbguard
 
@@ -145,8 +145,8 @@
 | TLS-02 | Phase 5 | Pending |
 | TLS-03 | Phase 5 | Pending |
 | TLS-04 | Phase 5 | Pending |
-| TLS-05 | Phase 5 | Pending |
-| TLS-06 | Phase 5 | Pending |
+| TLS-05 | Phase 5 | Complete |
+| TLS-06 | Phase 5 | Complete |
 | USB-01 | Phase 6 | Pending |
 | USB-02 | Phase 6 | Pending |
 | USB-03 | Phase 6 | Pending |
