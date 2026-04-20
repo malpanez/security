@@ -140,6 +140,16 @@ Plans:
 
 ---
 
+### Phase 05.1: SSH Access VM Test — commit workflow, playbook, and user_audit inventory for VM-based sssd_ad_integration validation (real sshd, sudoers, pam_access; no AD DC required) (INSERTED)
+
+**Goal:** Commit and validate VM-based SSH access control test workflow, playbook, and user_audit test inventory for sssd_ad_integration structural validation (real sshd, sudoers, pam_access; no AD DC required).
+**Requirements**: VMTEST-01, VMTEST-02, VMTEST-03, VMTEST-04
+**Depends on:** Phase 5
+**Plans:** 1 plan
+
+Plans:
+- [ ] 05.1-01-PLAN.md -- Validate, lint, commit 3 untracked files and update ROADMAP
+
 ### Phase 6: usbguard
 
 **Goal**: Implement USB device control role that reports USBGuard installation state and enforces block-by-default policy — generating an initial device whitelist from currently-attached hardware before starting the daemon to prevent lockout.
