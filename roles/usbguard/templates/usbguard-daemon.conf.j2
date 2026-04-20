@@ -1,0 +1,17 @@
+# Managed by Ansible - do not edit
+RuleFile={{ _usbguard_conf_dir }}/rules.conf
+RuleFolder={{ _usbguard_rules_dir }}
+ImplicitPolicyTarget={{ usbguard_implicit_policy }}
+PresentDevicePolicy={{ usbguard_present_device_policy }}
+PresentControllerPolicy={{ usbguard_present_controller_policy }}
+InsertedDevicePolicy=apply-policy
+RestoreControllerDeviceState={{ usbguard_restore_controller_state | ternary('true', 'false') }}
+DeviceManagerBackend=uevent
+IPCAllowedUsers=root
+IPCAllowedGroups={{ _usbguard_ipc_group }}
+IPCAccessControlFiles=/etc/usbguard/IPCAccessControl.d/
+DeviceRulesWithPort=false
+AuditBackend={{ usbguard_audit_backend }}
+{% if usbguard_audit_backend == 'FileAudit' %}
+AuditFilePath={{ usbguard_audit_file_path }}
+{% endif %}
