@@ -76,7 +76,7 @@
 - [ ] **USB-04**: Deploys usbguard-daemon.conf with ImplicitPolicyTarget=block (default)
 - [ ] **USB-05**: Enables and starts usbguard.service
 - [ ] **USB-06**: Container-aware: skip USB operations in containers (no USB subsystem)
-- [ ] **USB-07**: Compliance tags: PCI-DSS 12.3.4, HIPAA §164.310(d)(1), NIS2, SOC2 CC6.7
+- [x] **USB-07**: Compliance tags: PCI-DSS 12.3.4, HIPAA §164.310(d)(1), NIS2, SOC2 CC6.7
 
 ## v2 Requirements
 
@@ -116,11 +116,11 @@
 | STD-12 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
 | STD-13 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
 | STD-14 | Phase 1, 2, 3, 4, 5, 6 (all phases) | Complete |
-| NTP-01 | Phase 1 | Pending |
-| NTP-02 | Phase 1 | Pending |
+| NTP-01 | Phase 1 | Complete |
+| NTP-02 | Phase 1 | Complete |
 | NTP-03 | Phase 1 | Complete |
-| NTP-04 | Phase 1 | Pending |
-| NTP-05 | Phase 1 | Pending |
+| NTP-04 | Phase 1 | Complete |
+| NTP-05 | Phase 1 | Complete |
 | NTP-06 | Phase 1 | Complete |
 | USR-01 | Phase 2 | Complete |
 | USR-02 | Phase 2 | Complete |
@@ -153,7 +153,7 @@
 | USB-04 | Phase 6 | Pending |
 | USB-05 | Phase 6 | Pending |
 | USB-06 | Phase 6 | Pending |
-| USB-07 | Phase 6 | Pending |
+| USB-07 | Phase 6 | Complete |
 
 ---
 *Requirements defined: 2026-04-14*
