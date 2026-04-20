@@ -1,2 +1,42 @@
 ---
-# tasks file for usbguard
+- name: Gather minimum facts if not already collected
+  ansible.builtin.setup:
+    gather_subset: [min]
+  when: ansible_facts == {}
+  tags: [always]
+
+- name: Assert supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ['Debian', 'RedHat', 'Suse']
+    fail_msg: >-
+      usbguard: unsupported OS family '{{ ansible_os_family }}'.
+      Supported: Debian, RedHat, Suse.
+    quiet: true
+  tags: [always]
+
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+  tags: [always]
+
+- name: Detect USB bus availability
+  ansible.builtin.stat:
+    path: /sys/bus/usb/devices
+  register: _usbguard_usb_bus
+  tags: [always]
+
+- name: Set USB availability fact
+  ansible.builtin.set_fact:
+    _usbguard_usb_available: "{{ _usbguard_usb_bus.stat.exists }}"
+  tags: [always]
+
+- name: Review USBGuard configuration
+  ansible.builtin.include_tasks: review.yml
+  tags: [usbguard, review]
+
+- name: Enforce USBGuard hardening
+  ansible.builtin.include_tasks: enforce.yml
+  when:
+    - usbguard_enabled | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [usbguard, enforce]
