@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 05.1-ssh-access-vm-test/05.1-01-PLAN.md
-last_updated: "2026-04-20T07:27:55.654Z"
+status: executing
+stopped_at: Completed 06-usbguard/06-01-PLAN.md
+last_updated: "2026-04-20T13:05:57.669Z"
 last_activity: 2026-04-20
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 29
-  completed_plans: 29
+  total_plans: 34
+  completed_plans: 31
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-14)
 
 **Core value:** Each new role shows the auditor the deficiency first (review mode) then fixes it (enforce mode)
-**Current focus:** Phase 05.1 — ssh-access-vm-test-commit-workflow-playbook-and-user-audit-inventory-for-vm-based-sssd-ad-integration-validation-real-sshd-sudoers-pam-access-no-ad-dc-required
+**Current focus:** Phase 06 — usbguard
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 06 (usbguard) — EXECUTING
+Plan: 3 of 5
+Status: Ready to execute
 Last activity: 2026-04-20
 
 Progress: [░░░░░░░░░░] 0%
@@ -80,6 +80,8 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-tls-hardening P05-04 | 3 | 1 tasks | 4 files |
 | Phase 05-tls-hardening P05-05 | 5 | 1 tasks | 2 files |
 | Phase 05.1-ssh-access-vm-test P01 | 9 | 2 tasks | 3 files |
+| Phase 06-usbguard P06-04 | 8 | 2 tasks | 4 files |
+| Phase 06-usbguard P06-01 | 512 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -131,6 +133,8 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 05-tls-hardening]: tls_hardening molecule: verify.yml uses set_fact for OS-specific openssl.cnf path (no include_vars relative paths)
 - [Phase 05-tls-hardening]: tls_hardening inserted after antivirus in both CI matrices — consistent with ROADMAP phase sequence
 - [Phase 05.1-ssh-access-vm-test]: pre-commit wrapper: created /tmp/bin/pre-commit wrapper pointing to venv Python module — venv shebang broken (references old path /repos/malpanez vs /repos/wcl/malpanez), wrapper unblocks commits without touching venv files
+- [Phase 06-usbguard]: usbguard molecule verify: asserts package NOT installed (not service running) — meta:end_host fires before install when USB bus absent
+- [Phase 06-usbguard]: usbguard: ansible.builtin.service in handler (not systemd), Suse omitted from meta platforms (Galaxy schema), _usbguard_usb_available guard for container safety, EPEL conditional as Jinja2 expression (RHEL 8 only)
 
 ### Roadmap Evolution
 
@@ -147,6 +151,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-20T07:20:38.349Z
-Stopped at: Completed 05.1-ssh-access-vm-test/05.1-01-PLAN.md
+Last session: 2026-04-20T13:05:57.653Z
+Stopped at: Completed 06-usbguard/06-01-PLAN.md
 Resume file: None
