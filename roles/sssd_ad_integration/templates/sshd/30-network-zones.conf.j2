@@ -11,10 +11,10 @@
 #   directive in 30 (first occurrence) takes precedence.
 #
 #   Example: admin from corp LAN triggers Match Address corp AND
-#   Match Group linux-admins.  The corp block sets
-#   AuthenticationMethods publickey (single factor) — this wins over
-#   the linux-admins block's publickey,keyboard-interactive (2FA).
-#   Admins from internet trigger only Match Group linux-admins → 2FA.
+#   Match Group linux-admins.  When ssh_corp_require_mfa=false (default),
+#   the corp block sets AuthenticationMethods publickey (single factor) —
+#   this wins over linux-admins's publickey,keyboard-interactive (2FA).
+#   Set ssh_corp_require_mfa=true to require 2FA even from corp LAN.
 #
 # LoginGraceTime and MaxStartups are NOT valid inside Match blocks.
 # They must be set globally (in 10-auth-hardening.conf).
@@ -24,7 +24,11 @@ Match Address {{ ssh_network_zones.corp }}
     PasswordAuthentication yes
     MaxAuthTries 6
     AllowAgentForwarding yes
+{% if ssh_corp_require_mfa | default(false) | bool %}
+    AuthenticationMethods publickey,keyboard-interactive
+{% else %}
     AuthenticationMethods publickey
+{% endif %}
 {% endif %}
 
 {% if ssh_network_zones.vpn | length > 0 %}
