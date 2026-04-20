@@ -157,7 +157,7 @@ jenkins ALL=(ALL) NOPASSWD: /bin/bash, /usr/bin/bash
 
 ```
 Layer 7 — Application        → DAST, SAST, dependency scanning
-Layer 6 — Container/Cloud    → Trivy, CSPM, misconfiguration scanning
+Layer 6 — Container/Cloud    → Grype, CSPM, misconfiguration scanning
 Layer 5 — Network            → Firewall, IDS/IPS, WAF, Zero Trust
 Layer 4 — Identity           → MFA, PAM, SSH key management, LDAP/AD hygiene
 Layer 3 — OS hardening       → THIS COLLECTION
@@ -217,7 +217,7 @@ who no longer works there is not a security control. It is a mystery.
 ## What this collection is NOT
 
 - Not a replacement for a SIEM or threat detection.
-- Not a vulnerability scanner (use Trivy, Grype, OpenSCAP for that).
+- Not a vulnerability scanner (use Grype, OpenSCAP for that).
 - Not a configuration audit tool (use OpenSCAP/XCCDF for formal CIS benchmarks).
 - Not a key management solution (use Vault, AWS Secrets Manager, etc.).
 
