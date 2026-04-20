@@ -7,7 +7,8 @@ ConditionPathExists=/usr/bin/clamscan
 
 [Service]
 Type=oneshot
-User=root
+User={{ antivirus_clamd_user }}
+Group={{ antivirus_clamd_group }}
 ExecStart=/usr/bin/clamscan \
   --recursive \
   --infected \
