@@ -1,0 +1,7 @@
+---
+- name: Restart usbguard
+  ansible.builtin.service:
+    name: "{{ _usbguard_service }}"
+    state: restarted
+  changed_when: true
+  when: _usbguard_usb_available | default(false) | bool
