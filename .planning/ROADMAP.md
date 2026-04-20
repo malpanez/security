@@ -21,7 +21,7 @@ The milestone closes with a version bump from 1.1.0 to 1.2.0.
 - [x] **Phase 3: rsyslog_forwarding** - Centralised log forwarding via rsyslog drop-in with optional TLS (NIS2, SOC2 CC7.2, PCI-DSS 10.5) (completed 2026-04-18)
 - [x] **Phase 4: antivirus** - ClamAV installation, freshclam updates, and scheduled scan timer (PCI-DSS 5.2, NIS2, SOC2 CC6.8) (completed 2026-04-18)
 - [x] **Phase 5: tls_hardening** - System-wide TLS version and cipher enforcement (PCI-DSS 4.2.1, HIPAA, NIS2) (completed 2026-04-19)
-- [ ] **Phase 6: usbguard** - USB device control with block-by-default policy (PCI-DSS 12.3.4, HIPAA, NIS2)
+- [x] **Phase 6: usbguard** - USB device control with block-by-default policy (PCI-DSS 12.3.4, HIPAA, NIS2) (completed 2026-04-20)
 
 ## Phase Details
 
@@ -169,7 +169,7 @@ Plans:
 - [x] 06-02: Tasks — tasks/main.yml (gather_subset:[min,virtual] to populate virtualization_type, OS assert, include_vars with first_found, stat /sys/bus/usb/devices register _usbguard_usb_bus tags:[always], set_fact _usbguard_usb_available from stat.exists tags:[always], package_facts manager:auto tags:[always], include review.yml, include enforce.yml when enabled+enforce); tasks/review.yml (package_facts + service_facts; shell grep ImplicitPolicyTarget from daemon_conf failed_when:false; stat initial_rules file; debug report block with all findings including USB bus availability warning and RHEL 8 EPEL warning when applicable)
 - [x] 06-03: Tasks enforce.yml (full implementation) — debug+meta:end_host when not _usbguard_usb_available (graceful container skip); package_facts for EPEL assert when RHEL 8; package install usbguard; file rules_dir 0750; stat initial_rules register _usbguard_rules_existing; shell usbguard generate-policy register _usbguard_generated_policy changed_when:false when allow_existing_devices+not rules_existing; copy content:generated_policy+newline to initial_rules 0640 when allow_existing_devices+not rules_existing+policy non-empty; copy usbguard_extra_rules joined content to rules.d/10-extra-rules.conf when extra_rules non-empty notify:Restart usbguard; template usbguard-daemon.conf.j2 dest:daemon_conf mode:"0600" notify:Restart usbguard; service enable+start usbguard; service_facts post; assert service running; debug completion report; templates/usbguard-daemon.conf.j2 (RuleFile + RuleFolder pointing to rules_dir, ImplicitPolicyTarget, PresentDevicePolicy, PresentControllerPolicy, RestoreControllerDeviceState ternary true/false, InsertDRID:false, AuthorizedDefault:none, IPCAllowedUsers:root, IPCAllowedGroups:_usbguard_ipc_group, AuditBackend, conditional AuditFilePath when FileAudit)
 - [x] 06-04: Molecule — molecule.yml (ubuntu2204 + rockylinux9, privileged:true); prepare.yml (Rocky 9 nsswitch fix; note: RHEL 8 EPEL not needed for RHEL 9); converge.yml (usbguard_enabled:true, security_mode:enforce — will hit end_host in containers due to no USB bus); verify.yml (assert _usbguard_usb_available is false in container context; assert review debug output was produced; assert no enforcement errors occurred; assert package_facts were gathered; do NOT assert usbguard is running — containers have no USB bus and enforce gracefully skips)
-- [ ] 06-05: CI integration + milestone close — add usbguard to ci-uv.yml and ci-cd-enterprise.yml matrices; reinstall collection; run yamllint and ansible-lint --profile production confirming 0 errors; bump galaxy.yml version 1.1.0 → 1.2.0; update CHANGELOG.md promoting [Unreleased] section to [1.2.0] - 2026-04-14 listing all 6 new roles with their compliance framework tags; run `ansible-galaxy collection build --force` to verify build succeeds
+- [x] 06-05: CI integration + milestone close — add usbguard to ci-uv.yml and ci-cd-enterprise.yml matrices; reinstall collection; run yamllint and ansible-lint --profile production confirming 0 errors; bump galaxy.yml version 1.1.0 → 1.2.0; update CHANGELOG.md promoting [Unreleased] section to [1.2.0] - 2026-04-14 listing all 6 new roles with their compliance framework tags; run `ansible-galaxy collection build --force` to verify build succeeds
 
 ---
 
@@ -198,4 +198,4 @@ See REQUIREMENTS.md Traceability section for full requirement-to-phase mapping.
 | 3. rsyslog_forwarding | 5/5 | Complete   | 2026-04-18 |
 | 4. antivirus | 5/5 | Complete   | 2026-04-18 |
 | 5. tls_hardening | 5/5 | Complete   | 2026-04-19 |
-| 6. usbguard | 2/5 | In Progress|  |
+| 6. usbguard | 5/5 | Complete   | 2026-04-20 |
