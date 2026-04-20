@@ -232,16 +232,16 @@ argument_specs:
           - Optional LDAP filter to restrict AD login access.
           - Must be a single-line string (sssd.conf is INI, no backslash continuation).
 
-      ssh_verify_ad_groups:
+      ssh_verify_groups:
         type: bool
         default: true
         description:
-          - Run AD group membership verification after applying configuration.
+          - Run group membership verification after applying configuration.
           - Queries each enabled group via getent group (NSS/SSSD).
-          - Detects groups that are missing in AD or have no members before
+          - Detects groups that are missing or have no members before
             silent lockouts occur.
 
-      ssh_verify_ad_groups_strict:
+      ssh_verify_groups_strict:
         type: bool
         default: true
         description:
@@ -250,3 +250,15 @@ argument_specs:
           - 'OpenSSH deny-by-default: unresolvable group means ALL users are denied.'
           - 'false: warn and continue. Use only during initial rollout.'
           - 'Mitigate lockout risk with ssh_local_fallback_group.'
+
+      ssh_verify_ad_groups:
+        type: bool
+        default: true
+        description:
+          - Deprecated alias for ssh_verify_groups. Use ssh_verify_groups instead.
+
+      ssh_verify_ad_groups_strict:
+        type: bool
+        default: true
+        description:
+          - Deprecated alias for ssh_verify_groups_strict. Use ssh_verify_groups_strict instead.
