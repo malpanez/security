@@ -339,6 +339,7 @@ jobs:
           - rsyslog_forwarding
           - antivirus
           - tls_hardening
+          - usbguard
 
     env:
       DOCKER_DEFAULT_PLATFORM: linux/amd64
