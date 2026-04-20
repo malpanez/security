@@ -43,6 +43,13 @@ ssh_network_zones:
   vpn: "10.8.0.0/24"
   bastion: ""
 
+# Require MFA (publickey + keyboard-interactive) even from corporate LAN.
+# Default false preserves backward compatibility. Set true to close AUDIT-CRIT-01:
+# without this, Match Address corp (file 30) sets AuthenticationMethods publickey,
+# which wins over Match Group linux-admins (file 40) publickey,keyboard-interactive
+# due to sshd first-occurrence-wins rule.
+ssh_corp_require_mfa: false
+
 # ---------------------------------------------------------------------------
 # sshd drop-in directory (must match sshd_hardening_config_dir if used together).
 # ---------------------------------------------------------------------------
@@ -118,7 +125,10 @@ sssd_ad_realm: ""        # REQUIRED for backend=ad — e.g. "CORP.EXAMPLE.COM"
 sssd_ad_server: "_srv_"  # DNS SRV lookup by default
 
 sssd_cache_credentials: true
-sssd_offline_credentials_expiration: 0  # 0=never. Document this decision explicitly.
+# Days cached credentials remain valid when AD is unreachable.
+# 0 = no expiry (AUDIT-HIGH-01 risk: disabled AD accounts authenticate indefinitely).
+# 7 = credentials expire after 7 days offline. Adjust per site availability needs.
+sssd_offline_credentials_expiration: 7
 sssd_enumerate_users: false
 sssd_use_fully_qualified_names: false   # login as 'user' not 'user@domain'
 sssd_ldap_id_mapping: true             # SID→UID/GID mapping, no schema extensions
@@ -146,12 +156,15 @@ sssd_ipa_access_provider: "permit"  # "permit"=allow all IPA users; "ipa"=enforc
 # local /etc/group, SSSD/AD, SSSD/IPA, or any other NSS source.
 #
 # ssh_verify_groups_strict:
-#   false — warn via debug, continue play. Use during initial rollout.
-#   true  — fail the play if any group is missing or has no members.
-#           Use in CI and post-join verification playbooks.
+#   true  (default) — fail the play if any group is missing or has no members.
+#           Prevents silent lockout from unresolvable AllowGroups entries.
+#           OpenSSH deny-by-default: unresolvable group = ALL users denied.
+#   false — warn via debug, continue play. Use only during initial rollout
+#           when groups are not yet populated. Set ssh_local_fallback_group
+#           to prevent total lockout.
 # ---------------------------------------------------------------------------
 ssh_verify_groups: true
-ssh_verify_groups_strict: false
+ssh_verify_groups_strict: true
 
 # Backward-compatible aliases (deprecated — prefer ssh_verify_groups*)
 ssh_verify_ad_groups: "{{ ssh_verify_groups }}"

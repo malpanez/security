@@ -62,6 +62,17 @@ argument_specs:
             default: ''
             description: Optional single bastion IP. Empty = no Match Address block.
 
+      ssh_corp_require_mfa:
+        type: bool
+        default: false
+        description:
+          - Require 2FA (publickey + keyboard-interactive) for the corp LAN zone.
+          - 'When false (default): corp LAN uses publickey only (backward compatible).'
+          - 'When true: corp LAN uses publickey,keyboard-interactive, closing the'
+          - 'sshd first-occurrence-wins loophole where file 30 (Match Address) overrides'
+          - 'file 40 (Match Group linux-admins) AuthenticationMethods.'
+          - 'Risk acceptance: set false only if corp LAN is trusted and MFA adds no value.'
+
       sshd_config_d_path:
         type: str
         default: /etc/ssh/sshd_config.d
@@ -176,11 +187,12 @@ argument_specs:
 
       sssd_offline_credentials_expiration:
         type: int
-        default: 0
+        default: 7
         description:
           - Days to accept cached credentials when AD is unreachable.
-          - "'0' means never expire. Teams must set this explicitly."
-          - See docs/ssh-ad-integration.md for the security tradeoff discussion.
+          - 7 days balances offline access against credential staleness.
+          - '0 means never expire — disabled AD accounts can authenticate indefinitely.'
+          - Set higher for sites with unreliable WAN. Set 0 only with documented risk acceptance.
 
       sssd_enumerate_users:
         type: bool
@@ -231,7 +243,10 @@ argument_specs:
 
       ssh_verify_ad_groups_strict:
         type: bool
-        default: false
+        default: true
         description:
-          - 'false: warn via debug on missing/empty groups, continue play.'
-          - 'true: fail the play. Use in CI pipelines and post-join verification.'
+          - 'true (default): fail the play if any enabled group is unresolvable or empty.'
+          - 'Prevents deploying AllowGroups with groups OpenSSH cannot resolve.'
+          - 'OpenSSH deny-by-default: unresolvable group means ALL users are denied.'
+          - 'false: warn and continue. Use only during initial rollout.'
+          - 'Mitigate lockout risk with ssh_local_fallback_group.'

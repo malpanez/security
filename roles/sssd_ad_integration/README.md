@@ -46,10 +46,14 @@ simultaneously, the **first occurrence** of each directive wins.
 This enables zone-aware 2FA without `Match Address AND Group` syntax (which
 OpenSSH does not support):
 
-- `30-network-zones.conf` sets `AuthenticationMethods publickey` for corp/vpn
+- `30-network-zones.conf` controls `AuthenticationMethods` for corp/vpn
 - `40-group-admins.conf` sets `AuthenticationMethods publickey,keyboard-interactive`
-- Admin from corp → corp block fires first → single-factor (pubkey only)
 - Admin from internet → only group block fires → 2FA required
+- Admin from corp → corp block fires first; `ssh_corp_require_mfa` controls the result:
+  - `ssh_corp_require_mfa: false` (default) → corp block sets publickey (single factor)
+  - `ssh_corp_require_mfa: true` → corp block sets publickey,keyboard-interactive (MFA)
+
+Set `ssh_corp_require_mfa: true` to close **AUDIT-CRIT-01**.
 
 ## Groups
 
@@ -72,12 +76,29 @@ All variables have defaults. Required variables when `sssd_ad_configure: true`:
 | `ssh_network_zones.corp` | no | `10.10.0.0/16` | Corporate LAN CIDR |
 | `ssh_network_zones.vpn` | no | `10.8.0.0/24` | VPN CIDR |
 | `ssh_network_zones.bastion` | no | `""` | Bastion IP (empty = disabled) |
+| `ssh_corp_require_mfa` | no | `false` | Require MFA from corp LAN (set `true` to close AUDIT-CRIT-01) |
 | `ssh_chroot_base` | no | `/data/readonly` | ChrootDirectory for readonly group |
 | `ssh_service_allowed_sources` | no | `[]` | Source IPs for linux-service PAM access |
-| `sssd_offline_credentials_expiration` | no | `0` | Days cached creds valid (0=never) |
+| `sssd_offline_credentials_expiration` | no | `7` | Days cached creds valid (0=never; 7=default, closes AUDIT-HIGH-01) |
+| `ssh_verify_groups_strict` | no | `true` | Fail play on unresolvable AllowGroups entries (closes AUDIT-HIGH-03) |
 
 See [defaults/main.yml](defaults/main.yml) and
 [meta/argument_specs.yml](meta/argument_specs.yml) for all variables.
+
+## Upgrade Notes
+
+### Default changes in this version
+
+The following defaults changed. Operators using the old defaults must set them
+explicitly to preserve previous behavior.
+
+| Variable | Old default | New default | Reason |
+|----------|-------------|-------------|--------|
+| `sssd_offline_credentials_expiration` | `0` (never expire) | `7` (days) | AUDIT-HIGH-01: disabled AD accounts could authenticate indefinitely when offline |
+| `ssh_verify_groups_strict` | `false` | `true` | AUDIT-HIGH-03: unresolvable AllowGroups entries silently lock out all users |
+
+`ssh_corp_require_mfa` is new (default `false`). Existing deployments are
+unaffected. Set `true` to close AUDIT-CRIT-01 (MFA enforcement on corp LAN).
 
 ## ChrootDirectory
 
