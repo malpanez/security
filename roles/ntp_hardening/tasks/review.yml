@@ -51,13 +51,27 @@
   failed_when: false
   tags: [ntp_hardening, review]
 
+- name: Review | Extract stratum and time drift from tracking output
+  ansible.builtin.set_fact:
+    _ntp_stratum: >-
+      {{ (_ntp_tracking.stdout | default(''))
+         | regex_search('Stratum\s*:\s*(\d+)', '\1')
+         | first | default('unknown') }}
+    _ntp_time_offset: >-
+      {{ (_ntp_tracking.stdout | default(''))
+         | regex_search('System time\s*:\s*([^\n]+)', '\1')
+         | first | default('unknown') }}
+  when: not _ntp_in_container | bool
+  tags: [ntp_hardening, review]
+
 - name: Review | Report NTP review findings
   ansible.builtin.debug:
     msg:
       - 'Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})'
       - 'Package installed: {{ (_ntp_pkg_check.rc | default(-1)) == 0 }}'
       - 'Service active: {{ _ntp_svc_check.stdout | default("unknown") }}'
-      - 'Tracking: {{ _ntp_tracking.stdout_lines | default(["skipped - container"]) }}'
-      - 'Sources: {{ _ntp_sources.stdout_lines | default(["skipped - container"]) }}'
+      - 'Stratum: {{ _ntp_stratum | default("skipped - container") }}'
+      - 'Time drift (offset): {{ _ntp_time_offset | default("skipped - container") }}'
+      - 'NTP sources: {{ _ntp_sources.stdout_lines | default(["skipped - container"]) }}'
       - 'CVE-2013-5211 risk (monitor directive present): {{ _ntp_monitor_check.rc == 0 }}'
   tags: [ntp_hardening, review]
