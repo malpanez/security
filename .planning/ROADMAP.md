@@ -198,4 +198,21 @@ See REQUIREMENTS.md Traceability section for full requirement-to-phase mapping.
 | 3. rsyslog_forwarding | 5/5 | Complete   | 2026-04-18 |
 | 4. antivirus | 5/5 | Complete   | 2026-04-18 |
 | 5. tls_hardening | 5/5 | Complete   | 2026-04-19 |
-| 6. usbguard | 5/5 | Complete   | 2026-04-20 |
+| 6. usbguard | 5/5 | Complete    | 2026-04-20 |
+
+### Phase 06.1: Security audit remediations — CRITICAL-01, HIGH-01, HIGH-03, MEDIUM-02 (HIGH) (INSERTED)
+
+**Goal:** Remediate 4 security audit findings: corp LAN MFA downgrade (CRIT-01), offline credential expiration never expires (HIGH-01), verify_groups_strict unsafe default (HIGH-03), ClamAV scan runs as root (MED-02). All fixes use secure-by-default values with opt-out for backward compatibility.
+**Requirements**: AUDIT-CRIT-01, AUDIT-HIGH-01, AUDIT-HIGH-03, AUDIT-MED-02
+**Depends on:** Phase 6
+**Success Criteria** (what must be TRUE):
+  1. ssh_corp_require_mfa variable controls MFA in corp Match Address block; when true, AuthenticationMethods = publickey,keyboard-interactive
+  2. sssd_offline_credentials_expiration defaults to 7 (not 0); argument_specs documents the risk
+  3. ssh_verify_groups_strict defaults to true (not false); argument_specs documents lockout risk
+  4. clamav-scan.service runs as antivirus_clamd_user (not root); no User=root in template
+  5. yamllint + ansible-lint pass on all modified files
+**Plans:** 2 plans
+
+Plans:
+- [ ] 06.1-01-PLAN.md -- sssd_ad_integration remediations: AUDIT-CRIT-01 (corp MFA toggle), AUDIT-HIGH-01 (offline cred expiry 0->7), AUDIT-HIGH-03 (verify_groups_strict false->true)
+- [ ] 06.1-02-PLAN.md -- antivirus remediation: AUDIT-MED-02 (clamav-scan.service User=root -> antivirus_clamd_user)
