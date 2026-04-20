@@ -22,6 +22,7 @@ The milestone closes with a version bump from 1.1.0 to 1.2.0.
 - [x] **Phase 4: antivirus** - ClamAV installation, freshclam updates, and scheduled scan timer (PCI-DSS 5.2, NIS2, SOC2 CC6.8) (completed 2026-04-18)
 - [x] **Phase 5: tls_hardening** - System-wide TLS version and cipher enforcement (PCI-DSS 4.2.1, HIPAA, NIS2) (completed 2026-04-19)
 - [x] **Phase 6: usbguard** - USB device control with block-by-default policy (PCI-DSS 12.3.4, HIPAA, NIS2) (completed 2026-04-20)
+- [x] **Phase 06.1: security-audit-remediations** - AUDIT-CRIT-01, HIGH-01, HIGH-03, MED-02 remediations in sssd_ad_integration and antivirus (completed 2026-04-20)
 
 ## Phase Details
 
