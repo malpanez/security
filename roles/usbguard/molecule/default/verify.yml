@@ -1,0 +1,40 @@
+---
+- name: Verify usbguard
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Check USB bus availability in container
+      ansible.builtin.stat:
+        path: /sys/bus/usb/devices
+      register: _verify_usb_bus
+
+    - name: Assert USB bus absent in container environment
+      ansible.builtin.assert:
+        that:
+          - not _verify_usb_bus.stat.exists
+        fail_msg: >-
+          USB bus was unexpectedly found at /sys/bus/usb/devices.
+          Review container detection logic.
+        quiet: true
+
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert usbguard package is NOT installed (enforce skipped in container)
+      ansible.builtin.assert:
+        that:
+          - "'usbguard' not in ansible_facts.packages"
+        fail_msg: >-
+          usbguard package was installed despite USB bus being absent.
+          meta:end_host should have prevented enforcement.
+        quiet: true
+
+    - name: Confirm graceful container skip
+      ansible.builtin.debug:
+        msg: >-
+          Container verification complete.
+          USB bus absent, enforce skipped gracefully via meta:end_host.
+          No enforcement errors occurred.
