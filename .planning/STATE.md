@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 05-tls-hardening/05-05-PLAN.md
-last_updated: "2026-04-19T11:02:44.828Z"
-last_activity: 2026-04-19
+stopped_at: Completed 05.1-ssh-access-vm-test/05.1-01-PLAN.md
+last_updated: "2026-04-20T07:20:38.361Z"
+last_activity: 2026-04-20
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 28
-  completed_plans: 28
+  total_phases: 7
+  completed_phases: 6
+  total_plans: 29
+  completed_plans: 29
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-14)
 
 **Core value:** Each new role shows the auditor the deficiency first (review mode) then fixes it (enforce mode)
-**Current focus:** Phase 05 — tls-hardening
+**Current focus:** Phase 05.1 — ssh-access-vm-test-commit-workflow-playbook-and-user-audit-inventory-for-vm-based-sssd-ad-integration-validation-real-sshd-sudoers-pam-access-no-ad-dc-required
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
+Phase: 05.1 (ssh-access-vm-test-commit-workflow-playbook-and-user-audit-inventory-for-vm-based-sssd-ad-integration-validation-real-sshd-sudoers-pam-access-no-ad-dc-required) — EXECUTING
+Plan: 1 of 1
 Status: Phase complete — ready for verification
-Last activity: 2026-04-19
+Last activity: 2026-04-20
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -79,6 +79,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-tls-hardening P05-02 | 15 | 2 tasks | 2 files |
 | Phase 05-tls-hardening P05-04 | 3 | 1 tasks | 4 files |
 | Phase 05-tls-hardening P05-05 | 5 | 1 tasks | 2 files |
+| Phase 05.1-ssh-access-vm-test P01 | 9 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,11 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 05-tls-hardening]: tls_hardening: slurp used for FIPS and openssl.cnf reads — reads managed host not controller
 - [Phase 05-tls-hardening]: tls_hardening molecule: verify.yml uses set_fact for OS-specific openssl.cnf path (no include_vars relative paths)
 - [Phase 05-tls-hardening]: tls_hardening inserted after antivirus in both CI matrices — consistent with ROADMAP phase sequence
+- [Phase 05.1-ssh-access-vm-test]: pre-commit wrapper: created /tmp/bin/pre-commit wrapper pointing to venv Python module — venv shebang broken (references old path /repos/malpanez vs /repos/wcl/malpanez), wrapper unblocks commits without touching venv files
+
+### Roadmap Evolution
+
+- Phase 05.1 inserted after Phase 5: SSH Access VM Test — commit workflow, playbook, and user_audit inventory for VM-based sssd_ad_integration validation (INSERTED)
 
 ### Pending Todos
 
@@ -141,6 +147,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-19T10:52:47.346Z
-Stopped at: Completed 05-tls-hardening/05-05-PLAN.md
+Last session: 2026-04-20T07:20:38.349Z
+Stopped at: Completed 05.1-ssh-access-vm-test/05.1-01-PLAN.md
 Resume file: None

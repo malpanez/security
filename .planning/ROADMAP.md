@@ -145,10 +145,10 @@ Plans:
 **Goal:** Commit and validate VM-based SSH access control test workflow, playbook, and user_audit test inventory for sssd_ad_integration structural validation (real sshd, sudoers, pam_access; no AD DC required).
 **Requirements**: VMTEST-01, VMTEST-02, VMTEST-03, VMTEST-04
 **Depends on:** Phase 5
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 05.1-01-PLAN.md -- Validate, lint, commit 3 untracked files and update ROADMAP
+- [x] 05.1-01-PLAN.md -- Validate, lint, commit 3 untracked files and update ROADMAP
 
 ### Phase 6: usbguard
 
