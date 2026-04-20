@@ -71,10 +71,10 @@
 ### usbguard
 
 - [x] **USB-01**: review.yml reports usbguard installation, policy (ImplicitPolicyTarget), existing rules
-- [ ] **USB-02**: enforce.yml installs usbguard
-- [ ] **USB-03**: Runs usbguard generate-policy BEFORE enabling block policy (captures existing devices)
-- [ ] **USB-04**: Deploys usbguard-daemon.conf with ImplicitPolicyTarget=block (default)
-- [ ] **USB-05**: Enables and starts usbguard.service
+- [x] **USB-02**: enforce.yml installs usbguard
+- [x] **USB-03**: Runs usbguard generate-policy BEFORE enabling block policy (captures existing devices)
+- [x] **USB-04**: Deploys usbguard-daemon.conf with ImplicitPolicyTarget=block (default)
+- [x] **USB-05**: Enables and starts usbguard.service
 - [x] **USB-06**: Container-aware: skip USB operations in containers (no USB subsystem)
 - [x] **USB-07**: Compliance tags: PCI-DSS 12.3.4, HIPAA §164.310(d)(1), NIS2, SOC2 CC6.7
 
@@ -148,10 +148,10 @@
 | TLS-05 | Phase 5 | Complete |
 | TLS-06 | Phase 5 | Complete |
 | USB-01 | Phase 6 | Complete |
-| USB-02 | Phase 6 | Pending |
-| USB-03 | Phase 6 | Pending |
-| USB-04 | Phase 6 | Pending |
-| USB-05 | Phase 6 | Pending |
+| USB-02 | Phase 6 | Complete |
+| USB-03 | Phase 6 | Complete |
+| USB-04 | Phase 6 | Complete |
+| USB-05 | Phase 6 | Complete |
 | USB-06 | Phase 6 | Complete |
 | USB-07 | Phase 6 | Complete |
 
