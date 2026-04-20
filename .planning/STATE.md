@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 06-usbguard/06-05-PLAN.md
-last_updated: "2026-04-20T13:26:06.475Z"
+stopped_at: Completed 06.1-01-PLAN.md
+last_updated: "2026-04-20T14:52:14.921Z"
 last_activity: 2026-04-20
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 34
-  completed_plans: 34
+  total_phases: 8
+  completed_phases: 8
+  total_plans: 36
+  completed_plans: 36
   percent: 0
 ---
 
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 
 ## Current Position
 
-Phase: 06 (usbguard) — EXECUTING
-Plan: 5 of 5
+Phase: 6
+Plan: Not started
 Status: Phase complete — ready for verification
 Last activity: 2026-04-20
 
@@ -85,6 +85,8 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 06-usbguard P02 | 4 | 2 tasks | 2 files |
 | Phase 06-usbguard P03 | 20 | 2 tasks | 2 files |
 | Phase 06-usbguard P06-05 | 395 | 2 tasks | 4 files |
+| Phase 06.1-security-audit-remediations-critical-01-high-01-high-03-medium-02-high P02 | 8 | 1 tasks | 1 files |
+| Phase 06.1-security-audit-remediations-critical-01-high-01-high-03-medium-02-high P01 | 18 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -142,10 +144,14 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 06-usbguard]: generate-policy write-once + stdout guard prevents empty rules file and re-run overwrites
 - [Phase 06-usbguard]: daemon.conf requires both RuleFile and RuleFolder — RuleFolder alone silently ignores rules.d/ files
 - [Phase 06-usbguard]: Tarball malpanez-security-1.2.0.tar.gz produced but not committed (galaxy.yml build_ignore: '*.tar.gz')
+- [Phase 06.1]: antivirus/clamav-scan.service.j2: User={{ antivirus_clamd_user }}, Group={{ antivirus_clamd_group }} — privilege drop from root resolves AUDIT-MED-02 without adding hardening directives that break scan
+- [Phase 06.1]: sssd_ad_integration: AUDIT-CRIT-01 closed by opt-in ssh_corp_require_mfa=false default; set true to enforce MFA on corp LAN
+- [Phase 06.1]: sssd_ad_integration: sssd_offline_credentials_expiration 0->7 (AUDIT-HIGH-01); ssh_verify_groups_strict false->true (AUDIT-HIGH-03)
 
 ### Roadmap Evolution
 
 - Phase 05.1 inserted after Phase 5: SSH Access VM Test — commit workflow, playbook, and user_audit inventory for VM-based sssd_ad_integration validation (INSERTED)
+- Phase 06.1 inserted after Phase 6: Security audit remediations — CRITICAL-01, HIGH-01, HIGH-03, MEDIUM-02 (HIGH) (URGENT)
 
 ### Pending Todos
 
@@ -158,6 +164,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-20T13:26:06.465Z
-Stopped at: Completed 06-usbguard/06-05-PLAN.md
+Last session: 2026-04-20T14:52:14.912Z
+Stopped at: Completed 06.1-01-PLAN.md
 Resume file: None

@@ -211,8 +211,8 @@ See REQUIREMENTS.md Traceability section for full requirement-to-phase mapping.
   3. ssh_verify_groups_strict defaults to true (not false); argument_specs documents lockout risk
   4. clamav-scan.service runs as antivirus_clamd_user (not root); no User=root in template
   5. yamllint + ansible-lint pass on all modified files
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 06.1-01-PLAN.md -- sssd_ad_integration remediations: AUDIT-CRIT-01 (corp MFA toggle), AUDIT-HIGH-01 (offline cred expiry 0->7), AUDIT-HIGH-03 (verify_groups_strict false->true)
-- [ ] 06.1-02-PLAN.md -- antivirus remediation: AUDIT-MED-02 (clamav-scan.service User=root -> antivirus_clamd_user)
+- [x] 06.1-01-PLAN.md -- sssd_ad_integration remediations: AUDIT-CRIT-01 (corp MFA toggle), AUDIT-HIGH-01 (offline cred expiry 0->7), AUDIT-HIGH-03 (verify_groups_strict false->true)
+- [x] 06.1-02-PLAN.md -- antivirus remediation: AUDIT-MED-02 (clamav-scan.service User=root -> antivirus_clamd_user)
