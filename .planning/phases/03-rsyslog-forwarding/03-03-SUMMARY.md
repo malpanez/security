@@ -101,3 +101,10 @@ None - no external service configuration required.
 ---
 *Phase: 03-rsyslog-forwarding*
 *Completed: 2026-04-18*
+
+## Self-Check: PASSED
+
+- FOUND: roles/rsyslog_forwarding/templates/99-forwarding.conf.j2
+- FOUND: roles/rsyslog_forwarding/templates/rsyslog-logrotate.j2
+- FOUND: commit 658e97b (feat: templates)
+- FOUND: commit 080a49a (docs: plan metadata)
