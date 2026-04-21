@@ -1,38 +1,55 @@
-Role Name
-=========
+# ntp_hardening
 
-A brief description of the role goes here.
+NTP/chrony hardening. Installs chrony, disables competing time daemons, deploys a hardened chrony.conf, and enables the service. Supports review mode (audit-only) and enforce mode.
 
-Requirements
-------------
+## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+- Ansible >= 2.16
+- Collection: `malpanez.security`
 
-Role Variables
---------------
+## Role Variables
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ntp_hardening_enabled` | `false` | Gate variable. Set `true` with `security_mode: enforce` to install and configure chrony. Review tasks always run. |
+| `ntp_hardening_servers` | `[0-3].pool.ntp.org iburst` | List of NTP server directives. Each entry is a full chrony server line (e.g. `0.pool.ntp.org iburst`). |
+| `ntp_hardening_makestep` | `"1.0 3"` | chrony `makestep` directive value. Format: `threshold limit`. Allows stepping the clock on initial sync. |
+| `ntp_hardening_rtcsync` | `true` | Enables the `rtcsync` directive so the kernel synchronises the hardware clock every 11 minutes. |
+| `ntp_hardening_maxdistance` | `1.5` | Maximum root distance in seconds. Sources exceeding this value are rejected. |
+| `ntp_hardening_minsources` | `1` | Minimum selectable sources required before chrony will update the system clock. |
+| `ntp_hardening_allow` | `[]` | Subnets or hosts allowed to use this host as an NTP server. Empty list = client-only mode. |
+| `ntp_hardening_deny_all` | `true` | Adds a `deny all` directive after any allow entries to block all other NTP clients. Only relevant when `ntp_hardening_allow` is non-empty. |
+| `ntp_hardening_leapsectz` | `"right/UTC"` | Timezone for leap second handling. `right/UTC` uses the IANA timezone that embeds leap second data. |
+| `ntp_hardening_logdir` | `/var/log/chrony` | Directory where chrony writes log files. |
+| `ntp_hardening_logchange` | `0.5` | Threshold in seconds above which a clock change is logged. |
 
-Dependencies
-------------
+## Example Playbook
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+```yaml
+- name: Harden NTP with chrony
+  hosts: all
+  roles:
+    - role: malpanez.security.ntp_hardening
+      vars:
+        ntp_hardening_enabled: true
+        security_mode: enforce
+        ntp_hardening_servers:
+          - ntp1.corp.example.com iburst
+          - ntp2.corp.example.com iburst
+```
 
-Example Playbook
-----------------
+## Compliance
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+| Framework | Controls |
+|-----------|----------|
+| PCI-DSS | 10.6.1 — Time synchronisation |
+| NIS2 | Art. 21 — Time integrity |
+| SOC2 | CC6.1 — Logical access controls |
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+## License
 
-License
--------
+GPL-2.0-or-later
 
-BSD
+## Author
 
-Author Information
-------------------
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Miguel Alpañez

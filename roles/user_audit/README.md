@@ -1,38 +1,53 @@
-Role Name
-=========
+# user_audit
 
-A brief description of the role goes here.
+Local user account audit and lockout enforcement. Reviews password expiry, inactive accounts, UID 0 duplicates, and service account shells. Enforces policy via `chage` and `usermod`. Supports review mode (audit-only) and enforce mode.
 
-Requirements
-------------
+## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+- Ansible >= 2.16
+- Collection: `malpanez.security`
 
-Role Variables
---------------
+## Role Variables
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `user_audit_enabled` | `false` | Gate variable. Set `true` with `security_mode: enforce` to apply enforcement tasks. Review tasks always run. |
+| `user_audit_inactive_days` | `90` | Days since last login before an account is considered inactive. Accounts exceeding this are locked when `user_audit_lock_inactive: true`. |
+| `user_audit_max_password_age` | `90` | Maximum days between password changes (`chage --maxdays`). PCI-DSS 8.3.6 requires ≤ 90 days. |
+| `user_audit_min_password_age` | `1` | Minimum days between password changes (`chage --mindays`). Prevents immediate password cycling. |
+| `user_audit_warn_days` | `14` | Days before password expiry to warn the user at login (`chage --warndays`). |
+| `user_audit_lock_inactive` | `true` | When `true` and `user_audit_enabled: true`, lock accounts inactive beyond `user_audit_inactive_days`. |
+| `user_audit_set_password_expiry` | `true` | When `true` and `user_audit_enabled: true`, apply password aging policy to accounts with no expiry set. |
+| `user_audit_fix_service_shells` | `false` | When `true` and `user_audit_enabled: true`, change login shells of eligible service accounts to the OS nologin path. Opt-in only — shell changes are destructive. |
+| `user_audit_skip_users` | `[root, halt, sync, shutdown]` | Usernames that enforce tasks will never modify. Excluded from locking, shell changes, and password expiry enforcement. |
 
-Dependencies
-------------
+## Example Playbook
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+```yaml
+- name: Audit and enforce local user account policy
+  hosts: all
+  roles:
+    - role: malpanez.security.user_audit
+      vars:
+        user_audit_enabled: true
+        security_mode: enforce
+        user_audit_inactive_days: 90
+        user_audit_max_password_age: 90
+```
 
-Example Playbook
-----------------
+## Compliance
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+| Framework | Controls |
+|-----------|----------|
+| SOC2 | CC6.2 — User access management, CC6.3 — User access removal |
+| HIPAA | 164.308(a)(3) — Workforce clearance |
+| PCI-DSS | 8.1.4 — Inactive account removal, 8.3.6 — Password age policy |
+| NIS2 | Art. 21 — Access control |
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+## License
 
-License
--------
+GPL-2.0-or-later
 
-BSD
+## Author
 
-Author Information
-------------------
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Miguel Alpañez
