@@ -220,7 +220,7 @@ Plans:
 - [ ] 07-01-PLAN.md -- Role READMEs (7 roles)
 - [x] 07-02-PLAN.md -- Molecule SHA digest pins (all roles)
 - [x] 07-03-PLAN.md -- prepare.yml sed→lineinfile + argument_specs gaps + CI permissions
-- [ ] 07-04-PLAN.md -- venv rebuild
+- [x] 07-04-PLAN.md -- venv rebuild
 
 ---
 
