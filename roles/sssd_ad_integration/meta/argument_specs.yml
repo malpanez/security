@@ -161,6 +161,45 @@ argument_specs:
         default: true
         description: Write /etc/sssd/sssd.conf and manage the sssd service.
 
+      ssh_identity_backend:
+        type: str
+        default: "ad"
+        choices:
+          - ad
+          - ipa
+          - local
+        description: >-
+          Identity backend for group resolution. 'ad' configures SSSD for Active
+          Directory (requires sssd_ad_domain + sssd_ad_realm). 'ipa' configures
+          SSSD for FreeIPA/IdM (requires sssd_ipa_domain). 'local' disables SSSD
+          configuration — groups come from /etc/group only.
+
+      sssd_ipa_domain:
+        type: str
+        default: ""
+        description: >-
+          FreeIPA/IdM domain FQDN. Required when ssh_identity_backend is 'ipa'.
+          Example: 'ipa.corp.example.com'.
+
+      sssd_ipa_server:
+        type: str
+        default: "_srv_"
+        description: >-
+          IPA server address. '_srv_' triggers DNS SRV lookup to discover the
+          IPA server automatically. Set to a hostname for environments without
+          DNS SRV records.
+
+      sssd_ipa_access_provider:
+        type: str
+        default: "permit"
+        choices:
+          - permit
+          - ipa
+        description: >-
+          SSSD access provider for IPA backend. 'permit' allows all IPA users
+          with valid Kerberos credentials. 'ipa' enforces HBAC rules defined
+          in the IPA server — recommended for production.
+
       sssd_ad_domain:
         type: str
         required: false
