@@ -6,9 +6,10 @@
 
   tasks:
     - name: Fix Rocky 9 nsswitch for sudo/PAM in containers
-      ansible.builtin.command:
-        cmd: sed -i 's/ sss//g' /etc/nsswitch.conf
-      changed_when: true
+      ansible.builtin.replace:
+        path: /etc/nsswitch.conf
+        regexp: ' sss'
+        replace: ''
       failed_when: false
 
     - name: Create testuser for audit verification
