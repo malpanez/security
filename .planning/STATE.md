@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 07-02-PLAN.md (Molecule image pinning)
-last_updated: "2026-04-21T10:33:04.944Z"
+stopped_at: Completed 07-03-PLAN.md
+last_updated: "2026-04-21T10:40:12.291Z"
 last_activity: 2026-04-20
 progress:
   total_phases: 9
   completed_phases: 8
   total_plans: 40
-  completed_plans: 38
+  completed_plans: 39
   percent: 0
 ---
 
@@ -88,6 +88,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 06.1-security-audit-remediations-critical-01-high-01-high-03-medium-02-high P02 | 8 | 1 tasks | 1 files |
 | Phase 06.1-security-audit-remediations-critical-01-high-01-high-03-medium-02-high P01 | 18 | 2 tasks | 4 files |
 | Phase 07-tech-debt P02 | 526797 | 2 tasks | 6 files |
+| Phase 07-tech-debt P07-03 | 15 | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -149,6 +150,8 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 06.1]: sssd_ad_integration: AUDIT-CRIT-01 closed by opt-in ssh_corp_require_mfa=false default; set true to enforce MFA on corp LAN
 - [Phase 06.1]: sssd_ad_integration: sssd_offline_credentials_expiration 0->7 (AUDIT-HIGH-01); ssh_verify_groups_strict false->true (AUDIT-HIGH-03)
 - [Phase 07-tech-debt]: 07-02: ubuntu2204 pinned to sha256:84b2c1f5..., rockylinux9 pinned to sha256:31481cc3... (fetched 2026-04-20 from Docker Hub)
+- [Phase 07-tech-debt]: ansible.builtin.replace with regexp:' sss' replace:'' is idempotent equivalent to sed -i 's/ sss//g'
+- [Phase 07-tech-debt]: ci-cd-enterprise.yml contents:write->read safe — workflow_dispatch only, no push/tag/release
 
 ### Roadmap Evolution
 
@@ -166,6 +169,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-21T10:33:04.733Z
-Stopped at: Completed 07-02-PLAN.md (Molecule image pinning)
+Last session: 2026-04-21T10:40:12.140Z
+Stopped at: Completed 07-03-PLAN.md
 Resume file: None

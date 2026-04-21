@@ -214,12 +214,12 @@ See REQUIREMENTS.md Traceability section for full requirement-to-phase mapping.
   4. sssd_ad_integration argument_specs covers IPA vars and ssh_identity_backend
   5. `.venv/bin/pre-commit` shebang works (normal `git commit` runs hooks without wrapper)
   6. CI workflows have minimal permissions (no unnecessary `contents: write`)
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 - [ ] 07-01-PLAN.md -- Role READMEs (7 roles)
 - [x] 07-02-PLAN.md -- Molecule SHA digest pins (all roles)
-- [ ] 07-03-PLAN.md -- prepare.yml sed→lineinfile + argument_specs gaps + CI permissions
+- [x] 07-03-PLAN.md -- prepare.yml sed→lineinfile + argument_specs gaps + CI permissions
 - [ ] 07-04-PLAN.md -- venv rebuild
 
 ---
