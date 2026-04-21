@@ -1,38 +1,57 @@
-Role Name
-=========
+# antivirus
 
-A brief description of the role goes here.
+ClamAV antivirus installation, freshclam updates, and scheduled scan timer. Supports EPEL on RHEL-family hosts and container-aware skipping. Review mode audits ClamAV state; enforce mode installs and configures.
 
-Requirements
-------------
+## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+- Ansible >= 2.16
+- Collection: `malpanez.security`
+- RHEL-family hosts: EPEL repository must be available (the role installs it automatically on RHEL 8+).
 
-Role Variables
---------------
+## Role Variables
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `antivirus_enabled` | `false` | Gate variable. Set `true` with `security_mode: enforce` to install and configure ClamAV. Review tasks always run. |
+| `antivirus_update_db` | `true` | Run `freshclam` to update the virus database during role execution. Set `false` in CI to skip the ~200 MB freshclam download. |
+| `antivirus_scan_enabled` | `true` | Deploy a systemd scan timer that runs `clamscan` on a schedule. |
+| `antivirus_scan_dirs` | `[/home, /tmp, /var/tmp]` | List of directories to scan with `clamscan`. |
+| `antivirus_scan_schedule` | `daily` | systemd `OnCalendar` value for the scan timer. Accepts any systemd calendar expression (e.g. `*-*-* 02:00:00`). |
+| `antivirus_scan_log` | `/var/log/clamav/scan.log` | Path to the `clamscan` output log file. |
+| `antivirus_freshclam_checks` | `12` | freshclam `Checks` directive. Controls how many times per day freshclam checks for database updates. |
+| `antivirus_max_file_size` | `25M` | `MaxFileSize` directive for ClamAV. Files larger than this value are not scanned. |
+| `antivirus_max_scan_size` | `100M` | `MaxScanSize` directive for ClamAV. Maximum data to scan from a file, used for compressed/archive scanning. |
+| `antivirus_selinux_contexts` | `true` | Restore SELinux file contexts and set the `antivirus_can_scan_system` SELinux boolean on RHEL-family hosts. |
 
-Dependencies
-------------
+## Scan service privilege model
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+The `clamav-scan.service` runs as the ClamAV daemon user (not root). This resolves AUDIT-MED-02 (privilege reduction) without requiring additional systemd hardening directives that would break scan functionality.
 
-Example Playbook
-----------------
+## Example Playbook
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+```yaml
+- name: Install and configure ClamAV
+  hosts: all
+  roles:
+    - role: malpanez.security.antivirus
+      vars:
+        antivirus_enabled: true
+        security_mode: enforce
+        antivirus_update_db: false
+```
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+## Compliance
 
-License
--------
+| Framework | Controls |
+|-----------|----------|
+| PCI-DSS | 5.2 — Anti-malware on all applicable components |
+| NIS2 | Art. 21(2)(e) — Malware protection |
+| SOC2 | CC6.8 — Prevention of malicious software |
 
-BSD
+## License
 
-Author Information
-------------------
+MIT
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+## Author
+
+Miguel Alpañez
