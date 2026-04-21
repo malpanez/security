@@ -23,6 +23,7 @@ The milestone closes with a version bump from 1.1.0 to 1.2.0.
 - [x] **Phase 5: tls_hardening** - System-wide TLS version and cipher enforcement (PCI-DSS 4.2.1, HIPAA, NIS2) (completed 2026-04-19)
 - [x] **Phase 6: usbguard** - USB device control with block-by-default policy (PCI-DSS 12.3.4, HIPAA, NIS2) (completed 2026-04-20)
 - [x] **Phase 06.1: security-audit-remediations** - AUDIT-CRIT-01, HIGH-01, HIGH-03, MED-02 remediations in sssd_ad_integration and antivirus (completed 2026-04-20)
+- [ ] **Phase 7: tech-debt** - Role READMEs, Molecule SHA pins, prepare.yml sed→lineinfile, argument_specs gaps, venv rebuild, CI permissions
 
 ## Phase Details
 
@@ -200,6 +201,28 @@ See REQUIREMENTS.md Traceability section for full requirement-to-phase mapping.
 | 4. antivirus | 5/5 | Complete   | 2026-04-18 |
 | 5. tls_hardening | 5/5 | Complete   | 2026-04-19 |
 | 6. usbguard | 5/5 | Complete    | 2026-04-20 |
+
+### Phase 7: tech-debt
+
+**Goal:** Close pre-Galaxy-publish technical debt: replace all 7 role README placeholders with real documentation, pin all Molecule images to SHA digests, replace `command: sed` with `ansible.builtin.lineinfile` in all prepare.yml files, fill argument_specs gaps in sssd_ad_integration, rebuild the `.venv` to fix broken pre-commit shebangs, and tighten CI permissions.
+**Requirements**: TECH-01 through TECH-06
+**Depends on:** Phase 06.1
+**Success Criteria** (what must be TRUE):
+  1. All 7 role READMEs have role-specific content (no ansible-galaxy scaffold placeholders)
+  2. All Molecule platform images use SHA digest pins (no `:latest` floating tags)
+  3. All prepare.yml files use `ansible.builtin.replace` instead of `command: sed`
+  4. sssd_ad_integration argument_specs covers IPA vars and ssh_identity_backend
+  5. `.venv/bin/pre-commit` shebang works (normal `git commit` runs hooks without wrapper)
+  6. CI workflows have minimal permissions (no unnecessary `contents: write`)
+**Plans:** 0/4 plans complete
+
+Plans:
+- [ ] 07-01-PLAN.md -- Role READMEs (7 roles)
+- [ ] 07-02-PLAN.md -- Molecule SHA digest pins (all roles)
+- [ ] 07-03-PLAN.md -- prepare.yml sed→lineinfile + argument_specs gaps + CI permissions
+- [ ] 07-04-PLAN.md -- venv rebuild
+
+---
 
 ### Phase 06.1: Security audit remediations — CRITICAL-01, HIGH-01, HIGH-03, MEDIUM-02 (HIGH) (INSERTED)
 
