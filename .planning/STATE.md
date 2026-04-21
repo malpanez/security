@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2.0
 milestone_name: milestone
-status: complete
-stopped_at: Completed Phase 06.1 (all 4 audit findings remediated)
-last_updated: "2026-04-20T15:30:00.000Z"
+status: verifying
+stopped_at: Completed 07-02-PLAN.md (Molecule image pinning)
+last_updated: "2026-04-21T10:33:04.944Z"
 last_activity: 2026-04-20
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 8
-  total_plans: 36
-  completed_plans: 36
+  total_plans: 40
+  completed_plans: 38
   percent: 0
 ---
 
@@ -87,6 +87,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 06-usbguard P06-05 | 395 | 2 tasks | 4 files |
 | Phase 06.1-security-audit-remediations-critical-01-high-01-high-03-medium-02-high P02 | 8 | 1 tasks | 1 files |
 | Phase 06.1-security-audit-remediations-critical-01-high-01-high-03-medium-02-high P01 | 18 | 2 tasks | 4 files |
+| Phase 07-tech-debt P02 | 526797 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,7 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 06.1]: antivirus/clamav-scan.service.j2: User={{ antivirus_clamd_user }}, Group={{ antivirus_clamd_group }} — privilege drop from root resolves AUDIT-MED-02 without adding hardening directives that break scan
 - [Phase 06.1]: sssd_ad_integration: AUDIT-CRIT-01 closed by opt-in ssh_corp_require_mfa=false default; set true to enforce MFA on corp LAN
 - [Phase 06.1]: sssd_ad_integration: sssd_offline_credentials_expiration 0->7 (AUDIT-HIGH-01); ssh_verify_groups_strict false->true (AUDIT-HIGH-03)
+- [Phase 07-tech-debt]: 07-02: ubuntu2204 pinned to sha256:84b2c1f5..., rockylinux9 pinned to sha256:31481cc3... (fetched 2026-04-20 from Docker Hub)
 
 ### Roadmap Evolution
 
@@ -164,6 +166,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-20T14:52:14.912Z
-Stopped at: Completed 06.1-01-PLAN.md
+Last session: 2026-04-21T10:33:04.733Z
+Stopped at: Completed 07-02-PLAN.md (Molecule image pinning)
 Resume file: None
