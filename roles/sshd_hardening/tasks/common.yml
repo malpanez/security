@@ -202,7 +202,7 @@
     - name: common | Backup existing drop-in (if present)
       ansible.builtin.copy:
         src: "{{ sshd_hardening_dropin_path }}"
-        dest: "{{ sshd_hardening_dropin_path }}.backup-{{ ansible_date_time.epoch }}"
+        dest: "{{ sshd_hardening_dropin_path }}.rollback"
         remote_src: true
         mode: "0644"
       changed_when: false
@@ -222,22 +222,34 @@
       register: sshd_hardening_dropin_validate
       changed_when: false
       failed_when: sshd_hardening_dropin_validate.rc != 0
+
+    - name: common | Remove transient rollback backup after successful validation
+      ansible.builtin.file:
+        path: "{{ sshd_hardening_dropin_path }}.rollback"
+        state: absent
+      changed_when: false
   rescue:
     - name: common | Check for drop-in backup after validation failure
       ansible.builtin.stat:
-        path: "{{ sshd_hardening_dropin_path }}.backup-{{ ansible_date_time.epoch }}"
+        path: "{{ sshd_hardening_dropin_path }}.rollback"
       register: sshd_hardening_dropin_backup
       changed_when: false
 
     - name: common | Restore previous drop-in after validation failure
       ansible.builtin.copy:
-        src: "{{ sshd_hardening_dropin_path }}.backup-{{ ansible_date_time.epoch }}"
+        src: "{{ sshd_hardening_dropin_path }}.rollback"
         dest: "{{ sshd_hardening_dropin_path }}"
         remote_src: true
         mode: "0644"
       changed_when: false
       failed_when: false
       when: sshd_hardening_dropin_backup.stat.exists | default(false)
+
+    - name: common | Remove transient rollback backup after restore
+      ansible.builtin.file:
+        path: "{{ sshd_hardening_dropin_path }}.rollback"
+        state: absent
+      changed_when: false
 
     - name: common | Remove invalid drop-in when no backup exists
       ansible.builtin.file:

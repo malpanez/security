@@ -91,6 +91,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: test-roles
+    permissions:
+      contents: read
+      id-token: write       # SLSA provenance (OIDC)
+      attestations: write   # build attestation
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
@@ -112,6 +116,12 @@ jobs:
 
       - name: Build collection
         run: ansible-galaxy collection build
+
+      - name: Attest build provenance (SLSA)
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-path: "*.tar.gz"
 
       - name: Upload collection artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

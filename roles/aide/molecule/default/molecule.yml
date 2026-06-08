@@ -20,7 +20,7 @@ provisioner:
         ansible_remote_tmp: /tmp/ansible-tmp
 platforms:
   - name: ubuntu2204
-    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    image: geerlingguy/docker-ubuntu2204-ansible@sha256:2744f5aca5e33c01a682ff1ea201dc3841b0eaaa1f5c448e6bd9a6156a831638
     platform: linux/amd64
     privileged: true
     command: /lib/systemd/systemd
@@ -33,7 +33,7 @@ platforms:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
     pre_build_image: true
   - name: rockylinux9
-    image: geerlingguy/docker-rockylinux9-ansible:latest
+    image: geerlingguy/docker-rockylinux9-ansible@sha256:09c1074489a704687b2b1f3d16a4f537b211b49b64eb7a5b6e4d6d1eae5b8ba9
     platform: linux/amd64
     privileged: true
     command: /lib/systemd/systemd

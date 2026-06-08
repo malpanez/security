@@ -5,7 +5,7 @@ driver:
   name: docker
 platforms:
   - name: nginx_hardening-ubuntu2204
-    image: ghcr.io/geerlingguy/docker-ubuntu2204-ansible:latest
+    image: geerlingguy/docker-ubuntu2204-ansible@sha256:2744f5aca5e33c01a682ff1ea201dc3841b0eaaa1f5c448e6bd9a6156a831638
     command: /lib/systemd/systemd
     tmpfs: [/run, /tmp]
     volumes:
@@ -14,7 +14,7 @@ platforms:
     privileged: true
     pre_build_image: true
   - name: nginx_hardening-rocky9
-    image: ghcr.io/geerlingguy/docker-rockylinux9-ansible:latest
+    image: geerlingguy/docker-rockylinux9-ansible@sha256:09c1074489a704687b2b1f3d16a4f537b211b49b64eb7a5b6e4d6d1eae5b8ba9
     command: /usr/lib/systemd/systemd
     tmpfs: [/run, /tmp]
     volumes:

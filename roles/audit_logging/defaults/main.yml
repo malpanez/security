@@ -40,8 +40,33 @@ audit_logging_rules:
   # Time synchronization (audit log integrity depends on correct time)
   - "-w /etc/chrony.conf -p wa -k chrony"
   - "-w /etc/ntp.conf -p wa -k ntp"
+  # Login / session records (CIS 4.1.x, NIST AU-2)
+  - "-w /var/log/lastlog -p wa -k logins"
+  - "-w /var/run/faillock -p wa -k logins"
+  - "-w /var/log/wtmp -p wa -k session"
+  - "-w /var/log/btmp -p wa -k session"
 audit_logging_syscall_rules:
+  # Process execution
   - "-a always,exit -F arch=b64 -S execve -k exec"
+  - "-a always,exit -F arch=b32 -S execve -k exec"
+  # Privilege escalation via setuid/setgid family
+  - "-a always,exit -F arch=b64 -S setuid,setgid,setreuid,setregid,setresuid,setresgid -k priv_esc"
+  - "-a always,exit -F arch=b32 -S setuid,setgid,setreuid,setregid,setresuid,setresgid -k priv_esc"
+  # Discretionary access control: permission & ownership changes (CIS 4.1.3)
+  - "-a always,exit -F arch=b64 -S chmod,fchmod,fchmodat,chown,fchown,fchownat,lchown,setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod"
+  - "-a always,exit -F arch=b32 -S chmod,fchmod,fchmodat,chown,chown32,fchown,fchown32,fchownat,lchown,lchown32,setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod"
+  # Unsuccessful file access attempts
+  - "-a always,exit -F arch=b64 -S open,openat,creat,truncate,ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access"
+  - "-a always,exit -F arch=b64 -S open,openat,creat,truncate,ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access"
+  # File deletion by users
+  - "-a always,exit -F arch=b64 -S unlink,unlinkat,rename,renameat -F auid>=1000 -F auid!=4294967295 -k delete"
+  # Mount operations
+  - "-a always,exit -F arch=b64 -S mount,umount2 -F auid>=1000 -F auid!=4294967295 -k mounts"
+  # System time changes (audit log integrity)
+  - "-a always,exit -F arch=b64 -S adjtimex,settimeofday,clock_settime -k time_change"
+  - "-a always,exit -F arch=b32 -S adjtimex,settimeofday,stime,clock_settime -k time_change"
+  # Kernel module load/unload
+  - "-a always,exit -F arch=b64 -S init_module,finit_module,delete_module -k modules"
 audit_logging_service: auditd
 audit_logging_rules_path: /etc/audit/rules.d/99-security.rules
 audit_logging_auth_log: /var/log/auth.log

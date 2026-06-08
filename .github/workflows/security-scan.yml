@@ -49,12 +49,12 @@ jobs:
           sarif_file: ${{ steps.grype-scan.outputs.sarif }}
           category: grype
 
-      - name: Run Grype for human-readable output
+      - name: Run Grype gate — fail on critical vulnerabilities
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         with:
           path: '.'
-          fail-build: false
-          severity-cutoff: high
+          fail-build: true
+          severity-cutoff: critical
           output-format: table
 
   ansible-lint-security:

@@ -7,6 +7,27 @@ argument_specs:
         type: bool
         default: true
         description: Whether to manage auditd rules and service.
+      audit_logging_package:
+        type: str
+        default: auditd
+        description: Name of the audit daemon package to install.
+      audit_logging_syscall_rules:
+        type: list
+        elements: str
+        default:
+          - "-a always,exit -F arch=b64 -S execve -k exec"
+        description: >-
+          auditd syscall rules ('-a' lines) for execution, privilege
+          escalation, DAC changes, file access/deletion, mounts, time changes
+          and module loading (CIS 4.1.x / STIG).
+      audit_logging_verify_rules:
+        type: bool
+        default: true
+        description: Verify watch rules are loaded after deployment.
+      audit_logging_verify_syscalls:
+        type: bool
+        default: true
+        description: Verify syscall rules are loaded after deployment.
       audit_logging_rules:
         type: list
         elements: str
