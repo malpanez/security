@@ -118,11 +118,11 @@ jobs:
       - name: Ensure sshd_config.d directory and Include directive
         run: |
           set -euo pipefail
-          mkdir -p /etc/ssh/sshd_config.d
+          sudo mkdir -p /etc/ssh/sshd_config.d
           if ! grep -qE '^[[:space:]]*Include[[:space:]]+/etc/ssh/sshd_config\.d/\*\.conf' /etc/ssh/sshd_config; then
-            sed -i '1s|^|Include /etc/ssh/sshd_config.d/*.conf\n|' /etc/ssh/sshd_config
+            sudo sed -i '1s|^|Include /etc/ssh/sshd_config.d/*.conf\n|' /etc/ssh/sshd_config
           fi
-          sshd -t
+          sudo sshd -t
           echo "OK: sshd_config baseline valid"
 
       # ── sssd_ad_integration: enforce ──────────────────────────────────────
@@ -148,7 +148,7 @@ jobs:
       - name: "Verify sshd -t passes after drop-ins deployed"
         run: |
           set -euo pipefail
-          sshd -t && echo "OK: sshd -t passed"
+          sudo sshd -t && echo "OK: sshd -t passed"
 
       - name: "Verify all six sshd drop-in files exist with mode 0600"
         run: |
