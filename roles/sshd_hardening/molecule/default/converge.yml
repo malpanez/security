@@ -13,6 +13,7 @@
     - role: sshd_hardening
       vars:
         security_mode: enforce
+        sshd_hardening_kbd_interactive_authentication: false
         sshd_hardening_human_groups:
           - humans
         sshd_hardening_human_pubkey_accepted_algorithms:

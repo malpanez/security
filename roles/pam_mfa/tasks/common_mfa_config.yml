@@ -50,125 +50,27 @@
     mode: "0644"
   tags: [enforce]
 
-- name: Common | Configure PAM for SSHD - bypass service accounts group
-  vars:
-    pam_mfa_bypass_module_arguments: >-
-      {{
-        ['user', 'ingroup', pam_mfa_service_bypass_group]
-        + (
-          ['rhost', 'in', (pam_mfa_service_bypass_allow_from | join(','))]
-          if pam_mfa_service_bypass_allow_from | default([]) | length > 0
-          else []
-        )
-      }}
-  community.general.pamd:
-    name: sshd
-    type: auth
-    control: "[success=1 default=ignore]"
-    module_path: pam_succeed_if.so
-    module_arguments: "{{ pam_mfa_bypass_module_arguments }}"
+# NOTE: community.general.pamd with its default state (updated) only *modifies*
+# a pre-existing rule that matches type+control+module_path. It does NOT insert
+# new rules, so on a fresh /etc/pam.d/sshd it silently no-ops and leaves the
+# file stock. We therefore render the full, correctly-ordered MFA auth block via
+# blockinfile, inserted at the top of the auth stack (right after the #%PAM-1.0
+# header), guaranteeing the bypass/breakglass/primary/TOTP ordering the role
+# (and the tests) require. The block is idempotent and clearly marked.
+- name: Common | Inject MFA auth block into PAM sshd
+  ansible.builtin.blockinfile:
+    path: /etc/pam.d/sshd
+    insertafter: '^#%PAM-1.0'
+    marker: "# {mark} managed by malpanez.security pam_mfa"
+    block: "{{ lookup('ansible.builtin.template', 'mfa-auth-block.j2') }}"
   tags: [enforce]
 
-- name: Common | Configure PAM for SSHD - allow breakglass to bypass U2F
-  community.general.pamd:
-    name: sshd
-    type: auth
-    control: "[success=1 default=ignore]"
-    module_path: pam_succeed_if.so
-    module_arguments:
-      - user
-      - ingroup
-      - "{{ pam_mfa_totp_allowed_group }}"
-  when: pam_mfa_totp_enabled
-  tags: [enforce]
-
-- name: Common | Configure PAM for SSHD - primary U2F/FIDO2
-  community.general.pamd:
-    name: sshd
-    type: auth
-    control: required
-    module_path: "{{ pam_mfa_primary_module_path }}"
-    module_arguments:
-      - authfile={{ pam_mfa_primary_authfile }}
-      - cue
-  tags: [enforce]
-
-- name: Common | Configure PAM for SSHD - restrict TOTP to breakglass group
-  community.general.pamd:
-    name: sshd
-    type: auth
-    control: "[success=1 default=ignore]"
-    module_path: pam_succeed_if.so
-    module_arguments:
-      - user
-      - notingroup
-      - "{{ pam_mfa_totp_allowed_group }}"
-  when: pam_mfa_totp_enabled
-  tags: [enforce]
-
-- name: Common | Configure PAM for SSHD - backup TOTP
-  community.general.pamd:
-    name: sshd
-    type: auth
-    control: sufficient
-    module_path: "{{ pam_mfa_pam_module_google_authenticator }}"
-    module_arguments:
-      - nullok
-      - "{{ 'rate_limit=' ~ pam_mfa_totp_rate_limit_count if pam_mfa_totp_rate_limit else omit }}"
-      - user_readenv=1
-      - secret={{ pam_mfa_totp_dir }}/%u
-  when: pam_mfa_totp_enabled
-  tags: [enforce]
-
-- name: Common | Configure PAM for sudo - allow breakglass to bypass U2F
-  community.general.pamd:
-    name: sudo
-    type: auth
-    control: "[success=1 default=ignore]"
-    module_path: pam_succeed_if.so
-    module_arguments:
-      - user
-      - ingroup
-      - "{{ pam_mfa_totp_allowed_group }}"
-  when: pam_mfa_totp_enabled
-  tags: [enforce]
-
-- name: Common | Configure PAM for sudo - enforce MFA
-  community.general.pamd:
-    name: sudo
-    type: auth
-    control: required
-    module_path: "{{ pam_mfa_primary_module_path }}"
-    module_arguments:
-      - authfile={{ pam_mfa_primary_authfile }}
-      - cue
-  tags: [enforce]
-
-- name: Common | Configure PAM for sudo - restrict TOTP to breakglass group
-  community.general.pamd:
-    name: sudo
-    type: auth
-    control: "[success=1 default=ignore]"
-    module_path: pam_succeed_if.so
-    module_arguments:
-      - user
-      - notingroup
-      - "{{ pam_mfa_totp_allowed_group }}"
-  when: pam_mfa_totp_enabled
-  tags: [enforce]
-
-- name: Common | Configure PAM for sudo - backup TOTP
-  community.general.pamd:
-    name: sudo
-    type: auth
-    control: sufficient
-    module_path: "{{ pam_mfa_pam_module_google_authenticator }}"
-    module_arguments:
-      - nullok
-      - "{{ 'rate_limit=' ~ pam_mfa_totp_rate_limit_count if pam_mfa_totp_rate_limit else omit }}"
-      - user_readenv=1
-      - secret={{ pam_mfa_totp_dir }}/%u
-  when: pam_mfa_totp_enabled
+- name: Common | Inject MFA auth block into PAM sudo
+  ansible.builtin.blockinfile:
+    path: /etc/pam.d/sudo
+    insertafter: '^#%PAM-1.0'
+    marker: "# {mark} managed by malpanez.security pam_mfa"
+    block: "{{ lookup('ansible.builtin.template', 'mfa-auth-block.j2') }}"
   tags: [enforce]
 
 # CRITICAL: Post-configuration validation

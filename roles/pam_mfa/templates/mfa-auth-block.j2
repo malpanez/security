@@ -1,0 +1,10 @@
+auth    [success=1 default=ignore]    pam_succeed_if.so user ingroup {{ pam_mfa_service_bypass_group }}{% if pam_mfa_service_bypass_allow_from | default([]) | length > 0 %} rhost in {{ pam_mfa_service_bypass_allow_from | join(',') }}{% endif %}
+
+{% if pam_mfa_totp_enabled %}
+auth    [success=1 default=ignore]    pam_succeed_if.so user ingroup {{ pam_mfa_totp_allowed_group }}
+{% endif %}
+auth    required    {{ pam_mfa_primary_module_path }} authfile={{ pam_mfa_primary_authfile }} cue
+{% if pam_mfa_totp_enabled %}
+auth    [success=1 default=ignore]    pam_succeed_if.so user notingroup {{ pam_mfa_totp_allowed_group }}
+auth    sufficient    {{ pam_mfa_pam_module_google_authenticator }} nullok{% if pam_mfa_totp_rate_limit %} rate_limit={{ pam_mfa_totp_rate_limit_count }}{% endif %} user_readenv=1 secret={{ pam_mfa_totp_dir }}/%u
+{% endif %}

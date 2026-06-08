@@ -22,32 +22,33 @@ def test_service_accounts_in_bypass_group(host):
     CRITICAL: Service accounts must be in mfa-bypass group.
     This prevents automation lockout when MFA is enforced.
     """
-    # Common service account names
-    service_accounts = ["ansible", "ci", "backup", "monitoring", "deploy"]
+    # Only the accounts the role actually manages (converge: ansible, ci) are
+    # added to the bypass group. Unrelated distro system users such as Debian's
+    # pre-existing `backup` account must NOT be required to be members, so we
+    # scope this assertion to the role-managed service accounts.
+    managed_service_accounts = ["ansible", "ci"]
 
-    # Get all users in mfa-bypass group
-    result = host.run("getent group mfa-bypass")
+    bypass_group = host.group("mfa-bypass")
+    if not bypass_group.exists:
+        return
 
-    if result.rc == 0:
-        bypass_members = result.stdout.strip().split(":")[-1].split(",")
-        bypass_members = [m.strip() for m in bypass_members if m.strip()]
+    # group.members reads supplementary membership from /etc/group, which is the
+    # correct field to check (id -Gn conflates the user's primary group).
+    bypass_members = bypass_group.members
 
-        # Check if any service accounts exist and are in bypass group
-        found_service_accounts = []
-        for account in service_accounts:
-            user = host.user(account)
-            if user.exists:
-                found_service_accounts.append(account)
-                # Verify this service account is in mfa-bypass group
-                user_groups = host.run(f"id -Gn {account}").stdout
-                assert "mfa-bypass" in user_groups, \
-                    f"CRITICAL: Service account {account} exists but NOT in mfa-bypass group. " \
-                    f"This will cause automation lockout when MFA is enforced!"
+    found_service_accounts = []
+    for account in managed_service_accounts:
+        user = host.user(account)
+        if user.exists:
+            found_service_accounts.append(account)
+            assert account in bypass_members, \
+                f"CRITICAL: Service account {account} exists but NOT in mfa-bypass group. " \
+                f"This will cause automation lockout when MFA is enforced!"
 
-        # If service accounts exist, at least one should be in bypass group
-        if found_service_accounts:
-            assert len(bypass_members) > 0, \
-                f"CRITICAL: Service accounts found ({found_service_accounts}) but mfa-bypass group is empty"
+    # If managed service accounts exist, the bypass group must not be empty.
+    if found_service_accounts:
+        assert len(bypass_members) > 0, \
+            f"CRITICAL: Service accounts found ({found_service_accounts}) but mfa-bypass group is empty"
 
 
 def test_pam_bypass_rule_exists(host):

@@ -36,6 +36,11 @@
         path: /etc/pam.d
         state: directory
         mode: "0755"
+    # force: true is required so pamd has a real `auth` line to anchor inserts
+    # to. The stock Debian/Ubuntu sshd file is only `@include common-auth` with
+    # no `auth` rule, which makes community.general.pamd insertions no-op and
+    # leaves the file stock (the exact CI failure we are fixing). The debian13
+    # stack does not edit /etc/pam.d/sshd, so overwriting it is harmless there.
     - name: Ensure PAM sshd config exists for pamd edits
       ansible.builtin.copy:
         dest: /etc/pam.d/sshd
@@ -45,7 +50,8 @@
           account    required     pam_nologin.so
           session    required     pam_loginuid.so
         mode: "0644"
-        force: false
+        force: true
+      when: not pam_mfa_use_debian13_stack
     - name: Ensure PAM sudo config exists for pamd edits
       ansible.builtin.copy:
         dest: /etc/pam.d/sudo
@@ -55,7 +61,8 @@
           account    include      system-auth
           session    include      system-auth
         mode: "0644"
-        force: false
+        force: true
+      when: not pam_mfa_use_debian13_stack
     - name: Ensure PAM module directories exist
       ansible.builtin.file:
         path: "{{ item }}"
