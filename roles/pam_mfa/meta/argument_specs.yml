@@ -245,3 +245,15 @@ argument_specs:
           - Interval in seconds for counting failures
         type: int
         default: 900
+      pam_mfa_enable_deadman_switch:
+        type: bool
+        default: true
+        description: Enable the deadman-switch anti-lockout safeguard.
+      pam_mfa_skip_module_validation:
+        type: bool
+        default: false
+        description: Skip PAM module availability validation.
+      pam_mfa_validation_timeout:
+        type: int
+        default: 300
+        description: Timeout in seconds for the deadman-switch validation window.

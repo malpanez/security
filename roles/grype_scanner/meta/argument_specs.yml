@@ -64,3 +64,7 @@ argument_specs:
         description: >-
           systemd OnCalendar expression for scheduled scans.
           Default runs daily at 03:00.
+      grype_scanner_update_db:
+        type: bool
+        default: true
+        description: Update the Grype vulnerability database before scanning.

@@ -6,7 +6,7 @@
 
 ### Preferred Method
 
-Please report security vulnerabilities by email to: **alpanez.alcalde@gmail.com**
+Please report security vulnerabilities by email to: **winning.concepts.ltd@gmail.com**
 
 You can also use GitHub Security Advisories:
 https://github.com/malpanez/security/security/advisories
@@ -87,7 +87,7 @@ Include as much information as possible:
 #### PAM MFA Implementation
 
 - **Service account bypass**: Required for automation
-- **Auto-bypass membership**: El rol añade cuentas existentes de `pam_mfa_service_accounts` al grupo `pam_mfa_service_bypass_group` y avisa si faltan.
+- **Auto-bypass membership**: The role adds existing accounts from `pam_mfa_service_accounts` to the `pam_mfa_service_bypass_group` group and warns if any are missing.
 - **TOTP backup**: Always enabled to prevent lockout
 - **`nullok` option**: Used temporarily during setup
 - **Order matters**: Service account bypass MUST come before MFA enforcement
@@ -102,7 +102,7 @@ Include as much information as possible:
 
 - **Syntax validation**: Always uses `visudo -cf` before applying
 - **Root preservation**: Root sudo access always maintained
-- **Modo actual**: Solo aplica cambios si `sudoers_baseline_strict=true` y escribe `/etc/sudoers`
+- **Current mode**: Only applies changes when `sudoers_baseline_strict=true` and writes `/etc/sudoers`
 
 #### SELinux Enforcement
 
@@ -130,11 +130,11 @@ Include as much information as possible:
 
 This collection includes:
 
-- Molecule por rol (escenario default)
-- Escenario `complete_stack` con 11 plataformas
-- Escenario `chaos` básico
-- Property tests de plantillas (`tests/property_tests/`)
-- Validación de sintaxis (`sshd -t`, `visudo -cf`) en scripts/verifiers
+- Molecule per role (default scenario)
+- `complete_stack` scenario across 11 platforms
+- Basic `chaos` scenario
+- Template property tests (`tests/property_tests/`)
+- Syntax validation (`sshd -t`, `visudo -cf`) in scripts/verifiers
 
 ## Security Best Practices
 
@@ -431,5 +431,5 @@ Security researchers who have responsibly disclosed vulnerabilities will be list
 
 ---
 
-**Last Updated**: 2026-01-04
-**Contact**: alpanez.alcalde@gmail.com
+**Last Updated**: 2026-06-08
+**Contact**: winning.concepts.ltd@gmail.com

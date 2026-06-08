@@ -165,3 +165,43 @@ argument_specs:
         type: bool
         default: true
         description: Enable access logging via AccessLogValve.
+      tomcat_hardening_accept_count:
+        type: int
+        default: 100
+        description: Connector acceptCount value (backlog queue length).
+      tomcat_hardening_access_log_pattern:
+        type: str
+        default: '%{yyyy-MM-dd HH:mm:ss}t %a %{X-Forwarded-For}i %m %U%q %s %b %D'
+        description: AccessLogValve pattern.
+      tomcat_hardening_ajp_secret:
+        type: str
+        default: ''
+        description: Shared secret for the AJP connector (empty disables AJP secret).
+      tomcat_hardening_conf_dir:
+        type: str
+        default: '{{ tomcat_hardening_catalina_home }}/conf'
+        description: Tomcat configuration directory.
+      tomcat_hardening_error_page_redirect:
+        type: str
+        default: /error
+        description: Path to redirect to for error pages.
+      tomcat_hardening_logs_dir:
+        type: str
+        default: '{{ tomcat_hardening_catalina_home }}/logs'
+        description: Tomcat logs directory.
+      tomcat_hardening_max_connections:
+        type: int
+        default: 10000
+        description: Connector maxConnections value.
+      tomcat_hardening_rotate_logs:
+        type: bool
+        default: true
+        description: Enable access log rotation.
+      tomcat_hardening_ssl_ciphers:
+        type: str
+        default: TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+        description: TLS cipher list for the HTTPS connector.
+      tomcat_hardening_webapps_dir:
+        type: str
+        default: '{{ tomcat_hardening_catalina_home }}/webapps'
+        description: Tomcat webapps directory.

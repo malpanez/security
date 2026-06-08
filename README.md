@@ -17,10 +17,28 @@ Designed to be **audit-ready from day one**: run in review mode first to collect
 | `security_capabilities` | Auto-detects OpenSSH version and available MFA modules; selects the right authentication mode |
 | `sshd_hardening` | Enforces secure `sshd_config`: algorithms, access control, CA trust, Match blocks per user class |
 | `pam_mfa` | MFA with YubiKey (FIDO2/U2F) for humans, TOTP as breakglass fallback, bypass for service accounts |
+| `pam_security` | Hardens PAM password quality (pwquality), access.conf, login.defs, limits.conf, and faillock lockout |
 | `sudoers_baseline` | Least-privilege sudoers with visudo validation and auditable defaults |
 | `selinux_enforcement` | Enables SELinux, configures booleans and file contexts (RHEL family) |
+| `apparmor` | Enables and enforces AppArmor MAC on Debian/Ubuntu/SUSE — parallel to `selinux_enforcement` |
 | `service_accounts_transfer` | SFTP/rsync accounts with ForceCommand, AllowUsers/AllowGroups, and certificate restrictions |
+| `sssd_ad_integration` | Network-zone-aware SSH access control with AD/SSSD group mapping and per-group sudoers |
+| `system_hardening` | OS-level hardening: filesystem mounts, hidepid, SUID/SGID audit, umask, GPG package verification |
+| `kernel_hardening` | Hardens the kernel via sysctl parameters and disables dangerous kernel modules |
 | `audit_logging` | auditd rules covering SSH, sudo, and configuration changes |
+| `rsyslog_forwarding` | Centralised log forwarding via an rsyslog drop-in, with optional GnuTLS TLS and disk-assisted queue |
+| `aide` | File Integrity Monitoring with AIDE: hardened config, initial database, and scheduled integrity checks |
+| `antivirus` | ClamAV install, freshclam updates, and a scheduled scan timer (review and enforce modes) |
+| `grype_scanner` | Installs and configures the Grype vulnerability scanner with an optional periodic-scan timer |
+| `usbguard` | USB device control with USBGuard: device whitelist generation and block-by-default policy |
+| `ntp_hardening` | NTP hardening with chrony: disables competing time daemons and deploys a hardened `chrony.conf` |
+| `tls_hardening` | System-wide TLS/crypto policy hardening via `update-crypto-policies` and `openssl.cnf` |
+| `user_audit` | Local user account audit and lockout: password expiry, inactive accounts, UID 0 duplicates |
+| `cis_baseline` | Minimal CIS baseline checks and enforcement for SSH and sudo |
+| `nginx_hardening` | Hardens Nginx via a `conf.d/` drop-in: TLS, security headers, OCSP stapling, and rate limiting |
+| `apache_hardening` | Hardens Apache httpd: TLS, security headers, and module/access controls (review and enforce modes) |
+| `tomcat_hardening` | Hardens Apache Tomcat: secure connectors, manager access, and server configuration |
+| `mysql_hardening` | Hardens MySQL/MariaDB: removes anonymous users/test DB, disables remote root, enforces TLS and auditing |
 | `compliance_evidence` | Collects configuration snapshots and command outputs to `/var/log/compliance` |
 
 ## Authentication mode auto-selection

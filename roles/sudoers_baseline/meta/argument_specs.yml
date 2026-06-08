@@ -33,3 +33,27 @@ argument_specs:
         type: str
         default: /etc/sudoers.d
         description: Directory for included sudoers snippets.
+      sudoers_baseline_dropin_defaults:
+        type: str
+        default: '{{ sudoers_baseline_files_path }}/10-security-defaults'
+        description: Path of the sudoers.d defaults drop-in file.
+      sudoers_baseline_dropin_groups:
+        type: str
+        default: '{{ sudoers_baseline_files_path }}/99-security-groups'
+        description: Path of the sudoers.d groups drop-in file.
+      sudoers_baseline_iolog_dir:
+        type: str
+        default: /var/log/sudo-io
+        description: Directory for sudo I/O logging output.
+      sudoers_baseline_iolog_enabled:
+        type: bool
+        default: false
+        description: Enable sudo I/O (session) logging.
+      sudoers_baseline_iolog_maxseq:
+        type: int
+        default: 1000
+        description: Maximum sequence number for sudo I/O logs before rotation.
+      sudoers_baseline_use_dropin:
+        type: bool
+        default: true
+        description: Manage sudoers via sudoers.d drop-ins instead of the main file.

@@ -156,3 +156,39 @@ argument_specs:
         type: bool
         default: true
         description: Deploy core dump disable via /etc/profile.d drop-in.
+      system_hardening_var_tmp_bind:
+        type: bool
+        default: true
+        description: Bind-mount /var/tmp onto /tmp to inherit hardened mount options.
+      system_hardening_tmp_type:
+        type: str
+        default: tmpfs
+        description: Backing type for the /tmp mount (e.g. tmpfs).
+      system_hardening_rhosts_report:
+        type: bool
+        default: true
+        description: Report (and remove) .rhosts and hosts.equiv files.
+      system_hardening_dnf_repo_gpgcheck:
+        type: bool
+        default: false
+        description: Enforce repo_gpgcheck in dnf/yum configuration (RHEL family).
+      system_hardening_dnf_localpkg_gpgcheck:
+        type: bool
+        default: true
+        description: Enforce localpkg_gpgcheck in dnf/yum configuration (RHEL family).
+      system_hardening_umask_profile_path:
+        type: str
+        default: /etc/profile.d/99-security-umask.sh
+        description: Path of the profile.d drop-in that sets a hardened default umask.
+      system_hardening_coredump_profile_path:
+        type: str
+        default: /etc/profile.d/99-security-coredump.sh
+        description: Path of the profile.d drop-in that disables user core dumps.
+      system_hardening_home_options:
+        type: str
+        default: defaults,nodev,nosuid
+        description: Mount options applied to /home.
+      system_hardening_dev_shm_options:
+        type: str
+        default: defaults,nodev,nosuid,noexec
+        description: Mount options applied to /dev/shm.
