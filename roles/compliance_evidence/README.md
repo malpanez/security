@@ -106,7 +106,7 @@ When `compliance_evidence_hash_manifest: true`, the role generates `evidence.sha
 
 ## License
 
-MIT
+Apache-2.0
 
 ## Author
 

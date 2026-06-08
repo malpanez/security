@@ -76,7 +76,7 @@ Centralised log forwarding via rsyslog drop-in. Deploys `/etc/rsyslog.d/99-forwa
 
 ## License
 
-GPL-2.0-or-later
+Apache-2.0
 
 ## Author
 

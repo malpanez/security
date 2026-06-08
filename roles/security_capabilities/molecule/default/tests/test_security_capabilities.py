@@ -18,5 +18,5 @@ def test_sshd_binary_present(host):
 def test_openssh_version_detectable(host):
     cmd = host.run("/usr/sbin/sshd -V")
     assert cmd.rc == 0
-    # expect OpenSSH_X.Y in stderr
-    assert re.search(r"OpenSSH_\\d+\\.\\d+", cmd.stderr)
+    # expect OpenSSH_X.Y in stderr (sshd prints version banner on stderr)
+    assert re.search(r"OpenSSH_\d+\.\d+", cmd.stderr + cmd.stdout)

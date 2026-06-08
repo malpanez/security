@@ -5,7 +5,7 @@ galaxy_info:
     System-wide TLS/crypto policy hardening via update-crypto-policies (RHEL 8/9)
     and openssl.cnf (Debian, SUSE, RHEL < 8). Supports review mode (audit-only)
     and enforce mode. PCI-DSS 4.2.1, HIPAA, NIS2 Art.21, SOC2 CC6.7.
-  license: MIT
+  license: Apache-2.0
   min_ansible_version: "2.16"
   galaxy_tags:
     - tls

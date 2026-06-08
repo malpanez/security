@@ -6,7 +6,7 @@ galaxy_info:
     login policies (login.defs), resource limits (limits.conf), and
     account lockout (faillock). Supports Debian/Ubuntu, RHEL/Rocky/Alma,
     and SUSE/openSUSE.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   galaxy_tags:
     - security

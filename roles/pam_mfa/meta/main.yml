@@ -5,7 +5,7 @@ galaxy_info:
     Production-grade PAM MFA: YubiKey/FIDO2 hardware tokens + TOTP backup (Google Authenticator).
     Breakglass group, service account bypass, deadman switch anti-lockout, RHEL authselect support.
     Review and enforce modes. Supports Debian/Ubuntu, RHEL/Rocky/Alma, SUSE/openSUSE.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   platforms:
     - name: Debian

@@ -5,7 +5,7 @@ galaxy_info:
     ClamAV antivirus installation, freshclam updates, and scheduled scan timer.
     Supports review mode (audit-only) and enforce mode. PCI-DSS 5.2,
     NIS2 Art.21(2)(e), SOC2 CC6.8.
-  license: MIT
+  license: Apache-2.0
   min_ansible_version: "2.16"
   galaxy_tags:
     - antivirus

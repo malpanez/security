@@ -135,7 +135,7 @@ Tests verify: PAM modules installed, breakglass group created, service accounts 
 
 ## License
 
-MIT
+Apache-2.0
 
 ## Author
 

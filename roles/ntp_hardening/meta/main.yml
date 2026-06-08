@@ -5,7 +5,7 @@ galaxy_info:
     NTP hardening with chrony. Installs chrony, disables competing time daemons,
     deploys a hardened chrony.conf, and enables the service. Supports review mode
     (audit-only) and enforce mode. PCI-DSS 10.6.1, NIS2 Art.21, SOC2 CC6.1.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   galaxy_tags:
     - security

@@ -96,7 +96,7 @@ None.
 
 ## License
 
-MIT
+Apache-2.0
 
 ## Author
 

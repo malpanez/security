@@ -155,4 +155,4 @@ Tests verify: mount options applied, hidepid active, Ctrl+Alt+Del masked, umask 
 
 ## License
 
-GPL-2.0-or-later
+Apache-2.0

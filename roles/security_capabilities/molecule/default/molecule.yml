@@ -58,3 +58,5 @@ platforms:
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
     pre_build_image: true
+verifier:
+  name: testinfra

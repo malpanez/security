@@ -52,7 +52,7 @@ tls_hardening_openssl_cipher_string: "HIGH:!aNULL:!MD5:!RC4:!3DES:!DHE"
 
 ## License
 
-MIT
+Apache-2.0
 
 ## Author
 

@@ -6,7 +6,7 @@ galaxy_info:
     device whitelist from attached hardware, deploys block-by-default policy
     via usbguard-daemon.conf. Supports review mode (audit-only) and enforce
     mode. PCI-DSS 12.3.4, HIPAA 164.310(d)(1), NIS2 Art.21, SOC2 CC6.7.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   galaxy_tags:
     - security

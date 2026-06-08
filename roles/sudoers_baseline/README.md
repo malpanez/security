@@ -115,7 +115,7 @@ Tests verify: drop-in files exist, `use_pty` present, `logfile` configured, `tim
 
 ## License
 
-MIT
+Apache-2.0
 
 ## Author
 

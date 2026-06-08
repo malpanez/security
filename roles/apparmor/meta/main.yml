@@ -6,7 +6,7 @@ galaxy_info:
     Ubuntu, and SUSE/openSUSE systems. Parallel to selinux_enforcement for
     RedHat family. Installs utilities, sets enforcement mode, and optionally
     enforces additional profiles.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   galaxy_tags:
     - security

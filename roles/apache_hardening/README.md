@@ -146,4 +146,4 @@ Tests verify: drop-in file exists, `ServerTokens Prod` present, TLSv1 absent, HS
 
 ## License
 
-GPL-2.0-or-later
+Apache-2.0

@@ -8,7 +8,7 @@ galaxy_info:
     GPG package verification. Drop-in approach — never rewrites existing configs.
     Composable: pairs with kernel_hardening, pam_security, selinux_enforcement, audit_logging.
     Supports Debian/Ubuntu, RHEL/Rocky/Alma, SUSE/openSUSE.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   platforms:
     - name: EL

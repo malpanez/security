@@ -181,4 +181,4 @@ Tests verify: AJP disabled, shutdown port `-1`, default webapps absent, session 
 
 ## License
 
-GPL-2.0-or-later
+Apache-2.0

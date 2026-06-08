@@ -75,3 +75,28 @@ argument_specs:
           - Path to sudoers.d directory
         type: str
         default: /etc/sudoers.d
+
+      cis_baseline_sshd_service_name:
+        description:
+          - SSH service name to restart after enforcement (OS-conditional)
+        type: str
+        default: "sshd (ssh on Debian family)"
+
+      cis_baseline_max_auth_tries:
+        description:
+          - Maximum SSH authentication attempts (CIS 5.2.7)
+        type: int
+        default: 4
+
+      cis_baseline_sudo_logfile:
+        description:
+          - Target path for sudo command logging (CIS 5.3.6)
+        type: str
+        default: /var/log/sudo.log
+
+      cis_baseline_enforce_fail_on_nopasswd:
+        description:
+          - Fail enforce mode when NOPASSWD:ALL is found in sudoers
+          - NOPASSWD grants cannot be removed automatically without lockout risk
+        type: bool
+        default: true

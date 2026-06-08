@@ -6,7 +6,7 @@ galaxy_info:
     Auto-selects modern/legacy algorithm profiles by OpenSSH version. Match blocks for
     human vs service accounts. Auto-rollback on invalid config. Review and enforce modes.
     Supports Debian/Ubuntu, RHEL/Rocky/Alma, SUSE/openSUSE.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   platforms:
     - name: Debian

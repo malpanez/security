@@ -49,7 +49,7 @@ USB device control with block-by-default policy. Generates an initial device whi
 
 ## License
 
-GPL-2.0-or-later
+Apache-2.0
 
 ## Author
 

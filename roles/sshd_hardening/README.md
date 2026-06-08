@@ -153,7 +153,7 @@ Tests verify: drop-in file exists, `PasswordAuthentication no` present, `PermitR
 
 ## License
 
-GPL-2.0-or-later
+Apache-2.0
 
 ## Author
 

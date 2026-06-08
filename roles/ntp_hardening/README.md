@@ -48,7 +48,7 @@ NTP/chrony hardening. Installs chrony, disables competing time daemons, deploys 
 
 ## License
 
-GPL-2.0-or-later
+Apache-2.0
 
 ## Author
 

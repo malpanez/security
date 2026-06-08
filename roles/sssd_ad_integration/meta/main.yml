@@ -6,7 +6,7 @@ galaxy_info:
     Deploys sshd_config.d drop-ins (Match Address + Match Group), SSSD AD
     configuration, per-group sudoers.d files, and pam_access.conf enforcement.
     Designed to complement malpanez.security.sshd_hardening.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   platforms:
     - name: Debian

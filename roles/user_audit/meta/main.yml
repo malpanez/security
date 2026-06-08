@@ -6,7 +6,7 @@ galaxy_info:
     inactive accounts, UID 0 duplicates, and service account shells. Enforces
     password aging via chage and locks inactive accounts. Supports review mode
     (audit-only) and enforce mode. SOC2 CC6.2/CC6.3, HIPAA, PCI-DSS 8.1.4/8.3.6, NIS2.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   galaxy_tags:
     - security

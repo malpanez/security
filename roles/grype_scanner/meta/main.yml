@@ -5,7 +5,7 @@ galaxy_info:
     Install and configure Grype vulnerability scanner for filesystem and container
     image scanning. Architecture-aware binary install with optional systemd timer
     for periodic scans. Supports Debian/Ubuntu, RHEL/Rocky/Alma, and SUSE/openSUSE.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   galaxy_tags:
     - security

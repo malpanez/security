@@ -50,7 +50,7 @@ The `clamav-scan.service` runs as the ClamAV daemon user (not root). This resolv
 
 ## License
 
-MIT
+Apache-2.0
 
 ## Author
 

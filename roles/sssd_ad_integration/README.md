@@ -148,7 +148,7 @@ AD schema. This avoids AD schema extensions and works with every AD version.
 
 ## License
 
-GPL-2.0-or-later
+Apache-2.0
 
 ## Author
 

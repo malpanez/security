@@ -6,7 +6,7 @@ galaxy_info:
     configuration monitoring critical system paths, builds the initial database,
     and schedules periodic integrity checks via a systemd timer with reports to
     /var/log/aide/. Supports Debian/Ubuntu, RHEL/Rocky/Alma, and SUSE/openSUSE.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   galaxy_tags:
     - security

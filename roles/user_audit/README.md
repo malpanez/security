@@ -46,7 +46,7 @@ Local user account audit and lockout enforcement. Reviews password expiry, inact
 
 ## License
 
-GPL-2.0-or-later
+Apache-2.0
 
 ## Author
 
