@@ -220,6 +220,12 @@ argument_specs:
           - PAM substack file name for sudo MFA (Debian 13 stack)
         type: str
         default: mfa-totp
+      pam_mfa_substack_name:
+        description:
+          - Name of the MFA auth substack under /etc/pam.d/ that protected
+            services include via `auth substack <name>`
+        type: str
+        default: mfa
       pam_mfa_enable_faillock:
         description:
           - Enable pam_faillock via pam-auth-update (Debian 13 stack)

@@ -48,7 +48,7 @@
     _tls_current_min_protocol: >-
       {{ (_tls_openssl_cnf_review.content | b64decode)
          | regex_search('MinProtocol\s*=\s*(\S+)', '\1')
-         | first | default('NOT_SET') }}
+         | default([], true) | first | default('NOT_SET') }}
   when: _tls_openssl_cnf_review.content is defined
   tags: [tls_hardening, review]
 
@@ -57,7 +57,7 @@
     _tls_current_cipher_string: >-
       {{ (_tls_openssl_cnf_review.content | b64decode)
          | regex_search('CipherString\s*=\s*(.+)', '\1')
-         | first | default('NOT_SET') }}
+         | default([], true) | first | default('NOT_SET') }}
   when: _tls_openssl_cnf_review.content is defined
   tags: [tls_hardening, review]
 

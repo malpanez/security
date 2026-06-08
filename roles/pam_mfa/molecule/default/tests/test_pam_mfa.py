@@ -1,4 +1,6 @@
 import os
+import re
+
 import testinfra.utils.ansible_runner
 
 
@@ -7,10 +9,18 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
 ).get_hosts("all")
 
 
+MFA_SUBSTACK = "/etc/pam.d/mfa"
+
+
 def _using_debian13_stack(host):
     if host.system_info.distribution.lower() != "debian":
         return False
     return host.file("/etc/pam.d/mfa-totp").exists
+
+
+def _mfa_content(host):
+    f = host.file(MFA_SUBSTACK)
+    return f.content_string if f.exists else ""
 
 
 def test_pam_packages_installed(host):
@@ -33,24 +43,22 @@ def test_pam_packages_installed(host):
 
 
 def test_pam_sshd_contains_u2f_or_fido2(host):
-    """Test that PAM SSH configuration includes U2F or FIDO2."""
+    """Test that the MFA substack includes U2F or FIDO2 for the sshd path."""
     if _using_debian13_stack(host):
         return
-    pam_sshd = host.file("/etc/pam.d/sshd")
-    assert pam_sshd.exists, "/etc/pam.d/sshd should exist"
-    content = pam_sshd.content_string
+    content = _mfa_content(host)
+    assert content, f"{MFA_SUBSTACK} should exist"
     assert "pam_u2f" in content or "pam_fido2" in content, \
-        "PAM sshd should contain pam_u2f or pam_fido2 configuration"
+        "MFA substack should contain pam_u2f or pam_fido2 configuration"
 
 
 def test_pam_sshd_contains_totp(host):
-    """Test that PAM SSH configuration includes TOTP backup."""
+    """Test that the MFA substack includes TOTP backup."""
     if _using_debian13_stack(host):
         return
-    pam_sshd = host.file("/etc/pam.d/sshd")
-    content = pam_sshd.content_string
+    content = _mfa_content(host)
     assert "pam_google_authenticator" in content, \
-        "PAM sshd should contain google-authenticator for TOTP backup"
+        "MFA substack should contain google-authenticator for TOTP backup"
     # CRITICAL: Verify nullok option to prevent lockout
     if "pam_google_authenticator" in content:
         assert "nullok" in content, \
@@ -58,32 +66,38 @@ def test_pam_sshd_contains_totp(host):
 
 
 def test_pam_sudo_contains_u2f_or_fido2(host):
-    """Test that PAM sudo configuration includes MFA."""
+    """Test that the MFA substack includes U2F or FIDO2 for the sudo path."""
     if _using_debian13_stack(host):
         return
-    pam_sudo = host.file("/etc/pam.d/sudo")
-    assert pam_sudo.exists, "/etc/pam.d/sudo should exist"
-    content = pam_sudo.content_string
+    content = _mfa_content(host)
+    assert content, f"{MFA_SUBSTACK} should exist"
     assert "pam_u2f" in content or "pam_fido2" in content, \
-        "PAM sudo should contain pam_u2f or pam_fido2 configuration"
+        "MFA substack should contain pam_u2f or pam_fido2 configuration"
+
+
+def test_services_wired_to_mfa_substack(host):
+    """Both sshd and sudo must include the MFA substack via a single wiring line."""
+    if _using_debian13_stack(host):
+        return
+    wiring = re.compile(r"^auth\s+substack\s+mfa\b", re.MULTILINE)
+    for service in ("/etc/pam.d/sshd", "/etc/pam.d/sudo"):
+        f = host.file(service)
+        assert f.exists, f"{service} should exist"
+        assert wiring.search(f.content_string), \
+            f"{service} should be wired to the MFA substack via 'auth substack mfa'"
 
 
 def test_pam_prefers_fido2_when_present(host):
     """Primary module should be pam_fido2 when the module path is present."""
     if _using_debian13_stack(host):
         return
-    pam_sshd = host.file("/etc/pam.d/sshd").content_string
-    pam_sudo = host.file("/etc/pam.d/sudo").content_string
+    content = _mfa_content(host)
 
-    assert "/lib/security/pam_fido2.so" in pam_sshd, \
-        "PAM sshd should use pam_fido2 when module is present"
-    assert "/lib/security/pam_fido2.so" in pam_sudo, \
-        "PAM sudo should use pam_fido2 when module is present"
+    assert "/lib/security/pam_fido2.so" in content, \
+        "MFA substack should use pam_fido2 when module is present"
 
-    assert "authfile=/tmp/fido2_auth" in pam_sshd, \
-        "PAM sshd should use fido2 authfile when module is present"
-    assert "authfile=/tmp/fido2_auth" in pam_sudo, \
-        "PAM sudo should use fido2 authfile when module is present"
+    assert "authfile=/tmp/fido2_auth" in content, \
+        "MFA substack should use fido2 authfile when module is present"
 
 
 def test_u2f_keys_directory_exists(host):
@@ -109,8 +123,7 @@ def test_service_accounts_exempt(host):
     """Test that service accounts bypass MFA (CRITICAL for automation)."""
     if _using_debian13_stack(host):
         return
-    pam_sshd = host.file("/etc/pam.d/sshd")
-    content = pam_sshd.content_string
+    content = _mfa_content(host)
 
     # CRITICAL: Verify service account bypass exists
     assert "pam_succeed_if" in content and "mfa-bypass" in content, \
@@ -179,8 +192,7 @@ def test_pam_order_prevents_lockout(host):
     """CRITICAL: Test that PAM order allows bypass before MFA enforcement."""
     if _using_debian13_stack(host):
         return
-    pam_sshd = host.file("/etc/pam.d/sshd")
-    content = pam_sshd.content_string
+    content = _mfa_content(host)
     lines = content.split("\n")
 
     # Find the line numbers of bypass and MFA modules
@@ -204,8 +216,7 @@ def test_pam_control_keywords_safe(host):
     """CRITICAL: Verify PAM control keywords won't cause lockout."""
     if _using_debian13_stack(host):
         return
-    pam_sshd = host.file("/etc/pam.d/sshd")
-    content = pam_sshd.content_string
+    content = _mfa_content(host)
 
     # Check that google-authenticator has sufficient or nullok to allow fallback
     if "pam_google_authenticator" in content:
@@ -221,8 +232,7 @@ def test_totp_breakglass_gating(host):
     """CRITICAL: TOTP should only trigger for breakglass group."""
     if _using_debian13_stack(host):
         return
-    pam_sshd = host.file("/etc/pam.d/sshd").content_string.splitlines()
-    pam_sudo = host.file("/etc/pam.d/sudo").content_string.splitlines()
+    substack = _mfa_content(host).splitlines()
 
     def _assert_gating(lines, name):
         gate_idx = None
@@ -238,46 +248,39 @@ def test_totp_breakglass_gating(host):
         assert gate_idx < totp_idx, \
             f"{name}: breakglass gating must appear before TOTP line"
 
-    _assert_gating(pam_sshd, "sshd")
-    _assert_gating(pam_sudo, "sudo")
+    _assert_gating(substack, "mfa substack")
 
 
 def test_breakglass_skips_u2f(host):
-    """CRITICAL: Breakglass users should be able to bypass U2F for TOTP."""
+    """CRITICAL: only the breakglass group gets the TOTP fallback; normal users
+    are gated out of it. In the substack the FIDO2 line is `sufficient`, then a
+    `pam_succeed_if ... notingroup <breakglass>` gate appears before the TOTP
+    module so non-breakglass users never reach TOTP."""
     if _using_debian13_stack(host):
         return
-    pam_sshd = host.file("/etc/pam.d/sshd").content_string.splitlines()
-    pam_sudo = host.file("/etc/pam.d/sudo").content_string.splitlines()
-
-    def _assert_skip(lines, name):
-        skip_idx = None
-        u2f_idx = None
-        for i, line in enumerate(lines):
-            if "pam_succeed_if" in line and "ingroup" in line and "mfa-breakglass" in line:
-                skip_idx = i
-            if "pam_u2f" in line or "pam_fido2" in line:
-                u2f_idx = i
-                break
-        assert skip_idx is not None and u2f_idx is not None, \
-            f"{name}: missing breakglass skip or U2F/FIDO2 line"
-        assert skip_idx < u2f_idx, \
-            f"{name}: breakglass skip must appear before U2F/FIDO2 line"
-
-    _assert_skip(pam_sshd, "sshd")
-    _assert_skip(pam_sudo, "sudo")
+    lines = _mfa_content(host).splitlines()
+    gate_idx = None
+    totp_idx = None
+    for i, line in enumerate(lines):
+        if "pam_succeed_if" in line and "notingroup" in line and "mfa-breakglass" in line:
+            gate_idx = i
+        if "pam_google_authenticator" in line:
+            totp_idx = i
+    assert gate_idx is not None and totp_idx is not None, \
+        "mfa substack: missing breakglass notingroup gate or TOTP line"
+    assert gate_idx < totp_idx, \
+        "breakglass notingroup gate must appear before the TOTP module"
 
 
 def test_totp_rate_limit_enabled(host):
     """CRITICAL: TOTP should enforce rate limiting when enabled."""
     if _using_debian13_stack(host):
         return
-    pam_sshd = host.file("/etc/pam.d/sshd").content_string
-    pam_sudo = host.file("/etc/pam.d/sudo").content_string
+    content = _mfa_content(host)
 
-    for content in (pam_sshd, pam_sudo):
-        if "pam_google_authenticator" in content:
-            assert "rate_limit=" in content, \
-                "CRITICAL: TOTP must include rate_limit to mitigate brute force"
+    if "pam_google_authenticator" in content:
+        assert "rate_limit=" in content, \
+            "CRITICAL: TOTP must include rate_limit to mitigate brute force"
 
 
 def test_ssh_allows_keyboard_interactive(host):
@@ -298,8 +301,7 @@ def test_pam_modules_exist_before_use(host):
     """CRITICAL: Verify PAM modules exist before being referenced in configuration."""
     if _using_debian13_stack(host):
         return
-    pam_sshd = host.file("/etc/pam.d/sshd")
-    content = pam_sshd.content_string
+    content = _mfa_content(host)
 
     # Extract module paths from PAM configuration
     modules_in_use = []

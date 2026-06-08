@@ -50,27 +50,40 @@
     mode: "0644"
   tags: [enforce]
 
-# NOTE: community.general.pamd with its default state (updated) only *modifies*
-# a pre-existing rule that matches type+control+module_path. It does NOT insert
-# new rules, so on a fresh /etc/pam.d/sshd it silently no-ops and leaves the
-# file stock. We therefore render the full, correctly-ordered MFA auth block via
-# blockinfile, inserted at the top of the auth stack (right after the #%PAM-1.0
-# header), guaranteeing the bypass/breakglass/primary/TOTP ordering the role
-# (and the tests) require. The block is idempotent and clearly marked.
-- name: Common | Inject MFA auth block into PAM sshd
-  ansible.builtin.blockinfile:
-    path: /etc/pam.d/sshd
-    insertafter: '^#%PAM-1.0'
-    marker: "# {mark} managed by malpanez.security pam_mfa"
-    block: "{{ lookup('ansible.builtin.template', 'mfa-auth-block.j2') }}"
+# Modular PAM (the "drop-in" pattern applied to PAM): the MFA auth logic lives
+# in its OWN substack file at /etc/pam.d/<name>, and each protected service is
+# wired in with a SINGLE `auth substack <name>` line. We never bury the MFA
+# logic inside the vendor's /etc/pam.d/sshd or /etc/pam.d/sudo — that one include
+# line is the only managed change to those files (idempotent, trivially
+# removable). `substack` (not `include`) keeps the jump/`done` semantics
+# contained within the MFA stack so it cannot leak into the parent service.
+- name: Common | Deploy MFA auth substack
+  ansible.builtin.template:
+    src: pam-mfa-substack.j2
+    dest: "/etc/pam.d/{{ pam_mfa_substack_name }}"
+    owner: root
+    group: root
+    mode: "0644"
   tags: [enforce]
 
-- name: Common | Inject MFA auth block into PAM sudo
-  ansible.builtin.blockinfile:
+- name: Common | Wire MFA substack into PAM sshd
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/sshd
+    regexp: '^auth\s+substack\s+{{ pam_mfa_substack_name }}\b'
+    line: "auth\tsubstack\t{{ pam_mfa_substack_name }}"
+    insertbefore: '^\s*(auth\b|@include\b)'
+    firstmatch: true
+    create: false
+  tags: [enforce]
+
+- name: Common | Wire MFA substack into PAM sudo
+  ansible.builtin.lineinfile:
     path: /etc/pam.d/sudo
-    insertafter: '^#%PAM-1.0'
-    marker: "# {mark} managed by malpanez.security pam_mfa"
-    block: "{{ lookup('ansible.builtin.template', 'mfa-auth-block.j2') }}"
+    regexp: '^auth\s+substack\s+{{ pam_mfa_substack_name }}\b'
+    line: "auth\tsubstack\t{{ pam_mfa_substack_name }}"
+    insertbefore: '^\s*(auth\b|@include\b)'
+    firstmatch: true
+    create: false
   tags: [enforce]
 
 # CRITICAL: Post-configuration validation
@@ -84,188 +97,44 @@
       {{ pam_mfa_pam_module_google_authenticator | basename | regex_replace('\\.so$', '') }}
   tags: [enforce]
 
-- name: Common | Check PAM sshd for primary module path
+- name: Common | Validate MFA substack contains the primary module
   ansible.builtin.command: >-
-    grep -Fq "{{ pam_mfa_primary_module_path }}" /etc/pam.d/sshd
+    grep -Eq "{{ pam_mfa_primary_module_name }}(\\.so)?\\b" /etc/pam.d/{{ pam_mfa_substack_name }}
+  register: _pam_mfa_primary_check
   changed_when: false
-  failed_when: false
-  register: pam_mfa_primary_path_check_sshd
+  failed_when: _pam_mfa_primary_check.rc != 0
   when: not pam_mfa_skip_module_validation
   tags: [enforce]
 
-- name: Common | Check PAM sshd for primary module basename
+- name: Common | Validate MFA substack contains the bypass (pam_succeed_if) rule
+  ansible.builtin.command: grep -q "pam_succeed_if.so" /etc/pam.d/{{ pam_mfa_substack_name }}
+  register: _pam_mfa_succeed_if_check
+  changed_when: false
+  failed_when: _pam_mfa_succeed_if_check.rc != 0
+  when: not pam_mfa_skip_module_validation
+  tags: [enforce]
+
+- name: Common | Validate MFA substack contains the TOTP module
   ansible.builtin.command: >-
-    grep -Fq "{{ pam_mfa_primary_module_basename }}" /etc/pam.d/sshd
+    grep -Fq "{{ pam_mfa_totp_module_basename }}" /etc/pam.d/{{ pam_mfa_substack_name }}
+  register: _pam_mfa_totp_check
   changed_when: false
-  failed_when: false
-  register: pam_mfa_primary_base_check_sshd
-  when: not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Check PAM sshd for primary module name
-  ansible.builtin.command: >-
-    grep -Eq "{{ pam_mfa_primary_module_name }}(\\.so)?\\b" /etc/pam.d/sshd
-  changed_when: false
-  failed_when: false
-  register: pam_mfa_primary_name_check_sshd
-  when: not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Assert PAM sshd includes primary module
-  ansible.builtin.assert:
-    that:
-      - >-
-        pam_mfa_primary_path_check_sshd.rc == 0
-        or pam_mfa_primary_base_check_sshd.rc == 0
-        or pam_mfa_primary_name_check_sshd.rc == 0
-    fail_msg: "PAM sshd missing primary module entry"
-  when: not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Check PAM sudo for primary module path
-  ansible.builtin.command: >-
-    grep -Fq "{{ pam_mfa_primary_module_path }}" /etc/pam.d/sudo
-  changed_when: false
-  failed_when: false
-  register: pam_mfa_primary_path_check_sudo
-  when: not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Check PAM sudo for primary module basename
-  ansible.builtin.command: >-
-    grep -Fq "{{ pam_mfa_primary_module_basename }}" /etc/pam.d/sudo
-  changed_when: false
-  failed_when: false
-  register: pam_mfa_primary_base_check_sudo
-  when: not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Check PAM sudo for primary module name
-  ansible.builtin.command: >-
-    grep -Eq "{{ pam_mfa_primary_module_name }}(\\.so)?\\b" /etc/pam.d/sudo
-  changed_when: false
-  failed_when: false
-  register: pam_mfa_primary_name_check_sudo
-  when: not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Assert PAM sudo includes primary module
-  ansible.builtin.assert:
-    that:
-      - >-
-        pam_mfa_primary_path_check_sudo.rc == 0
-        or pam_mfa_primary_base_check_sudo.rc == 0
-        or pam_mfa_primary_name_check_sudo.rc == 0
-    fail_msg: "PAM sudo missing primary module entry"
-  when: not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Validate PAM sshd includes succeed_if
-  ansible.builtin.command: grep -q "pam_succeed_if.so" /etc/pam.d/sshd
-  register: _pam_mfa_sshd_succeed_if
-  changed_when: false
-  failed_when: _pam_mfa_sshd_succeed_if.rc != 0
-  when: not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Validate PAM sudo includes succeed_if
-  ansible.builtin.command: grep -q "pam_succeed_if.so" /etc/pam.d/sudo
-  register: _pam_mfa_sudo_succeed_if
-  changed_when: false
-  failed_when: _pam_mfa_sudo_succeed_if.rc != 0
-  when: not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Check PAM sshd for TOTP module path
-  ansible.builtin.command: >-
-    grep -Fq "{{ pam_mfa_pam_module_google_authenticator }}" /etc/pam.d/sshd
-  changed_when: false
-  failed_when: false
-  register: pam_mfa_totp_path_check_sshd
+  failed_when: _pam_mfa_totp_check.rc != 0
   when:
     - pam_mfa_totp_enabled
     - not pam_mfa_skip_module_validation
   tags: [enforce]
 
-- name: Common | Check PAM sshd for TOTP module basename
+- name: Common | Validate sshd and sudo are wired to the MFA substack
   ansible.builtin.command: >-
-    grep -Fq "{{ pam_mfa_totp_module_basename }}" /etc/pam.d/sshd
+    grep -Eq "^auth[[:space:]]+substack[[:space:]]+{{ pam_mfa_substack_name }}\\b" {{ item }}
+  loop:
+    - /etc/pam.d/sshd
+    - /etc/pam.d/sudo
+  register: _pam_mfa_wire_check
   changed_when: false
-  failed_when: false
-  register: pam_mfa_totp_base_check_sshd
-  when:
-    - pam_mfa_totp_enabled
-    - not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Check PAM sshd for TOTP module name
-  ansible.builtin.command: >-
-    grep -Eq "{{ pam_mfa_totp_module_name }}(\\.so)?\\b" /etc/pam.d/sshd
-  changed_when: false
-  failed_when: false
-  register: pam_mfa_totp_name_check_sshd
-  when:
-    - pam_mfa_totp_enabled
-    - not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Assert PAM sshd includes TOTP backup when enabled
-  ansible.builtin.assert:
-    that:
-      - >-
-        pam_mfa_totp_path_check_sshd.rc == 0
-        or pam_mfa_totp_base_check_sshd.rc == 0
-        or pam_mfa_totp_name_check_sshd.rc == 0
-    fail_msg: "PAM sshd missing TOTP backup entry"
-  when:
-    - pam_mfa_totp_enabled
-    - not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Check PAM sudo for TOTP module path
-  ansible.builtin.command: >-
-    grep -Fq "{{ pam_mfa_pam_module_google_authenticator }}" /etc/pam.d/sudo
-  changed_when: false
-  failed_when: false
-  register: pam_mfa_totp_path_check_sudo
-  when:
-    - pam_mfa_totp_enabled
-    - not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Check PAM sudo for TOTP module basename
-  ansible.builtin.command: >-
-    grep -Fq "{{ pam_mfa_totp_module_basename }}" /etc/pam.d/sudo
-  changed_when: false
-  failed_when: false
-  register: pam_mfa_totp_base_check_sudo
-  when:
-    - pam_mfa_totp_enabled
-    - not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Check PAM sudo for TOTP module name
-  ansible.builtin.command: >-
-    grep -Eq "{{ pam_mfa_totp_module_name }}(\\.so)?\\b" /etc/pam.d/sudo
-  changed_when: false
-  failed_when: false
-  register: pam_mfa_totp_name_check_sudo
-  when:
-    - pam_mfa_totp_enabled
-    - not pam_mfa_skip_module_validation
-  tags: [enforce]
-
-- name: Common | Assert PAM sudo includes TOTP backup when enabled
-  ansible.builtin.assert:
-    that:
-      - >-
-        pam_mfa_totp_path_check_sudo.rc == 0
-        or pam_mfa_totp_base_check_sudo.rc == 0
-        or pam_mfa_totp_name_check_sudo.rc == 0
-    fail_msg: "PAM sudo missing TOTP backup entry"
-  when:
-    - pam_mfa_totp_enabled
-    - not pam_mfa_skip_module_validation
+  failed_when: _pam_mfa_wire_check.rc != 0
+  when: not pam_mfa_skip_module_validation
   tags: [enforce]
 
 - name: Common | Display PAM lockout prevention warning
@@ -283,7 +152,7 @@
 
       IF NEW SESSION FAILS:
       - DO NOT close this session
-      - Restore backup: cp /etc/pam.d/sshd.backup-* /etc/pam.d/sshd
+      - Restore backup: cp /etc/pam.d/sshd.pam_mfa.orig /etc/pam.d/sshd
       - Restart sshd: systemctl restart sshd
       - Contact administrator
 
