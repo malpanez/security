@@ -111,7 +111,7 @@ jobs:
           set -euo pipefail
           for grp in linux-admins linux-users linux-service linux-readonly; do
             user="testuser-${grp}"
-            id "$user" >/dev/null 2>&1 || useradd -m -s /bin/bash -G "$grp" "$user"
+            id "$user" >/dev/null 2>&1 || sudo useradd -m -s /bin/bash -G "$grp" "$user"
             echo "OK: user $user in group $grp"
           done
 

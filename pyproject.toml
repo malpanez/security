@@ -112,14 +112,13 @@ ignore = [
 
 [tool.pytest.ini_options]
 minversion = "8.0"
+# Coverage is opt-in (run `pytest --cov=roles ...` explicitly). It is NOT in the
+# default addopts so the Molecule testinfra verifier — which invokes pytest
+# without pytest-cov in scope — does not fail on unrecognised --cov arguments.
 addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
-    "--cov=roles",
-    "--cov-report=term-missing:skip-covered",
-    "--cov-report=html",
-    "--cov-report=xml",
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
