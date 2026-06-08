@@ -123,11 +123,28 @@ jobs:
         with:
           subject-path: "*.tar.gz"
 
-      - name: Upload collection artifact
+      - name: Install cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign collection tarball (keyless / sigstore)
+        if: github.event_name != 'pull_request'
+        run: |
+          for f in *.tar.gz; do
+            cosign sign-blob --yes \
+              --output-signature "${f}.sig" \
+              --output-certificate "${f}.pem" \
+              "${f}"
+          done
+
+      - name: Upload collection artifact (+ signatures)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ansible-collection
-          path: "*.tar.gz"
+          path: |
+            *.tar.gz
+            *.tar.gz.sig
+            *.tar.gz.pem
           retention-days: 30
 
   test-install:
