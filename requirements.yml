@@ -1,6 +1,15 @@
 ---
+# Galaxy collections pinned to exact versions for reproducible, supply-chain-safe
+# installs. Versions are the latest compatible with the ansible-core floor
+# declared in pyproject.toml (>=2.16). ansible-galaxy verifies each tarball's
+# SHA256 against signed Galaxy metadata on install.
+# Bump deliberately; re-check requires_ansible before raising a major.
 collections:
   - name: ansible.posix
+    version: "2.2.0"
   - name: community.general
+    version: "11.4.8"
   - name: community.crypto
+    version: "2.26.8"
   - name: community.docker
+    version: "4.8.7"

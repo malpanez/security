@@ -1,0 +1,19 @@
+# lychee link-checker config — replaces markdown-link-check-config.json
+# Docs: https://github.com/lycheeverse/lychee
+# Migrated 2026-06-08 (gaurav-nelson/github-action-markdown-link-check archived).
+
+# HTTP status codes treated as success (matches former aliveStatusCodes).
+accept = [200, 206, 301, 302, 307, 308, 403, 405, 999]
+
+# Per-request timeout, seconds.
+timeout = 20
+
+# Retry behaviour — covers 429 rate limiting from GitHub.
+max_retries = 3
+retry_wait_time = 30
+
+# Links never checked (local + self-links that 404 while the repo is private).
+exclude = [
+  "^http://localhost",
+  "^https://github.com/malpanez/security",
+]
