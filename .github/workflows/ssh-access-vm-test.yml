@@ -102,7 +102,7 @@ jobs:
         run: |
           set -euo pipefail
           for grp in linux-admins linux-users linux-service linux-readonly ansible-deploy; do
-            getent group "$grp" >/dev/null 2>&1 || groupadd "$grp"
+            getent group "$grp" >/dev/null 2>&1 || sudo groupadd "$grp"
             echo "OK: group $grp"
           done
 

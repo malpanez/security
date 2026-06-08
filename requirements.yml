@@ -13,3 +13,5 @@ collections:
     version: "2.26.8"
   - name: community.docker
     version: "4.8.7"
+  - name: community.mysql
+    version: "4.2.0"

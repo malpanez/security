@@ -162,6 +162,9 @@
   tags: [system_hardening, hidepid]
 
 - name: "Remount /proc with hidepid (live, non-destructive)"
+  vars:
+    # Newer kernels report hidepid by name (2=invisible, 1=noaccess, 0=off)
+    _hidepid_alias: "{{ {'0': 'off', '1': 'noaccess', '2': 'invisible'}[system_hardening_hidepid_value | string] | default('__none__') }}"
   ansible.builtin.command:
     cmd: >-
       mount -o remount,hidepid={{ system_hardening_hidepid_value }},gid={{ system_hardening_proc_group }}
@@ -172,7 +175,8 @@
   when:
     - system_hardening_hidepid_enabled | bool
     - ansible_virtualization_type | default('') not in ['docker', 'podman', 'container', 'lxc']
-    - _proc_mount_options.stdout is not search('hidepid=' ~ (system_hardening_hidepid_value | string))
+    - not (_proc_mount_options.stdout is search('hidepid=' ~ (system_hardening_hidepid_value | string))
+           or _proc_mount_options.stdout is search('hidepid=' ~ _hidepid_alias))
   tags: [system_hardening, hidepid]
 
 # ── Mount hardening ───────────────────────────────────────────────────────────

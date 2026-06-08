@@ -57,10 +57,9 @@
   tags: [enforce]
 
 - name: common | Deploy audit rules
-  ansible.builtin.copy:
+  ansible.builtin.template:
+    src: audit.rules.j2
     dest: "{{ audit_logging_rules_path }}"
-    content: |
-      {{ (audit_logging_effective_rules | default(audit_logging_rules)) | join('\n') }}
     owner: root
     group: root
     mode: "0640"

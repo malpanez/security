@@ -1,0 +1,4 @@
+## Managed by malpanez.security.audit_logging — do not edit by hand.
+{% for rule in (audit_logging_effective_rules | default(audit_logging_rules)) %}
+{{ rule }}
+{% endfor %}

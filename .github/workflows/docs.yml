@@ -65,6 +65,7 @@ jobs:
         env:
           ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}
         run: |
+          mkdir -p built_docs
           antsibull-docs sphinx-init --use-current \
             --squash-hierarchy --dest-dir built_docs malpanez.security
           pip install -r built_docs/requirements.txt
