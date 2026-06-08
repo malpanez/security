@@ -1,0 +1,2 @@
+---
+# vars file for roles/encryption_at_rest (OS-specific values live in <os_family>.yml)

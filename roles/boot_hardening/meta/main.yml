@@ -1,0 +1,30 @@
+---
+galaxy_info:
+  author: Miguel Alpanez
+  description: >-
+    GRUB2 bootloader hardening. Optionally sets a GRUB superuser and PBKDF2
+    password (only when a pre-hashed value is supplied — never plaintext),
+    disables os-prober and recovery entries, and enforces grub.cfg permissions.
+    Uses update-grub on Debian/Ubuntu and grub2-mkconfig on RHEL/SUSE. Supports
+    review mode (audit-only) and enforce mode.
+    CIS 1.4.x, NIST CM-6.
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - security
+    - hardening
+    - boot
+    - grub
+    - grub2
+    - bootloader
+    - linux
+    - cis
+    - nist
+  platforms:
+    - name: Debian
+      versions: [bullseye, bookworm, trixie]
+    - name: Ubuntu
+      versions: [focal, jammy, noble]
+    - name: EL
+      versions: [all]
+dependencies: []

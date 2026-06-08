@@ -1,0 +1,24 @@
+---
+encryption_at_rest_enabled: false
+
+# Mounts that SHOULD be encrypted at rest. Audited only — never modified.
+# e.g. ["/", "/var", "swap"]
+encryption_at_rest_required_mounts: []
+
+# Review fails the play when a required mount is not encrypted.
+# Default false: a normal run only reports evidence.
+encryption_at_rest_fail_on_unencrypted: false
+
+# Ensure cryptsetup tooling is installed (enforce mode).
+encryption_at_rest_install_tools: true
+
+# Permissions applied to /etc/crypttab when it exists (enforce mode).
+encryption_at_rest_crypttab_mode: "0600"
+
+# Data volumes eligible for guarded LUKS init: list of {device, name} dicts.
+# e.g. [{device: /dev/sdb, name: cryptdata}]
+encryption_at_rest_data_volumes: []
+
+# HARD GUARD: LUKS-format a listed data volume ONLY when this is true.
+# Default false: the format tasks never run and no device is ever touched.
+encryption_at_rest_allow_format: false

@@ -1,0 +1,15 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Include boot_hardening role
+      ansible.builtin.include_role:
+        name: malpanez.security.boot_hardening
+      vars:
+        boot_hardening_enabled: true
+        security_mode: enforce
+        # Password hash left empty on purpose — no GRUB password in CI (safe).
+        boot_hardening_disable_recovery: true

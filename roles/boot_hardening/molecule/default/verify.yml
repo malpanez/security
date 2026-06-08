@@ -1,0 +1,57 @@
+---
+- name: Verify boot_hardening
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Detect container environment
+      ansible.builtin.command:
+        cmd: systemd-detect-virt --container
+      register: _virt_check
+      changed_when: false
+      failed_when: false
+
+    - name: Set container flag
+      ansible.builtin.set_fact:
+        _in_container: "{{ _virt_check.rc == 0 }}"
+
+    - name: Stat GRUB default file
+      ansible.builtin.stat:
+        path: /etc/default/grub
+      register: _grub_default
+
+    # In a container there is no bootloader: the role must still run cleanly,
+    # and only assert against the GRUB default file when it actually exists.
+    - name: Read GRUB default file (when present)
+      ansible.builtin.slurp:
+        src: /etc/default/grub
+      register: _grub_default_content
+      when: _grub_default.stat.exists
+
+    - name: Assert GRUB_DISABLE_OS_PROBER is set (when default file present)
+      ansible.builtin.assert:
+        that:
+          - "'GRUB_DISABLE_OS_PROBER=true' in (_grub_default_content.content | b64decode)"
+        fail_msg: GRUB_DISABLE_OS_PROBER=true not found in /etc/default/grub
+        quiet: true
+      when:
+        - _grub_default.stat.exists
+        - not _in_container | bool
+
+    # ---- grub.cfg / runtime checks only on real hosts ----
+    - name: Stat grub.cfg (non-container)
+      ansible.builtin.stat:
+        path: "{{ '/boot/grub/grub.cfg' if ansible_os_family == 'Debian' else '/boot/grub2/grub.cfg' }}"
+      register: _grub_cfg
+      when: not _in_container | bool
+
+    - name: Assert grub.cfg permissions are 0600 (non-container)
+      ansible.builtin.assert:
+        that:
+          - _grub_cfg.stat.mode == '0600'
+        fail_msg: grub.cfg permissions are not 0600
+        quiet: true
+      when:
+        - not _in_container | bool
+        - _grub_cfg.stat.exists | default(false)

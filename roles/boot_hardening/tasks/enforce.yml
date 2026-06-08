@@ -1,0 +1,62 @@
+---
+# All bootloader operations are gated on running on a real host:
+# there is no bootloader inside a container.
+
+- name: Enforce | Set GRUB_DISABLE_OS_PROBER in default file
+  ansible.builtin.lineinfile:
+    path: "{{ grub_default_file }}"
+    regexp: '^GRUB_DISABLE_OS_PROBER='
+    line: GRUB_DISABLE_OS_PROBER=true
+    create: false
+    mode: "0644"
+  notify: Regenerate grub config
+  when:
+    - boot_hardening_disable_os_prober | bool
+    - not _boot_hardening_in_container | bool
+  tags: [boot_hardening, enforce, configure]
+
+- name: Enforce | Set GRUB_DISABLE_RECOVERY in default file
+  ansible.builtin.lineinfile:
+    path: "{{ grub_default_file }}"
+    regexp: '^GRUB_DISABLE_RECOVERY='
+    line: GRUB_DISABLE_RECOVERY="true"
+    create: false
+    mode: "0644"
+  notify: Regenerate grub config
+  when:
+    - boot_hardening_disable_recovery | bool
+    - not _boot_hardening_in_container | bool
+  tags: [boot_hardening, enforce, configure]
+
+# Password is set ONLY when a pre-hashed PBKDF2 value is supplied.
+# An empty hash means this drop-in is never written (safe default).
+- name: Enforce | Deploy GRUB superuser/password drop-in
+  ansible.builtin.template:
+    src: 01_security.j2
+    dest: "{{ grub_user_cfg }}/01_security"
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Regenerate grub config
+  when:
+    - boot_hardening_grub_password_hash | length > 0
+    - not _boot_hardening_in_container | bool
+  tags: [boot_hardening, enforce, configure]
+
+- name: Enforce | Stat grub.cfg before tightening permissions
+  ansible.builtin.stat:
+    path: "{{ grub_cfg_path }}"
+  register: _boot_hardening_cfg_enforce
+  when: not _boot_hardening_in_container | bool
+  tags: [boot_hardening, enforce, configure]
+
+- name: Enforce | Enforce grub.cfg permissions
+  ansible.builtin.file:
+    path: "{{ grub_cfg_path }}"
+    owner: root
+    group: root
+    mode: "{{ boot_hardening_cfg_mode }}"
+  when:
+    - not _boot_hardening_in_container | bool
+    - _boot_hardening_cfg_enforce.stat.exists | default(false)
+  tags: [boot_hardening, enforce, configure]

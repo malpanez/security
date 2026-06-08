@@ -1,0 +1,51 @@
+---
+- name: Review | Stat grub.cfg
+  ansible.builtin.stat:
+    path: "{{ grub_cfg_path }}"
+  register: _boot_hardening_cfg_stat
+  changed_when: false
+  failed_when: false
+  tags: [boot_hardening, review]
+
+- name: Review | Check for GRUB superusers/password in grub.d
+  ansible.builtin.command:
+    cmd: grep -rEl 'set superusers|password_pbkdf2' {{ grub_user_cfg }}
+  register: _boot_hardening_pw_drop
+  changed_when: false
+  failed_when: false
+  tags: [boot_hardening, review]
+
+- name: Review | Check for password directives in grub.cfg
+  ansible.builtin.command:
+    cmd: grep -E 'set superusers|password_pbkdf2' {{ grub_cfg_path }}
+  register: _boot_hardening_pw_cfg
+  changed_when: false
+  failed_when: false
+  when: _boot_hardening_cfg_stat.stat.exists | default(false)
+  tags: [boot_hardening, review]
+
+- name: Review | Check GRUB_DISABLE_OS_PROBER in default file
+  ansible.builtin.command:
+    cmd: grep -E '^GRUB_DISABLE_OS_PROBER=' {{ grub_default_file }}
+  register: _boot_hardening_os_prober
+  changed_when: false
+  failed_when: false
+  tags: [boot_hardening, review]
+
+- name: Review | Report bootloader review findings
+  ansible.builtin.debug:
+    msg:
+      - "Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
+      - "grub.cfg: {{ grub_cfg_path }}"
+      - "grub.cfg present: {{ _boot_hardening_cfg_stat.stat.exists | default(false) }}"
+      - >-
+        grub.cfg mode:
+        {{ _boot_hardening_cfg_stat.stat.mode | default('unknown') }}
+      - >-
+        GRUB password configured:
+        {{ (_boot_hardening_pw_drop.rc | default(-1)) == 0
+           or (_boot_hardening_pw_cfg.rc | default(-1)) == 0 }}
+      - >-
+        GRUB_DISABLE_OS_PROBER set:
+        {{ _boot_hardening_os_prober.stdout | default('not set') }}
+  tags: [boot_hardening, review]

@@ -39,7 +39,11 @@ Designed to be **audit-ready from day one**: run in review mode first to collect
 | `apache_hardening` | Hardens Apache httpd: TLS, security headers, and module/access controls (review and enforce modes) |
 | `tomcat_hardening` | Hardens Apache Tomcat: secure connectors, manager access, and server configuration |
 | `mysql_hardening` | Hardens MySQL/MariaDB: removes anonymous users/test DB, disables remote root, enforces TLS and auditing |
-| `compliance_evidence` | Collects configuration snapshots and command outputs to `/var/log/compliance` |
+| `firewall` | Default-deny host firewall (firewalld on RHEL/SUSE, ufw on Debian) with an explicit allowlist; SSH always kept open |
+| `automated_patching` | Security-only automatic patching (dnf-automatic / unattended-upgrades) with controlled, opt-in reboots |
+| `boot_hardening` | GRUB2 bootloader hardening: grub.cfg permissions, os-prober/recovery control, opt-in PBKDF2 password |
+| `encryption_at_rest` | Non-destructive LUKS/dm-crypt audit and evidence; crypttab hardening; guarded data-volume encryption |
+| `compliance_evidence` | Collects configuration snapshots, command outputs, and a machine-readable OSCAL-aligned compliance report to `/var/log/compliance` |
 
 ## Authentication mode auto-selection
 

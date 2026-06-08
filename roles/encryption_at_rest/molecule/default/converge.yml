@@ -1,0 +1,15 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Include encryption_at_rest role
+      ansible.builtin.include_role:
+        name: malpanez.security.encryption_at_rest
+      vars:
+        encryption_at_rest_enabled: true
+        security_mode: enforce
+        encryption_at_rest_required_mounts: []
+        encryption_at_rest_allow_format: false

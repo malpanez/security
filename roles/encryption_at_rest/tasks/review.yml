@@ -1,0 +1,82 @@
+---
+- name: Review | Enumerate block devices and their crypto status
+  ansible.builtin.command:
+    cmd: lsblk -o NAME,FSTYPE,TYPE,MOUNTPOINT -p -n
+  register: _encryption_at_rest_lsblk
+  changed_when: false
+  failed_when: false
+  tags: [encryption_at_rest, review]
+
+- name: Review | Check /etc/crypttab existence and permissions
+  ansible.builtin.stat:
+    path: /etc/crypttab
+  register: _encryption_at_rest_crypttab
+  tags: [encryption_at_rest, review]
+
+- name: Review | Read /etc/crypttab contents
+  ansible.builtin.command:
+    cmd: cat /etc/crypttab
+  register: _encryption_at_rest_crypttab_content
+  changed_when: false
+  failed_when: false
+  when: _encryption_at_rest_crypttab.stat.exists
+  tags: [encryption_at_rest, review]
+
+- name: Review | Build encryption findings for required mounts
+  ansible.builtin.set_fact:
+    _encryption_findings: >-
+      {{ _encryption_findings | default([]) + [{
+           'mount': item,
+           'encrypted': (
+             _encryption_at_rest_lsblk.stdout_lines
+             | select('search', '(^| )crypto_LUKS( |$)')
+             | select('search', mount_token)
+             | list | length > 0
+           ) or (
+             (_encryption_at_rest_crypttab_content.stdout | default(''))
+             | regex_search(mount_token) is not none
+           )
+         }] }}
+  vars:
+    mount_token: >-
+      {{ ' ' + item + ' ' if item != 'swap' else 'swap' }}
+  loop: "{{ encryption_at_rest_required_mounts }}"
+  loop_control:
+    label: "{{ item }}"
+  tags: [encryption_at_rest, review]
+
+- name: Review | Report encryption-at-rest findings
+  ansible.builtin.debug:
+    msg:
+      - "Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
+      - "crypttab present: {{ _encryption_at_rest_crypttab.stat.exists }}"
+      - >-
+        crypttab mode:
+        {{ _encryption_at_rest_crypttab.stat.mode | default('n/a') }}
+      - >-
+        LUKS/crypt devices:
+        {{ _encryption_at_rest_lsblk.stdout_lines
+           | default([])
+           | select('search', 'crypt')
+           | list | default(['none detected']) }}
+      - >-
+        Required-mount encryption:
+        {{ _encryption_findings | default([]) }}
+  tags: [encryption_at_rest, review]
+
+- name: Review | Assert all required mounts are encrypted
+  ansible.builtin.assert:
+    that:
+      - >-
+        _encryption_findings | default([])
+        | rejectattr('encrypted')
+        | list | length == 0
+    fail_msg: >-
+      encryption_at_rest: one or more required mounts are NOT encrypted:
+      {{ _encryption_findings | default([])
+         | rejectattr('encrypted')
+         | map(attribute='mount') | list }}
+    success_msg: All required mounts are encrypted (or none required).
+    quiet: true
+  when: encryption_at_rest_fail_on_unencrypted | bool
+  tags: [encryption_at_rest, review]

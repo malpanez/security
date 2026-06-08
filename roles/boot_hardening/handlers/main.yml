@@ -1,0 +1,8 @@
+---
+- name: Regenerate grub config
+  ansible.builtin.command:
+    cmd: >-
+      {{ grub_mkconfig if ansible_os_family == 'Debian'
+         else grub_mkconfig ~ ' -o ' ~ grub_cfg_path }}
+  changed_when: true
+  when: not _boot_hardening_in_container | default(false) | bool

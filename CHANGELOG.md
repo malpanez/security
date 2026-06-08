@@ -3,6 +3,11 @@
 ### Added
 - firewall role: default-deny host firewall (firewalld on RHEL/SUSE, ufw on Debian/Ubuntu) with explicit allowlist and SSH lockout protection (CIS 3.5.x, NIST CM-7/SC-7, NIS2 Art.21(2)(j))
 - automated_patching role: security-only automatic patching (dnf-automatic / unattended-upgrades) with controlled, opt-in reboots (CIS 1.9, NIST SI-2, NIS2 Art.21(2)(i))
+- boot_hardening role: GRUB2 hardening — grub.cfg perms, os-prober/recovery control, opt-in PBKDF2 password (CIS 1.4.x, NIST CM-6)
+- encryption_at_rest role: non-destructive LUKS/dm-crypt audit and evidence, crypttab hardening, guarded data-volume encryption (NIST SC-28, NIS2 Art.21(2)(f))
+- machine-readable OSCAL-aligned compliance report (compliance-report.json) mapping 15 controls to CIS/NIST/NIS2
+- ansible-test sanity gate across an ansible-core 2.16/2.17/2.18 matrix
+- keyless cosign signing of release artifacts; antsibull-docs site; governance files (CODEOWNERS, issue/PR templates); changelog fragments
 - SLSA build provenance attestation on the collection build (ci.yml, ci-uv.yml)
 - cis_baseline: enforce + review for MaxAuthTries, sudo logfile, and NOPASSWD:ALL
 - auditd: CIS L2 / STIG syscall rules (priv_esc, perm_mod, access, delete, mounts, time_change, modules) and login/session watches

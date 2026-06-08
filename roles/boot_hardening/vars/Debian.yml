@@ -1,0 +1,5 @@
+---
+grub_cfg_path: /boot/grub/grub.cfg
+grub_default_file: /etc/default/grub
+grub_mkconfig: update-grub
+grub_user_cfg: /etc/grub.d

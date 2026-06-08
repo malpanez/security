@@ -1,0 +1,18 @@
+---
+boot_hardening_enabled: false
+
+# GRUB superuser name (used only when a password hash is provided).
+boot_hardening_grub_superuser: admin
+
+# Pre-hashed PBKDF2 password from grub2-mkpasswd-pbkdf2 / grub-mkpasswd-pbkdf2.
+# SAFETY: empty means NO password is set. Never put a plaintext password here.
+boot_hardening_grub_password_hash: ""
+
+# Permissions enforced on the generated grub.cfg (CIS 1.4.x).
+boot_hardening_cfg_mode: "0600"
+
+# Disable os-prober (avoids leaking other OS entries / boot probing).
+boot_hardening_disable_os_prober: true
+
+# Disable GRUB recovery-mode menu entries.
+boot_hardening_disable_recovery: false

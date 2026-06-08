@@ -141,6 +141,10 @@ jobs:
           - antivirus
           - tls_hardening
           - usbguard
+          - firewall
+          - automated_patching
+          - boot_hardening
+          - encryption_at_rest
 
     steps:
       - name: Harden runner

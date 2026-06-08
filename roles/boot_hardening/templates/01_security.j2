@@ -1,0 +1,9 @@
+#!/bin/sh
+# {{ ansible_managed }}
+# GRUB superuser and PBKDF2 password drop-in (CIS 1.4.x).
+# Managed by the malpanez.security.boot_hardening role — do not edit by hand.
+exec tail -n +3 $0
+cat <<'EOF'
+set superusers="{{ boot_hardening_grub_superuser }}"
+password_pbkdf2 {{ boot_hardening_grub_superuser }} {{ boot_hardening_grub_password_hash }}
+EOF

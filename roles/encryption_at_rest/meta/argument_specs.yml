@@ -1,0 +1,61 @@
+---
+argument_specs:
+  main:
+    short_description: Audit and evidence of encryption-at-rest (LUKS / dm-crypt)
+    description:
+      - Audit-first and non-destructive role for encryption-at-rest evidence.
+      - Reports which block devices are encrypted and flags required mounts that
+        are not encrypted; hardens crypttab permissions and cryptsetup tooling.
+      - Does not encrypt an existing root filesystem; only initialises LUKS on
+        explicitly-listed empty data volumes behind a hard safety guard.
+      - Review mode audits the current state; enforce mode applies hardening.
+      - NIST SC-28 (protection of information at rest), NIS2 Art.21(2)(f).
+    author: Miguel Alpanez
+    options:
+      encryption_at_rest_enabled:
+        type: bool
+        default: false
+        description: Whether to run enforce-mode hardening. Review always runs.
+      encryption_at_rest_required_mounts:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Mounts that should be encrypted at rest (audited only, never
+          modified), e.g. C(["/", "/var", "swap"]).
+      encryption_at_rest_fail_on_unencrypted:
+        type: bool
+        default: false
+        description: >-
+          Fail the play during review when a required mount is not encrypted.
+          Default false reports evidence without failing.
+      encryption_at_rest_install_tools:
+        type: bool
+        default: true
+        description: Ensure the cryptsetup package is installed (enforce mode).
+      encryption_at_rest_crypttab_mode:
+        type: str
+        default: "0600"
+        description: Permissions applied to /etc/crypttab when it exists.
+      encryption_at_rest_data_volumes:
+        type: list
+        elements: dict
+        default: []
+        description: >-
+          Data volumes eligible for guarded LUKS init. Each item is a dict with
+          C(device) and C(name), e.g. C([{device: /dev/sdb, name: cryptdata}]).
+        options:
+          device:
+            type: str
+            required: true
+            description: Absolute path to the empty block device to format.
+          name:
+            type: str
+            required: true
+            description: dm-crypt mapper name for the opened LUKS device.
+      encryption_at_rest_allow_format:
+        type: bool
+        default: false
+        description: >-
+          Hard guard. LUKS-format a listed data volume ONLY when true. Default
+          false means the format tasks never run and no device is ever touched.

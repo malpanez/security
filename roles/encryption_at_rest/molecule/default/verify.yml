@@ -1,0 +1,58 @@
+---
+- name: Verify encryption_at_rest
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Detect container environment
+      ansible.builtin.command:
+        cmd: systemd-detect-virt --container
+      register: _virt_check
+      changed_when: false
+      failed_when: false
+
+    - name: Set container flag
+      ansible.builtin.set_fact:
+        _in_container: "{{ _virt_check.rc == 0 }}"
+
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert cryptsetup is installed
+      ansible.builtin.assert:
+        that:
+          - "'cryptsetup' in ansible_facts.packages"
+        fail_msg: cryptsetup package is not installed
+        quiet: true
+
+    - name: Read /etc/crypttab permissions if present
+      ansible.builtin.stat:
+        path: /etc/crypttab
+      register: _crypttab_stat
+
+    - name: Assert crypttab is mode 0600 when present
+      ansible.builtin.assert:
+        that:
+          - _crypttab_stat.stat.mode == '0600'
+        fail_msg: "/etc/crypttab exists but is not mode 0600"
+        quiet: true
+      when: _crypttab_stat.stat.exists
+
+    # ---- runtime device/LUKS checks only on real hosts ----
+    - name: Enumerate block devices (non-container)
+      ansible.builtin.command:
+        cmd: lsblk -o NAME,FSTYPE,TYPE -p -n
+      register: _lsblk
+      changed_when: false
+      failed_when: false
+      when: not _in_container | bool
+
+    - name: Assert lsblk enumeration succeeded (non-container)
+      ansible.builtin.assert:
+        that:
+          - _lsblk.rc == 0
+        fail_msg: lsblk failed to enumerate block devices
+        quiet: true
+      when: not _in_container | bool

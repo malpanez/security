@@ -39,6 +39,9 @@
     # 4b. Host firewall: default-deny inbound, SSH always kept open
     - malpanez.security.firewall
 
+    # 4c. Bootloader hardening (GRUB perms, os-prober; password opt-in)
+    - malpanez.security.boot_hardening
+
     # 5. SSH daemon hardening (drop-in by default)
     - malpanez.security.sshd_hardening
 
@@ -72,6 +75,9 @@
 
     # 13. Audit logging: auditd rules for all managed config files
     - malpanez.security.audit_logging
+
+    # 13b. Encryption-at-rest audit (LUKS evidence; non-destructive)
+    - malpanez.security.encryption_at_rest
 
     # 14. Compliance evidence: collect and hash all artifacts
     - malpanez.security.compliance_evidence

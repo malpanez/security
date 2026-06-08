@@ -1,0 +1,45 @@
+---
+argument_specs:
+  main:
+    short_description: GRUB2 bootloader hardening (password, os-prober, permissions)
+    description:
+      - Hardens the GRUB2 bootloader following CIS 1.4.x.
+      - >-
+        Optionally configures a GRUB superuser and PBKDF2 password. The password
+        is applied only when a pre-hashed value is provided; an empty hash leaves
+        the bootloader password unset (safe default). Plaintext passwords are
+        never accepted.
+      - Disables os-prober and (optionally) recovery entries, and enforces
+        grub.cfg permissions.
+      - update-grub on Debian/Ubuntu, grub2-mkconfig on RHEL/SUSE.
+      - Review mode audits the current state; enforce mode applies the changes.
+      - All bootloader changes are skipped inside containers (no bootloader).
+    author: Miguel Alpanez
+    options:
+      boot_hardening_enabled:
+        type: bool
+        default: false
+        description: Whether to apply bootloader hardening (enforce mode).
+      boot_hardening_grub_superuser:
+        type: str
+        default: admin
+        description: GRUB superuser name (used only when a password hash is set).
+      boot_hardening_grub_password_hash:
+        type: str
+        default: ""
+        description: >-
+          Pre-hashed PBKDF2 password from grub2-mkpasswd-pbkdf2 /
+          grub-mkpasswd-pbkdf2. Empty (default) means no password is set. Never
+          provide a plaintext password.
+      boot_hardening_cfg_mode:
+        type: str
+        default: "0600"
+        description: Permissions enforced on the generated grub.cfg.
+      boot_hardening_disable_os_prober:
+        type: bool
+        default: true
+        description: Set GRUB_DISABLE_OS_PROBER=true in the GRUB default file.
+      boot_hardening_disable_recovery:
+        type: bool
+        default: false
+        description: Set GRUB_DISABLE_RECOVERY in the GRUB default file.
