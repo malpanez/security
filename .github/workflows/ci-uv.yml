@@ -44,10 +44,10 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install UV
-        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -57,7 +57,7 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Cache venv
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: cache-venv
         with:
           path: .venv
@@ -71,7 +71,7 @@ jobs:
         if: steps.cache-venv.outputs.cache-hit != 'true'
 
       - name: Cache Ansible + Molecule
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible
@@ -82,7 +82,7 @@ jobs:
             ansible-molecule-${{ runner.os }}-
 
       - name: Cache Ansible Galaxy collections
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible/collections
@@ -139,10 +139,10 @@ jobs:
           - usbguard
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install UV
-        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -152,7 +152,7 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Cache venv
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: cache-venv
         with:
           path: .venv
@@ -166,7 +166,7 @@ jobs:
         if: steps.cache-venv.outputs.cache-hit != 'true'
 
       - name: Cache Ansible + Molecule
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible
@@ -177,7 +177,7 @@ jobs:
             ansible-molecule-${{ runner.os }}-
 
       - name: Cache Ansible Galaxy collections
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible/collections
@@ -214,10 +214,10 @@ jobs:
           - audit_logging
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install UV
-        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -227,7 +227,7 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Cache venv
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: cache-venv
         with:
           path: .venv
@@ -241,7 +241,7 @@ jobs:
         if: steps.cache-venv.outputs.cache-hit != 'true'
 
       - name: Cache Ansible + Molecule
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible
@@ -252,7 +252,7 @@ jobs:
             ansible-molecule-${{ runner.os }}-
 
       - name: Cache Ansible Galaxy collections
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible/collections
@@ -280,10 +280,10 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install UV
-        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           version: ${{ env.UV_VERSION }}
           cache-dependency-glob: pyproject.toml
@@ -292,7 +292,7 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Cache venv
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: cache-venv
         with:
           path: .venv
@@ -310,7 +310,7 @@ jobs:
           ansible-galaxy collection build
 
       - name: Upload artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: collection
           path: "*.tar.gz"

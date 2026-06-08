@@ -17,6 +17,7 @@ jobs:
   auto-merge-to-develop:
     name: Auto-merge to Develop
     runs-on: ubuntu-slim
+    timeout-minutes: 15
     permissions:
       contents: write
       pull-requests: write
@@ -28,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -81,6 +82,7 @@ jobs:
   auto-promote-to-main:
     name: Auto-promote to Main
     runs-on: ubuntu-slim
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write
@@ -90,7 +92,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -152,6 +154,7 @@ jobs:
   backmerge-main-to-develop:
     name: Sync Main → Develop
     runs-on: ubuntu-slim
+    timeout-minutes: 15
     permissions:
       contents: write
       pull-requests: read
@@ -161,7 +164,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}

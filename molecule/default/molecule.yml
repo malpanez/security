@@ -7,7 +7,8 @@ driver:
 
 platforms:
   - name: placeholder
-    image: docker.io/library/alpine:3.18
+    # alpine:3.18 digest, pinned 2026-06-08
+    image: docker.io/library/alpine@sha256:fd032399cd767f310a1d1274e81cab9f0fd8a49b3589eba2c3420228cd45b6a7
     command: /bin/sh -c "while true; do sleep 1000; done"
     privileged: true
     pre_build_image: true
