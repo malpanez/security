@@ -1,0 +1,54 @@
+---
+name: Feature request
+description: Suggest a new role, capability, or improvement for malpanez.security
+title: "[Feature]: "
+labels:
+  - enhancement
+  - triage
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Thanks for proposing an improvement. Please describe the problem you
+        are trying to solve before the solution, so we can evaluate
+        alternatives.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What problem or gap does this feature address?
+      placeholder: There is currently no role to enforce ...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the behaviour or capability you would like to see.
+    validations:
+      required: true
+  - type: input
+    id: area
+    attributes:
+      label: Affected role or area
+      description: Which existing role would change, or what new role/area is proposed?
+      placeholder: "new role: dns_hardening / firewall"
+    validations:
+      required: false
+  - type: textarea
+    id: compliance
+    attributes:
+      label: Compliance framework relevance
+      description: >
+        Which controls or frameworks does this support
+        (e.g. CIS Benchmark item, NIST 800-53, NIS2 Article 21, STIG)?
+      placeholder: "CIS 3.5.x, NIST SC-7, NIS2 Art.21(2)(j)"
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds or alternative approaches you evaluated.
+    validations:
+      required: false

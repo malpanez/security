@@ -150,6 +150,17 @@ Runs read-only with tmpfs, minimal capabilities, and audit logging enabled.
 - [Platform support](docs/PLATFORM_SUPPORT.md)
 - [Workflows](docs/WORKFLOWS.md)
 - [Publication strategy](docs/PUBLICATION_STRATEGY.md)
+- [Releasing & verifying](docs/RELEASING.md) — signed tags, SLSA provenance, cosign verification
+- [OpenSSF Best Practices self-assessment](docs/openssf-best-practices.md)
+
+## Supply chain
+
+Every dependency (GitHub Actions, container images, pre-commit hooks, downloaded
+binaries) is pinned to a verified digest/checksum; CI runs under
+[step-security/harden-runner](https://github.com/step-security/harden-runner)
+with least-privilege tokens. Release artifacts carry a **SLSA build provenance
+attestation** and a **keyless cosign signature** — verification steps in
+[docs/RELEASING.md](docs/RELEASING.md).
 
 ## Contributing
 

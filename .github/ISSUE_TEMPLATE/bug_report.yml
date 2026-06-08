@@ -1,0 +1,110 @@
+---
+name: Bug report
+description: Report a defect in a malpanez.security role or in the collection itself
+title: "[Bug]: "
+labels:
+  - bug
+  - triage
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Thanks for taking the time to file a bug report. Please do **not**
+        report security vulnerabilities here — see our
+        [security policy](../blob/main/SECURITY.md) instead.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+      placeholder: When I run the firewall role on Debian 13, ...
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Role affected
+      description: Which role exhibits the problem? Choose "N/A" for collection-wide issues.
+      options:
+        - N/A / collection-wide
+        - aide
+        - antivirus
+        - apache_hardening
+        - apparmor
+        - audit_logging
+        - automated_patching
+        - cis_baseline
+        - compliance_evidence
+        - firewall
+        - grype_scanner
+        - kernel_hardening
+        - mysql_hardening
+        - nginx_hardening
+        - ntp_hardening
+        - pam_mfa
+        - pam_security
+        - rsyslog_forwarding
+        - security_capabilities
+        - selinux_enforcement
+        - service_accounts_transfer
+        - sshd_hardening
+        - sssd_ad_integration
+        - sudoers_baseline
+        - system_hardening
+        - tls_hardening
+        - tomcat_hardening
+        - usbguard
+        - user_audit
+    validations:
+      required: true
+  - type: input
+    id: ansible-version
+    attributes:
+      label: Ansible version
+      description: Output of `ansible --version` (core version is enough).
+      placeholder: "ansible-core 2.17.5"
+    validations:
+      required: true
+  - type: input
+    id: target-os
+    attributes:
+      label: Target OS / distribution
+      description: The OS family and version of the managed host.
+      placeholder: "Rocky Linux 9.4 / Debian 13"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal, ordered steps to trigger the bug.
+      placeholder: |
+        1. Add the role to a playbook with `firewall_default_policy: deny`
+        2. Run `ansible-playbook ...`
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / output
+      description: >
+        Paste any relevant Ansible output. This is automatically formatted
+        as a code block, so no backticks are needed.
+      render: shell
+    validations:
+      required: false
