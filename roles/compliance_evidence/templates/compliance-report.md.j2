@@ -1,0 +1,11 @@
+# Compliance Report — {{ _report_obj.host }}
+
+{{ _report_obj.summary.compliant }}/{{ _report_obj.summary.total }} controls compliant
+({{ _report_obj.summary.non_compliant }} non-compliant) on
+{{ _report_obj.os.distribution }} {{ _report_obj.os.version }} ({{ _report_obj.os.family }}).
+
+| Control | Severity | Status | CIS | NIST | NIS2 |
+|---------|----------|--------|-----|------|------|
+{% for c in _report_obj.controls %}
+| {{ c.id }} | {{ c.severity }} | {{ c.status }} | {{ c.frameworks.cis | default('') }} | {{ c.frameworks.nist | default('') }} | {{ c.frameworks.nis2 | default('') }} |
+{% endfor %}

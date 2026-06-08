@@ -5,6 +5,7 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
     ".molecule/ansible_inventory.yml"
 ).get_hosts("all")
 
+
 def _using_debian13_stack(host):
     if host.system_info.distribution.lower() != "debian":
         return False
@@ -59,6 +60,7 @@ def test_pam_sudo_contains_u2f_or_fido2(host):
     content = pam_sudo.content_string
     assert "pam_u2f" in content or "pam_fido2" in content, \
         "PAM sudo should contain pam_u2f or pam_fido2 configuration"
+
 
 def test_pam_prefers_fido2_when_present(host):
     """Primary module should be pam_fido2 when the module path is present."""
@@ -205,6 +207,7 @@ def test_pam_control_keywords_safe(host):
                 # Should have 'sufficient' control OR 'nullok' argument
                 assert "sufficient" in line or "nullok" in line, \
                     "CRITICAL: google-authenticator must have 'sufficient' control or 'nullok' argument"
+
 
 def test_totp_breakglass_gating(host):
     """CRITICAL: TOTP should only trigger for breakglass group."""

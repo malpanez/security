@@ -1,0 +1,80 @@
+---
+- name: Report | Ensure evidence directory exists
+  ansible.builtin.file:
+    path: "{{ compliance_evidence_output_dir }}"
+    state: directory
+    mode: "0750"
+
+- name: Report | Run compliance control checks
+  ansible.builtin.shell: |
+    {{ item.check }}
+  args:
+    executable: /bin/bash
+  register: compliance_evidence_checks
+  loop: "{{ compliance_evidence_controls | sort(attribute='id') }}"
+  loop_control:
+    label: "{{ item.id }}"
+  changed_when: false
+  failed_when: false
+  no_log: false
+  tags: [review]
+
+- name: Report | Build per-control results fact
+  ansible.builtin.set_fact:
+    _compliance_results: >-
+      {{
+        _compliance_results | default([]) + [{
+          'id': item.item.id,
+          'title': item.item.title,
+          'role': item.item.role,
+          'severity': item.item.severity,
+          'frameworks': item.item.frameworks,
+          'status': (
+            'compliant'
+            if (
+              (item.rc | default(1)) == 0
+              and (
+                item.item.expect_pattern is not defined
+                or (item.stdout | default('')) is search(item.item.expect_pattern)
+              )
+            )
+            else 'non_compliant'
+          )
+        }]
+      }}
+  loop: "{{ compliance_evidence_checks.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.id }}"
+  tags: [review]
+
+- name: Report | Assemble report object fact
+  ansible.builtin.set_fact:
+    _report_obj:
+      schema: malpanez.security/compliance-report/v1
+      oscal_profile: subset
+      host: "{{ inventory_hostname }}"
+      os:
+        family: "{{ ansible_os_family | default('unknown') }}"
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+      collection: malpanez.security
+      summary:
+        total: "{{ _compliance_results | length | int }}"
+        compliant: "{{ _compliance_results | selectattr('status', 'equalto', 'compliant') | list | length | int }}"
+        non_compliant: "{{ _compliance_results | selectattr('status', 'equalto', 'non_compliant') | list | length | int }}"
+      controls: "{{ _compliance_results | sort(attribute='id') }}"
+  tags: [review]
+
+- name: Report | Render machine-readable JSON compliance report
+  ansible.builtin.template:
+    src: compliance-report.json.j2
+    dest: "{{ compliance_evidence_output_dir }}/{{ compliance_evidence_report_json }}"
+    mode: "0640"
+  tags: [review]
+
+- name: Report | Render Markdown compliance summary
+  ansible.builtin.template:
+    src: compliance-report.md.j2
+    dest: "{{ compliance_evidence_output_dir }}/{{ compliance_evidence_report_md }}"
+    mode: "0640"
+  tags: [review]
