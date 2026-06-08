@@ -39,8 +39,8 @@
           {{ '/etc/apt/apt.conf.d/50unattended-upgrades' if ansible_os_family == 'Debian'
              else '/etc/dnf/automatic.conf' }}
         _patching_security_marker: >-
-          {{ '\\$\\{distro_id\\}:\\$\\{distro_codename\\}-security' if ansible_os_family == 'Debian'
-             else '^\\s*upgrade_type\\s*=\\s*security' }}
+          {{ '\$\{distro_id\}:\$\{distro_codename\}-security' if ansible_os_family == 'Debian'
+             else '^[[:space:]]*upgrade_type[[:space:]]*=[[:space:]]*security' }}
 
     - name: Check config file exists
       ansible.builtin.stat:

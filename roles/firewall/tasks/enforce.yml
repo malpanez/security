@@ -11,7 +11,9 @@
 - name: Enforce | Configure ufw logging (Debian)
   community.general.ufw:
     logging: "{{ firewall_log_level if firewall_logging else 'off' }}"
-  when: ansible_os_family == 'Debian'
+  when:
+    - ansible_os_family == 'Debian'
+    - not _firewall_in_container | bool
   tags: [configure]
 
 - name: Enforce | Allow SSH before tightening defaults (Debian)

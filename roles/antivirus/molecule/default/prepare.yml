@@ -1,7 +1,7 @@
 ---
 - name: Prepare
   hosts: all
-  gather_facts: false
+  gather_facts: true
   become: true
 
   tasks:
@@ -11,3 +11,11 @@
         regexp: ' sss'
         replace: ''
       failed_when: false
+
+    - name: Install SELinux Python bindings (RedHat)
+      ansible.builtin.dnf:
+        name:
+          - python3-libselinux
+          - python3-policycoreutils
+        state: present
+      when: ansible_os_family == 'RedHat'

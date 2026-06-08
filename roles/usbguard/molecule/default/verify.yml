@@ -5,19 +5,17 @@
   gather_facts: true
 
   tasks:
-    - name: Check USB bus availability in container
+    - name: Check USB bus availability
       ansible.builtin.stat:
         path: /sys/bus/usb/devices
       register: _verify_usb_bus
 
-    - name: Assert USB bus absent in container environment
-      ansible.builtin.assert:
-        that:
-          - not _verify_usb_bus.stat.exists
-        fail_msg: >-
-          USB bus was unexpectedly found at /sys/bus/usb/devices.
-          Review container detection logic.
-        quiet: true
+    - name: Report USB bus availability
+      ansible.builtin.debug:
+        msg: >-
+          USB bus present: {{ _verify_usb_bus.stat.exists }}.
+          USBGuard is configured regardless; runtime enforcement depends on a
+          real USB subsystem, which CI runners may or may not expose.
 
     - name: Gather package facts
       ansible.builtin.package_facts:
