@@ -122,6 +122,7 @@ jobs:
           if ! grep -qE '^[[:space:]]*Include[[:space:]]+/etc/ssh/sshd_config\.d/\*\.conf' /etc/ssh/sshd_config; then
             sudo sed -i '1s|^|Include /etc/ssh/sshd_config.d/*.conf\n|' /etc/ssh/sshd_config
           fi
+          sudo mkdir -p /run/sshd
           sudo sshd -t
           echo "OK: sshd_config baseline valid"
 
@@ -148,6 +149,7 @@ jobs:
       - name: "Verify sshd -t passes after drop-ins deployed"
         run: |
           set -euo pipefail
+          sudo mkdir -p /run/sshd
           sudo sshd -t && echo "OK: sshd -t passed"
 
       - name: "Verify all six sshd drop-in files exist with mode 0600"

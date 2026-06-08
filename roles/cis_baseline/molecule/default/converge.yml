@@ -7,16 +7,16 @@
     - name: Ensure remote tmp directory
       ansible.builtin.raw: mkdir -p /tmp/ansible-tmp
       changed_when: false
-    - name: Install openssh-server (Debian)
-      ansible.builtin.raw: apt-get install -y openssh-server
-      changed_when: false
-      when: ansible_os_family | default('') == 'Debian'
-    - name: Install openssh-server (RedHat)
-      ansible.builtin.raw: dnf install -y openssh-server
-      changed_when: false
-      when: ansible_os_family | default('') == 'RedHat'
     - name: Gather facts
       ansible.builtin.setup:
+    - name: Install openssh-server
+      ansible.builtin.package:
+        name: openssh-server
+        state: present
+    - name: Generate SSH host keys so sshd -T can dump the effective config
+      ansible.builtin.command:
+        cmd: ssh-keygen -A
+        creates: /etc/ssh/ssh_host_ed25519_key
   vars:
     cis_baseline_enabled: true
     cis_baseline_mode: enforce

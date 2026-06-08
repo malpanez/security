@@ -14,7 +14,7 @@
       - 192.0.2.0/24
     service_accounts_transfer_accounts:
       - name: svc_ci
-        home: /srv/sftp/svc_ci
+        home: /home/svc_ci
         shell: /usr/sbin/nologin
         keys:
           - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdummykeyexample svc_ci
@@ -24,7 +24,7 @@
         command: /usr/lib/openssh/sftp-server
         chroot: /srv/sftp/svc_ci
       - name: svc_backup
-        home: /srv/sftp/svc_backup
+        home: /home/svc_backup
         shell: /usr/sbin/nologin
         keys:
           - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdummykeyexamplebackup svc_backup

@@ -7,6 +7,22 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
 ).get_hosts("all")
 
 
+# The role runs in its default drop-in mode (sudoers_baseline_use_dropin: true):
+# /etc/sudoers is NEVER rewritten. All hardening (Defaults use_pty, logfile,
+# secure_path, timestamp_timeout, passwd_tries, ...) is written to the
+# role-managed drop-in /etc/sudoers.d/10-security-defaults. Defaults-content
+# assertions therefore read that drop-in, while /etc/sudoers ownership/syntax/
+# includedir assertions still target the main file.
+DEFAULTS_DROPIN = "/etc/sudoers.d/10-security-defaults"
+
+
+def _defaults_content(host):
+    """Return the content the role manages for sudo Defaults directives."""
+    dropin = host.file(DEFAULTS_DROPIN)
+    assert dropin.exists, f"{DEFAULTS_DROPIN} must be created by the role"
+    return dropin.content_string
+
+
 def test_sudoers_main_file_exists(host):
     """CRITICAL: Test that main sudoers file exists with correct permissions."""
     main = host.file("/etc/sudoers")
@@ -54,7 +70,7 @@ def test_sudoers_syntax_valid(host):
 
 def test_sudoers_defaults_security(host):
     """Test that security defaults are properly configured."""
-    sudoers_content = host.file("/etc/sudoers").content_string
+    sudoers_content = _defaults_content(host)
 
     # Essential security defaults
     assert "use_pty" in sudoers_content, \
@@ -77,7 +93,7 @@ def test_sudoers_root_access_preserved(host):
 
 def test_sudoers_secure_path_set(host):
     """Test that secure_path is configured."""
-    sudoers_content = host.file("/etc/sudoers").content_string
+    sudoers_content = _defaults_content(host)
 
     assert "secure_path" in sudoers_content.lower(), \
         "secure_path should be set to prevent PATH manipulation"
@@ -120,7 +136,7 @@ def test_sudoers_no_nopasswd_all(host):
 
 def test_sudoers_timestamp_timeout(host):
     """Test that timestamp_timeout is reasonably configured."""
-    sudoers_content = host.file("/etc/sudoers").content_string
+    sudoers_content = _defaults_content(host)
 
     if "timestamp_timeout" in sudoers_content:
         # Extract the timeout value
@@ -133,7 +149,7 @@ def test_sudoers_timestamp_timeout(host):
 
 def test_sudoers_passwd_tries_limited(host):
     """Test that password attempts are limited."""
-    sudoers_content = host.file("/etc/sudoers").content_string
+    sudoers_content = _defaults_content(host)
 
     if "passwd_tries" in sudoers_content:
         # Extract the tries value

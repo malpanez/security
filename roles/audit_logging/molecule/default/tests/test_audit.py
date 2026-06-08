@@ -1,4 +1,5 @@
 import os
+import pytest
 import testinfra.utils.ansible_runner
 
 
@@ -7,7 +8,16 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
 ).get_hosts("all")
 
 
+def _in_container(host):
+    res = host.run("systemd-detect-virt --container")
+    return res.rc == 0
+
+
 def test_auditd_service_running(host):
+    # The kernel audit subsystem is unavailable inside a container, so auditd
+    # cannot run there. Assert the real service state only on full hosts.
+    if _in_container(host):
+        pytest.skip("auditd cannot run without the kernel audit subsystem (container)")
     service = host.service("auditd")
     assert service.is_running
     assert service.is_enabled
@@ -34,6 +44,8 @@ def test_audit_rules_file(host):
 
 def test_audit_rules_loaded(host):
     """Ensure audit rules are loaded by the kernel."""
+    if _in_container(host):
+        pytest.skip("augenrules --load cannot load rules without the kernel audit subsystem (container)")
     cmd = host.run("auditctl -l")
     assert cmd.rc == 0
     output = cmd.stdout

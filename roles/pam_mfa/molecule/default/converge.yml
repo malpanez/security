@@ -9,17 +9,53 @@
       changed_when: false
     - name: Gather facts
       ansible.builtin.setup:
-    - name: Install OpenSSH server (Debian/Ubuntu)
+    - name: Install OpenSSH server and sudo (Debian/Ubuntu)
       ansible.builtin.apt:
-        name: openssh-server
+        name:
+          - openssh-server
+          - sudo
+          - libpam-modules
         state: present
         update_cache: true
       when: ansible_facts['os_family'] == 'Debian'
-    - name: Install OpenSSH server (RedHat)
+    - name: Enable EPEL (RedHat) for pam_u2f / google-authenticator
       ansible.builtin.dnf:
-        name: openssh-server
+        name: epel-release
         state: present
       when: ansible_facts['os_family'] == 'RedHat'
+    - name: Install OpenSSH server and sudo (RedHat)
+      ansible.builtin.dnf:
+        name:
+          - openssh-server
+          - sudo
+          - pam
+        state: present
+      when: ansible_facts['os_family'] == 'RedHat'
+    - name: Ensure /etc/pam.d exists
+      ansible.builtin.file:
+        path: /etc/pam.d
+        state: directory
+        mode: "0755"
+    - name: Ensure PAM sshd config exists for pamd edits
+      ansible.builtin.copy:
+        dest: /etc/pam.d/sshd
+        content: |
+          #%PAM-1.0
+          auth       substack     password-auth
+          account    required     pam_nologin.so
+          session    required     pam_loginuid.so
+        mode: "0644"
+        force: false
+    - name: Ensure PAM sudo config exists for pamd edits
+      ansible.builtin.copy:
+        dest: /etc/pam.d/sudo
+        content: |
+          #%PAM-1.0
+          auth       include      system-auth
+          account    include      system-auth
+          session    include      system-auth
+        mode: "0644"
+        force: false
     - name: Ensure PAM module directories exist
       ansible.builtin.file:
         path: "{{ item }}"
@@ -35,8 +71,11 @@
         mode: "0644"
       loop:
         - /lib/security/pam_fido2.so
+        - /lib/security/pam_u2f.so
         - /lib/security/pam_google_authenticator.so
         - /lib/security/pam_succeed_if.so
+        - /usr/lib64/security/pam_fido2.so
+        - /usr/lib64/security/pam_u2f.so
         - /usr/lib64/security/pam_google_authenticator.so
         - /usr/lib64/security/pam_succeed_if.so
       changed_when: false
@@ -53,8 +92,13 @@
     pam_mfa_enabled: true
     pam_mfa_totp_enabled: true
     pam_mfa_breakglass_group: mfa-breakglass
+    # 'auto' resolves to fido2 because the fake /lib/security/pam_fido2.so is
+    # created in pre_tasks; this avoids installing the (nonexistent) fido2
+    # package while still landing pam_fido2 + /tmp/fido2_auth in the stacks.
     pam_mfa_primary_module: auto
     pam_mfa_skip_module_validation: true
+    # Disable the dead-man-switch pause so molecule converge does not block.
+    pam_mfa_enable_deadman_switch: false
     pam_mfa_use_debian13_stack: >-
       {{ ansible_facts['distribution'] == 'Debian'
          and (ansible_facts['distribution_major_version'] | int) >= 13 }}
@@ -66,9 +110,10 @@
          and (ansible_facts['distribution_major_version'] | int) >= 13) else [] }}
     pam_mfa_service_bypass_allow_from:
       - 10.0.0.0/8
+    # Pin the fido2 module + authfile to what the testinfra suite asserts. On
+    # RedHat the vars/RedHat.yml file does not override these, so they apply on
+    # every platform.
     pam_mfa_pam_module_fido2: /lib/security/pam_fido2.so
-    pam_mfa_pam_module_google_authenticator: /lib/security/pam_google_authenticator.so
-    pam_mfa_succeed_if_module_path: /lib/security/pam_succeed_if.so
     pam_mfa_fido2_authfile: /tmp/fido2_auth
     pam_mfa_service_accounts:
       - ansible

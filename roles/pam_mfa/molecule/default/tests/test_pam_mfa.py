@@ -18,7 +18,12 @@ def test_pam_packages_installed(host):
     os_family = host.system_info.distribution.lower()
 
     if os_family in ["debian", "ubuntu"]:
-        packages = ["libpam-u2f", "libpam-google-authenticator"]
+        # The Debian 13 sudo-only TOTP stack installs the google-authenticator
+        # package only; pam_u2f is not part of that code path.
+        if _using_debian13_stack(host):
+            packages = ["libpam-google-authenticator"]
+        else:
+            packages = ["libpam-u2f", "libpam-google-authenticator"]
         for pkg in packages:
             assert host.package(pkg).is_installed, f"Package {pkg} should be installed"
     elif os_family in ["centos", "rocky", "almalinux", "oraclelinux"]:
@@ -88,7 +93,8 @@ def test_u2f_keys_directory_exists(host):
     keys_dir = host.file("/etc/Yubico")
     assert keys_dir.exists, "/etc/Yubico directory should exist"
     assert keys_dir.is_directory, "/etc/Yubico should be a directory"
-    assert keys_dir.mode == 0o755, "/etc/Yubico should have 755 permissions"
+    # Role hardens the U2F key dir to 0750 (root:root) — tighter than 0755.
+    assert keys_dir.mode == 0o750, "/etc/Yubico should have 750 permissions"
 
 
 def test_mfa_breakglass_group_exists(host):
@@ -165,7 +171,8 @@ def test_totp_directory_exists(host):
     # Directory might not exist if no users configured yet, but it should be creatable
     if totp_dir.exists:
         assert totp_dir.is_directory, "/etc/google-authenticator.d should be a directory"
-        assert totp_dir.mode == 0o755, "/etc/google-authenticator.d should have 755 permissions"
+        # Role hardens the TOTP secret dir to 0700 (root:root) — tighter than 0755.
+        assert totp_dir.mode == 0o700, "/etc/google-authenticator.d should have 700 permissions"
 
 
 def test_pam_order_prevents_lockout(host):

@@ -1,0 +1,22 @@
+---
+- name: Prepare instances
+  hosts: all
+  become: false
+  gather_facts: false
+
+  tasks:
+    - name: Fix nsswitch.conf - remove sss entry to prevent PAM/sudo failures in EL containers
+      ansible.builtin.raw: |
+        if [ -f /etc/nsswitch.conf ]; then
+          sed -i 's/ sss//g' /etc/nsswitch.conf
+        fi
+      changed_when: false
+
+    - name: Install Python and openssh-server
+      ansible.builtin.raw: |
+        if command -v apt-get >/dev/null 2>&1; then
+          apt-get update -y && apt-get install -y python3 sudo openssh-server
+        elif command -v dnf >/dev/null 2>&1; then
+          dnf install -y python3 sudo openssh-server
+        fi
+      changed_when: false
