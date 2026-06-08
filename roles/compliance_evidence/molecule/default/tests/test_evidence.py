@@ -24,7 +24,7 @@ def _find_evidence(host, suffix):
     instead of reconstructing the prefix.
     """
     res = host.run(
-        "find %s -maxdepth 1 -type f -name '*%s'" % (EVIDENCE_DIR, suffix)
+        f"find {EVIDENCE_DIR} -maxdepth 1 -type f -name '*{suffix}'"
     )
     matches = [line for line in res.stdout.splitlines() if line.strip()]
     return matches[0] if matches else None
