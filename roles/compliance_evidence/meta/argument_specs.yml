@@ -123,3 +123,71 @@ argument_specs:
               Shell command to execute on the target. stdout is written to a
               .log file. Commands run with 'set -o pipefail' and bash.
               Use '|| true' to prevent failure on non-critical commands.
+      compliance_evidence_report_enabled:
+        type: bool
+        default: true
+        description: >
+          Whether to emit the machine-readable compliance report
+          (OSCAL-aligned JSON plus a Markdown summary).
+      compliance_evidence_report_json:
+        type: str
+        default: compliance-report.json
+        description: >
+          Filename for the machine-readable JSON compliance report within
+          compliance_evidence_output_dir.
+      compliance_evidence_report_md:
+        type: str
+        default: compliance-report.md
+        description: >
+          Filename for the human-readable Markdown compliance summary within
+          compliance_evidence_output_dir.
+      compliance_evidence_controls:
+        type: list
+        elements: dict
+        description: >
+          Catalog of compliance controls evaluated for the report. Each control
+          runs a shell check that exits 0 when compliant and is mapped to CIS,
+          NIST, and NIS2 framework references.
+        options:
+          id:
+            type: str
+            required: true
+            description: Stable machine identifier for the control.
+          title:
+            type: str
+            required: true
+            description: Human-readable control title.
+          frameworks:
+            type: dict
+            required: true
+            description: Framework reference mapping for the control.
+            options:
+              cis:
+                type: str
+                description: CIS Benchmark reference (may be empty).
+              nist:
+                type: str
+                description: NIST 800-53 control reference (may be empty).
+              nis2:
+                type: str
+                description: NIS2 Article 21 reference (may be empty).
+          role:
+            type: str
+            required: true
+            description: Role in this collection responsible for the control.
+          severity:
+            type: str
+            required: true
+            choices: [high, medium, low]
+            description: Control severity classification.
+          check:
+            type: str
+            required: true
+            description: >
+              Shell command that exits 0 when the host is compliant. Runs under
+              /bin/bash with changed_when false and failed_when false.
+          expect_pattern:
+            type: str
+            description: >
+              Optional regex that must be present in the check stdout for the
+              control to be considered compliant, in addition to a zero exit.

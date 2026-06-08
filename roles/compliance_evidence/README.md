@@ -95,6 +95,47 @@ When `compliance_evidence_hash_manifest: true`, the role generates `evidence.sha
 - Submit as an artefact to a GRC platform or ticketing system.
 - Verify evidence integrity during audit reviews.
 
+## Machine-readable compliance report
+
+When `compliance_evidence_report_enabled: true` (the default), the role evaluates
+the `compliance_evidence_controls` catalog against the live host and writes two
+artefacts to `compliance_evidence_output_dir`:
+
+- `compliance-report.json` — a machine-readable, OSCAL-aligned report. Field
+  naming follows an OSCAL subset (`schema`, `oscal_profile`, `controls`,
+  per-control `id`/`title`/`status`) and every control carries an explicit
+  `frameworks` mapping to **CIS**, **NIST 800-53**, and **NIS2 Article 21**
+  references. A `summary` block reports `total`, `compliant`, and
+  `non_compliant` counts. This is the artefact intended for client compliance
+  reporting and ingestion into GRC tooling.
+- `compliance-report.md` — a human-readable summary with a `X/Y controls
+  compliant` line and a table of Control / Severity / Status / CIS / NIST / NIS2.
+
+Each control runs a read-only shell `check` that exits 0 when the host is
+compliant; an optional `expect_pattern` regex can additionally require a string
+in the check output. Checks run with `changed_when: false`, so the report is a
+non-destructive collection step.
+
+### Idempotency
+
+The rendered report content contains **no wall-clock timestamp**. Re-running the
+role against an unchanged host produces byte-identical `compliance-report.json`
+and `compliance-report.md`. Report freshness is conveyed by the file mtime and
+the existing SHA-256 manifest (`evidence.sha256`), not by an embedded timestamp.
+
+### Report variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `compliance_evidence_report_enabled` | `true` | Emit the JSON + Markdown report |
+| `compliance_evidence_report_json` | `compliance-report.json` | JSON report filename |
+| `compliance_evidence_report_md` | `compliance-report.md` | Markdown report filename |
+| `compliance_evidence_controls` | See defaults | Catalog of evaluated controls |
+
+Each control in `compliance_evidence_controls` is a dict with `id`, `title`,
+`frameworks` (`cis`/`nist`/`nis2`), `role`, `severity` (`high`/`medium`/`low`),
+`check`, and optional `expect_pattern`.
+
 ## Compliance Mapping
 
 | Control | Framework |
