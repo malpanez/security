@@ -36,6 +36,9 @@
     # 4. OS system hardening: mounts, hidepid, SUID/SGID, accounts, ctrl+alt+del
     - malpanez.security.system_hardening
 
+    # 4b. Host firewall: default-deny inbound, SSH always kept open
+    - malpanez.security.firewall
+
     # 5. SSH daemon hardening (drop-in by default)
     - malpanez.security.sshd_hardening
 
@@ -63,6 +66,9 @@
 
     # 12. Application server hardening (skips if not installed)
     - malpanez.security.tomcat_hardening
+
+    # 12b. Automated security patching (dnf-automatic / unattended-upgrades)
+    - malpanez.security.automated_patching
 
     # 13. Audit logging: auditd rules for all managed config files
     - malpanez.security.audit_logging

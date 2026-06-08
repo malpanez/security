@@ -1,0 +1,77 @@
+---
+- name: Verify firewall
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Detect container environment
+      ansible.builtin.command:
+        cmd: systemd-detect-virt --container
+      register: _virt_check
+      changed_when: false
+      failed_when: false
+
+    - name: Set container flag
+      ansible.builtin.set_fact:
+        _in_container: "{{ _virt_check.rc == 0 }}"
+        _backend: "{{ 'ufw' if ansible_os_family == 'Debian' else 'firewalld' }}"
+
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert firewall package installed
+      ansible.builtin.assert:
+        that:
+          - (_backend if _backend == 'ufw' else 'firewalld') in ansible_facts.packages
+        fail_msg: "{{ _backend }} package is not installed"
+        quiet: true
+
+    # ---- ufw (Debian): config is written even without activating filtering ----
+    - name: Read ufw default policy file (Debian)
+      ansible.builtin.slurp:
+        src: /etc/default/ufw
+      register: _ufw_defaults
+      when: _backend == 'ufw'
+
+    - name: Assert ufw default input policy is DROP (Debian)
+      ansible.builtin.assert:
+        that:
+          - "'DEFAULT_INPUT_POLICY=\"DROP\"' in (_ufw_defaults.content | b64decode)"
+        fail_msg: ufw default incoming policy is not DROP (default-deny)
+        quiet: true
+      when: _backend == 'ufw'
+
+    - name: Check ufw user rules for SSH allow (Debian)
+      ansible.builtin.command:
+        cmd: grep -E "dport 22|dport ssh" /etc/ufw/user.rules
+      register: _ufw_ssh
+      changed_when: false
+      failed_when: false
+      when: _backend == 'ufw'
+
+    - name: Assert SSH is allowed (Debian)
+      ansible.builtin.assert:
+        that:
+          - _ufw_ssh.rc == 0
+        fail_msg: "SSH (port 22) allow rule not found in ufw — lockout risk"
+        quiet: true
+      when: _backend == 'ufw'
+
+    # ---- runtime checks only on real hosts ----
+    - name: Check firewall service enabled (non-container)
+      ansible.builtin.command:
+        cmd: "systemctl is-enabled {{ 'ufw' if _backend == 'ufw' else 'firewalld' }}"
+      register: _fw_enabled
+      changed_when: false
+      failed_when: false
+      when: not _in_container | bool
+
+    - name: Assert firewall service enabled (non-container)
+      ansible.builtin.assert:
+        that:
+          - _fw_enabled.stdout in ['enabled']
+        fail_msg: firewall service is not enabled
+        quiet: true
+      when: not _in_container | bool

@@ -1,5 +1,24 @@
 ## [Unreleased]
 
+### Added
+- firewall role: default-deny host firewall (firewalld on RHEL/SUSE, ufw on Debian/Ubuntu) with explicit allowlist and SSH lockout protection (CIS 3.5.x, NIST CM-7/SC-7, NIS2 Art.21(2)(j))
+- automated_patching role: security-only automatic patching (dnf-automatic / unattended-upgrades) with controlled, opt-in reboots (CIS 1.9, NIST SI-2, NIS2 Art.21(2)(i))
+- SLSA build provenance attestation on the collection build (ci.yml, ci-uv.yml)
+- cis_baseline: enforce + review for MaxAuthTries, sudo logfile, and NOPASSWD:ALL
+- auditd: CIS L2 / STIG syscall rules (priv_esc, perm_mod, access, delete, mounts, time_change, modules) and login/session watches
+
+### Changed
+- License unified to Apache-2.0 across the collection (galaxy.yml, all role metadata, LICENSE)
+- Supply chain hardened: all GitHub Actions, Docker images, pre-commit hooks, and the gitleaks binary pinned to verified digests/checksums; step-security/harden-runner on every CI job; per-job least-privilege permissions
+- Replaced archived gaurav-nelson markdown link checker with lycheeverse/lychee-action
+- Galaxy collections pinned in requirements.yml; added ansible.posix and community.docker dependencies
+- Grype now fails CI on critical vulnerabilities
+- README documents all 26 (now 28) roles; argument_specs parity across all roles
+
+### Fixed
+- Wired up 9 dormant testinfra suites (missing `verifier: testinfra`) so role tests actually run
+- PAM/sshd backup idempotence (stable filenames instead of epoch timestamps; no more unbounded backup accumulation)
+
 ## [1.2.0] - 2026-04-20
 
 ### Added

@@ -1,0 +1,61 @@
+---
+- name: Review | Check firewall package (RedHat/Suse)
+  ansible.builtin.command:
+    cmd: rpm -q {{ firewall_package }}
+  register: _firewall_pkg_check
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family in ['RedHat', 'Suse']
+  tags: [firewall, review]
+
+- name: Review | Check firewall package (Debian)
+  ansible.builtin.command:
+    cmd: dpkg-query -W {{ firewall_package }}
+  register: _firewall_pkg_check
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family == 'Debian'
+  tags: [firewall, review]
+
+- name: Review | Check firewall service status
+  ansible.builtin.command:
+    cmd: systemctl is-active {{ firewall_service }}
+  register: _firewall_svc_check
+  changed_when: false
+  failed_when: false
+  tags: [firewall, review]
+
+- name: Review | Capture firewalld active configuration
+  ansible.builtin.command:
+    cmd: firewall-cmd --list-all
+  register: _firewall_fwd_state
+  changed_when: false
+  failed_when: false
+  when:
+    - firewall_backend == 'firewalld'
+    - not _firewall_in_container | bool
+  tags: [firewall, review]
+
+- name: Review | Capture ufw status
+  ansible.builtin.command:
+    cmd: ufw status verbose
+  register: _firewall_ufw_state
+  changed_when: false
+  failed_when: false
+  when: firewall_backend == 'ufw'
+  tags: [firewall, review]
+
+- name: Review | Report firewall review findings
+  ansible.builtin.debug:
+    msg:
+      - "Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
+      - "Backend: {{ firewall_backend }}"
+      - "Package installed: {{ (_firewall_pkg_check.rc | default(-1)) == 0 }}"
+      - "Service active: {{ _firewall_svc_check.stdout | default('unknown') }}"
+      - >-
+        Active config:
+        {{ (_firewall_fwd_state.stdout_lines
+            if firewall_backend == 'firewalld'
+            else _firewall_ufw_state.stdout_lines)
+           | default(['skipped']) }}
+  tags: [firewall, review]

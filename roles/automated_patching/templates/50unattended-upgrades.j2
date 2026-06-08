@@ -1,0 +1,30 @@
+// Managed by Ansible — malpanez.security.automated_patching
+// Do not edit manually.
+
+Unattended-Upgrade::Allowed-Origins {
+{% if automated_patching_security_only %}
+    "${distro_id}:${distro_codename}-security";
+    "${distro_id}ESMApps:${distro_codename}-apps-security";
+    "${distro_id}ESM:${distro_codename}-infra-security";
+{% else %}
+    "${distro_id}:${distro_codename}";
+    "${distro_id}:${distro_codename}-security";
+    "${distro_id}:${distro_codename}-updates";
+{% endif %}
+};
+
+Unattended-Upgrade::Package-Blacklist {
+{% for pkg in automated_patching_exclude_packages %}
+    "{{ pkg }}";
+{% endfor %}
+};
+
+{% if automated_patching_notify_email %}
+Unattended-Upgrade::Mail "{{ automated_patching_notify_email }}";
+Unattended-Upgrade::MailReport "on-change";
+{% endif %}
+
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Automatic-Reboot "{{ 'true' if automated_patching_auto_reboot else 'false' }}";
+Unattended-Upgrade::Automatic-Reboot-Time "{{ automated_patching_reboot_time }}";

@@ -1,0 +1,7 @@
+// Managed by Ansible — malpanez.security.automated_patching
+// Do not edit manually.
+
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "{{ '1' if automated_patching_apply_updates else '0' }}";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";

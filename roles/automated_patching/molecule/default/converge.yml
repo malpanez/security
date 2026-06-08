@@ -1,0 +1,14 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Include automated_patching role
+      ansible.builtin.include_role:
+        name: malpanez.security.automated_patching
+      vars:
+        automated_patching_enabled: true
+        security_mode: enforce
+        automated_patching_security_only: true

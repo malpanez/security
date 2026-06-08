@@ -1,0 +1,30 @@
+---
+galaxy_info:
+  author: Miguel Alpanez
+  description: >-
+    Automated security patching. On RedHat installs and configures dnf-automatic
+    for security-only updates via the dnf-automatic.timer; on Debian installs and
+    configures unattended-upgrades restricted to the security origin. Supports
+    review mode (audit-only) and enforce mode. CIS 1.9, NIST SI-2, NIS2 Art.21(2)(i).
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - security
+    - hardening
+    - patching
+    - updates
+    - dnf
+    - apt
+    - linux
+    - cis
+    - nist
+    - nis2
+    - compliance
+  platforms:
+    - name: Debian
+      versions: [bullseye, bookworm, trixie]
+    - name: Ubuntu
+      versions: [focal, jammy, noble]
+    - name: EL
+      versions: [all]
+dependencies: []

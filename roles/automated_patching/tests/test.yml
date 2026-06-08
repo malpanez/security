@@ -1,0 +1,6 @@
+---
+- name: Test automated_patching role
+  hosts: localhost
+  gather_facts: true
+  roles:
+    - role: malpanez.security.automated_patching

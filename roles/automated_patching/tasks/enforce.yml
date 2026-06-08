@@ -1,0 +1,60 @@
+---
+- name: Enforce | Install dnf-automatic (RedHat)
+  ansible.builtin.dnf:
+    name: "{{ automated_patching_package }}"
+    state: present
+  when: ansible_os_family == 'RedHat'
+  tags: [install]
+
+- name: Enforce | Install unattended-upgrades (Debian)
+  ansible.builtin.apt:
+    name: "{{ automated_patching_package }}"
+    state: present
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+  tags: [install]
+
+- name: Enforce | Deploy dnf-automatic.conf (RedHat)
+  ansible.builtin.template:
+    src: automatic.conf.j2
+    dest: "{{ automated_patching_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  when: ansible_os_family == 'RedHat'
+  notify: Restart automated patching timer
+  tags: [configure]
+
+- name: Enforce | Deploy 50unattended-upgrades (Debian)
+  ansible.builtin.template:
+    src: 50unattended-upgrades.j2
+    dest: "{{ automated_patching_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  when: ansible_os_family == 'Debian'
+  notify: Restart automated patching timer
+  tags: [configure]
+
+- name: Enforce | Deploy 20auto-upgrades (Debian)
+  ansible.builtin.template:
+    src: 20auto-upgrades.j2
+    dest: "{{ automated_patching_periodic_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  when: ansible_os_family == 'Debian'
+  notify: Restart automated patching timer
+  tags: [configure]
+
+- name: Enforce | Enable and start patching timer
+  ansible.builtin.systemd:
+    name: "{{ automated_patching_service }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: not _automated_patching_in_container | bool
+  tags: [service]
