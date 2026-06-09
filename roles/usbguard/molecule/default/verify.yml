@@ -10,29 +10,39 @@
         path: /sys/bus/usb/devices
       register: _verify_usb_bus
 
-    - name: Report USB bus availability
-      ansible.builtin.debug:
-        msg: >-
-          USB bus present: {{ _verify_usb_bus.stat.exists }}.
-          USBGuard is configured regardless; runtime enforcement depends on a
-          real USB subsystem, which CI runners may or may not expose.
-
     - name: Gather package facts
       ansible.builtin.package_facts:
         manager: auto
 
-    - name: Assert usbguard package is NOT installed (enforce skipped in container)
-      ansible.builtin.assert:
-        that:
-          - "'usbguard' not in ansible_facts.packages"
-        fail_msg: >-
-          usbguard package was installed despite USB bus being absent.
-          meta:end_host should have prevented enforcement.
-        quiet: true
+    # The role uses `meta: end_host` to skip enforcement on hosts WITHOUT a USB
+    # subsystem. CI runners DO expose /sys/bus/usb, so the role runs fully and
+    # installs/configures usbguard. Verify whichever path actually applied.
+    - name: Verify enforcement when a USB bus is present
+      when: _verify_usb_bus.stat.exists
+      block:
+        - name: Assert usbguard package is installed
+          ansible.builtin.assert:
+            that:
+              - "'usbguard' in ansible_facts.packages"
+            fail_msg: usbguard should be installed when a USB bus is present
+            quiet: true
 
-    - name: Confirm graceful container skip
+        - name: Stat the usbguard config directory
+          ansible.builtin.stat:
+            path: /etc/usbguard
+          register: _verify_usbguard_cfg
+
+        - name: Assert usbguard config directory exists
+          ansible.builtin.assert:
+            that:
+              - _verify_usbguard_cfg.stat.exists
+              - _verify_usbguard_cfg.stat.isdir
+            fail_msg: /etc/usbguard should exist after enforcement
+            quiet: true
+
+    - name: Note graceful skip when no USB bus is present
       ansible.builtin.debug:
         msg: >-
-          Container verification complete.
-          USB bus absent, enforce skipped gracefully via meta:end_host.
-          No enforcement errors occurred.
+          No USB bus at /sys/bus/usb/devices; usbguard enforcement is skipped by
+          design (meta:end_host). Nothing to assert.
+      when: not _verify_usb_bus.stat.exists

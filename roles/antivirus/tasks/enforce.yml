@@ -84,7 +84,10 @@
     name: antivirus_can_scan_system
     state: true
     persistent: true
-  when: ansible_os_family == 'RedHat' and antivirus_selinux_contexts | bool
+  when:
+    - ansible_os_family == 'RedHat'
+    - antivirus_selinux_contexts | bool
+    - ansible_selinux.status | default('disabled') == 'enabled'
   tags: [antivirus, enforce, configure]
 
 - name: Enforce | Restore SELinux context on log directory
@@ -93,7 +96,10 @@
   register: _antivirus_restorecon_log
   changed_when: "'Relabeled' in _antivirus_restorecon_log.stdout"
   failed_when: false
-  when: ansible_os_family == 'RedHat' and antivirus_selinux_contexts | bool
+  when:
+    - ansible_os_family == 'RedHat'
+    - antivirus_selinux_contexts | bool
+    - ansible_selinux.status | default('disabled') == 'enabled'
   tags: [antivirus, enforce, configure]
 
 - name: Enforce | Restore SELinux context on scan dirs
@@ -103,7 +109,10 @@
   register: _antivirus_restorecon_scan
   changed_when: "'Relabeled' in _antivirus_restorecon_scan.stdout"
   failed_when: false
-  when: ansible_os_family == 'RedHat' and antivirus_selinux_contexts | bool
+  when:
+    - ansible_os_family == 'RedHat'
+    - antivirus_selinux_contexts | bool
+    - ansible_selinux.status | default('disabled') == 'enabled'
   tags: [antivirus, enforce, configure]
 
 - name: Enforce | Run freshclam to update virus databases
