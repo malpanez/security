@@ -132,9 +132,7 @@ jobs:
         run: |
           ansible-playbook -i test-inventory/hosts \
             -e "security_mode=enforce" \
-            -e "sssd_ad_configure=false" \
-            -e "sssd_ad_domain=example.com" \
-            -e "sssd_ad_realm=EXAMPLE.COM" \
+            -e "ssh_identity_backend=local" \
             -e "ssh_backup_config=false" \
             -e "ssh_local_fallback_group=ansible-deploy" \
             -e "ssh_verify_ad_groups=true" \
@@ -186,7 +184,7 @@ jobs:
           set -euo pipefail
           FAIL=0
           for grp in linux-admins linux-users linux-service linux-readonly ansible-deploy; do
-            if grep -r "AllowGroups" /etc/ssh/sshd_config.d/ | grep -q "$grp"; then
+            if sudo grep -rh "AllowGroups" /etc/ssh/sshd_config.d/ | grep -q "$grp"; then
               echo "OK:   AllowGroups contains $grp"
             else
               echo "FAIL: AllowGroups missing $grp"
@@ -198,7 +196,7 @@ jobs:
       - name: "Verify 30-network-zones.conf has Match Address blocks"
         run: |
           set -euo pipefail
-          COUNT=$(grep -c 'Match Address' /etc/ssh/sshd_config.d/30-network-zones.conf)
+          COUNT=$(sudo grep -c 'Match Address' /etc/ssh/sshd_config.d/30-network-zones.conf)
           echo "Match Address blocks: $COUNT"
           [ "$COUNT" -ge 2 ] || { echo "FAIL: expected at least 2 Match Address blocks"; exit 1; }
           echo "OK"
@@ -207,8 +205,8 @@ jobs:
         run: |
           set -euo pipefail
           FAIL=0
-          grep -q 'ChrootDirectory' /etc/ssh/sshd_config.d/43-group-readonly.conf || { echo "FAIL: ChrootDirectory missing"; FAIL=1; }
-          grep -q 'ForceCommand internal-sftp' /etc/ssh/sshd_config.d/43-group-readonly.conf || { echo "FAIL: ForceCommand internal-sftp missing"; FAIL=1; }
+          sudo grep -q 'ChrootDirectory' /etc/ssh/sshd_config.d/43-group-readonly.conf || { echo "FAIL: ChrootDirectory missing"; FAIL=1; }
+          sudo grep -q 'ForceCommand internal-sftp' /etc/ssh/sshd_config.d/43-group-readonly.conf || { echo "FAIL: ForceCommand internal-sftp missing"; FAIL=1; }
           [ $FAIL -eq 0 ] && echo "OK: readonly drop-in correct"
           [ $FAIL -eq 0 ] || exit 1
 
@@ -226,12 +224,12 @@ jobs:
           set -euo pipefail
           FAIL=0
           for f in /etc/sudoers.d/50-linux-admins /etc/sudoers.d/51-linux-users; do
-            if [ ! -f "$f" ]; then
+            if ! sudo test -f "$f"; then
               echo "FAIL: $f not found"
               FAIL=1
               continue
             fi
-            if visudo -cf "$f"; then
+            if sudo visudo -cf "$f"; then
               echo "OK:   $f"
             else
               echo "FAIL: $f failed visudo -cf"
@@ -240,7 +238,7 @@ jobs:
           done
           # linux-service and linux-readonly must NOT have sudoers files (fail closed)
           for f in /etc/sudoers.d/52-linux-service /etc/sudoers.d/53-linux-readonly; do
-            if [ -f "$f" ]; then
+            if sudo test -f "$f"; then
               echo "FAIL: $f should not exist (fail-closed principle)"
               FAIL=1
             else
@@ -254,16 +252,16 @@ jobs:
           set -euo pipefail
           FAIL=0
           ACCESS=/etc/security/access.conf
-          [ -f "$ACCESS" ] || { echo "FAIL: $ACCESS not found"; exit 1; }
+          sudo test -f "$ACCESS" || { echo "FAIL: $ACCESS not found"; exit 1; }
           for grp in linux-admins linux-users linux-service linux-readonly; do
-            if grep -q "@${grp}" "$ACCESS"; then
+            if sudo grep -q "@${grp}" "$ACCESS"; then
               echo "OK:   @${grp} in $ACCESS"
             else
               echo "FAIL: @${grp} missing from $ACCESS"
               FAIL=1
             fi
           done
-          if grep -q '^-:ALL:ALL' "$ACCESS"; then
+          if sudo grep -q '^-:ALL:ALL' "$ACCESS"; then
             echo "OK:   catch-all deny present"
           else
             echo "FAIL: catch-all deny '-:ALL:ALL' missing — pam_access would fail open"
@@ -287,9 +285,7 @@ jobs:
           set -euo pipefail
           OUTPUT=$(ansible-playbook -i test-inventory/hosts \
             -e "security_mode=enforce" \
-            -e "sssd_ad_configure=false" \
-            -e "sssd_ad_domain=example.com" \
-            -e "sssd_ad_realm=EXAMPLE.COM" \
+            -e "ssh_identity_backend=local" \
             -e "ssh_backup_config=false" \
             -e "ssh_local_fallback_group=ansible-deploy" \
             -e "ssh_verify_ad_groups=true" \
