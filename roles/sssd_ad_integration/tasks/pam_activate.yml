@@ -17,6 +17,23 @@
   ansible.builtin.command:
     cmd: pam-auth-update --enable access
   changed_when: true
+  failed_when: false
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - security_mode | default('review') == 'enforce'
+    - _pam_activate_deb_check.stdout | length == 0
+  tags: [sshd, ssh, access-control]
+
+# Debian/Ubuntu ship no `access` pam-auth-update profile, so the command above
+# is a no-op there. Insert pam_access into /etc/pam.d/sshd directly so SSH
+# access control is actually enforced (idempotent: skipped once present).
+- name: Pam_activate | Insert pam_access.so into /etc/pam.d/sshd (Debian, if missing)
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/sshd
+    line: "account    required     pam_access.so"
+    insertbefore: '^@include\s+common-account'
+    firstmatch: true
+    state: present
   when:
     - ansible_facts['os_family'] == 'Debian'
     - security_mode | default('review') == 'enforce'
@@ -51,8 +68,7 @@
   ansible.builtin.shell:
     cmd: >-
       set -o pipefail &&
-      grep -r pam_access.so /etc/pam.d/sshd /etc/pam.d/system-auth
-      /etc/pam.d/password-auth 2>/dev/null | grep -v '^#'
+      grep -r pam_access.so /etc/pam.d/ 2>/dev/null | grep -v '^#'
     executable: /bin/bash
   register: _pam_activate_verify
   changed_when: false
