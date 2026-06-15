@@ -353,6 +353,7 @@ jobs:
             cosign sign-blob --yes \
               --output-signature "${f}.sig" \
               --output-certificate "${f}.pem" \
+              --bundle "${f}.cosign.bundle" \
               "${f}"
           done
 
@@ -364,3 +365,4 @@ jobs:
             *.tar.gz
             *.tar.gz.sig
             *.tar.gz.pem
+            *.tar.gz.cosign.bundle
