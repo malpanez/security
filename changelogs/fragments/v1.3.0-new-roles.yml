@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - firewall role - added a default-deny host firewall role (firewalld on RHEL/SUSE, ufw on Debian/Ubuntu) with an explicit allowlist and SSH lockout protection (CIS 3.5.x, NIST CM-7/SC-7, NIS2 Art.21(2)(j)).
+  - automated_patching role - added a security-only automatic patching role (dnf-automatic / unattended-upgrades) with controlled, opt-in reboots (CIS 1.9, NIST SI-2, NIS2 Art.21(2)(i)).

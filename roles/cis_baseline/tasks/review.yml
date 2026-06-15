@@ -1,6 +1,8 @@
 ---
 - name: Cis Review | Check sshd password auth disabled
-  ansible.builtin.command: sshd -T | grep -i passwordauthentication
+  ansible.builtin.shell:
+    cmd: set -o pipefail && sshd -T | grep -i passwordauthentication
+    executable: /bin/bash
   register: cis_baseline_sshd_passwordauth
   changed_when: false
   failed_when: false
@@ -15,7 +17,9 @@
   tags: [cis_review]
 
 - name: Cis Review | Check sudoers use_pty
-  ansible.builtin.command: grep -E '^Defaults.*use_pty' {{ cis_baseline_sudoers_path }} {{ cis_baseline_sudoers_dir }}/*
+  ansible.builtin.shell:
+    cmd: grep -E '^Defaults.*use_pty' {{ cis_baseline_sudoers_path }} {{ cis_baseline_sudoers_dir }}/*
+    executable: /bin/bash
   register: cis_baseline_sudo_use_pty
   changed_when: false
   failed_when: false
@@ -26,5 +30,59 @@
     that:
       - cis_baseline_sudo_use_pty.rc == 0
     fail_msg: "CIS: Defaults use_pty not found"
+  failed_when: cis_baseline_review_fail_on_violation | bool
+  tags: [cis_review]
+
+- name: Cis Review | Check sshd MaxAuthTries
+  ansible.builtin.shell:
+    cmd: set -o pipefail && sshd -T | grep -i '^maxauthtries'
+    executable: /bin/bash
+  register: cis_baseline_sshd_maxauth
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Cis Review | Assert MaxAuthTries <= 4 (CIS 5.2.7)
+  ansible.builtin.assert:
+    that:
+      - cis_baseline_sshd_maxauth.rc == 0
+      - (cis_baseline_sshd_maxauth.stdout.split()[1] | int) <= cis_baseline_max_auth_tries
+    fail_msg: "CIS 5.2.7: MaxAuthTries must be <= {{ cis_baseline_max_auth_tries }} (got '{{ cis_baseline_sshd_maxauth.stdout }}')"
+  failed_when: cis_baseline_review_fail_on_violation | bool
+  tags: [cis_review]
+
+- name: Cis Review | Check sudo logfile directive
+  ansible.builtin.shell:
+    cmd: grep -REh '^Defaults.*logfile=' {{ cis_baseline_sudoers_path }} {{ cis_baseline_sudoers_dir }}/
+    executable: /bin/bash
+  register: cis_baseline_sudo_logfile_check
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Cis Review | Assert sudo logfile configured (CIS 5.3.6)
+  ansible.builtin.assert:
+    that:
+      - cis_baseline_sudo_logfile_check.rc == 0
+    fail_msg: "CIS 5.3.6: sudo 'Defaults logfile=' not configured"
+  failed_when: cis_baseline_review_fail_on_violation | bool
+  tags: [cis_review]
+
+- name: Cis Review | Check for NOPASSWD:ALL grants
+  ansible.builtin.shell:
+    cmd: >-
+      grep -REIl '^[^#]*NOPASSWD:[[:space:]]*ALL'
+      {{ cis_baseline_sudoers_path }} {{ cis_baseline_sudoers_dir }}/ || true
+    executable: /bin/bash
+  register: cis_baseline_nopasswd_review
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Cis Review | Assert no NOPASSWD:ALL grants (CIS 5.3)
+  ansible.builtin.assert:
+    that:
+      - (cis_baseline_nopasswd_review.stdout | trim | length) == 0
+    fail_msg: "CIS 5.3: NOPASSWD:ALL present in {{ cis_baseline_nopasswd_review.stdout_lines }}"
   failed_when: cis_baseline_review_fail_on_violation | bool
   tags: [cis_review]

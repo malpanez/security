@@ -139,7 +139,7 @@ argument_specs:
         description: Directory for drop-in SSHD configuration files.
       sshd_hardening_use_dropin:
         type: bool
-        default: false
+        default: true
         description: Write a drop-in file in sshd_config.d instead of replacing sshd_config.
       sshd_hardening_dropin_path:
         type: str
@@ -231,11 +231,23 @@ argument_specs:
         type: str
         default: openssh-server
         description: Package providing the SSH daemon.
+      sshd_hardening_ciphers:
+        type: list
+        elements: str
+        default: []
+        description: Override cipher list. When empty the effective list is taken from sshd_hardening_algorithm_sets.
+      sshd_hardening_macs:
+        type: list
+        elements: str
+        default: []
+        description: Override MAC list. When empty the effective list is taken from sshd_hardening_algorithm_sets.
+      sshd_hardening_kex_algorithms:
+        type: list
+        elements: str
+        default: []
+        description: Override KEX algorithm list. When empty the effective list is taken from sshd_hardening_algorithm_sets.
       sshd_hardening_hostkey_algorithms:
         type: list
         elements: str
-        default:
-          - ssh-ed25519
-          - rsa-sha2-512
-          - rsa-sha2-256
-        description: Ordered list of allowed host key algorithms.
+        default: []
+        description: Override host key algorithm list. When empty the effective list is taken from sshd_hardening_algorithm_sets.

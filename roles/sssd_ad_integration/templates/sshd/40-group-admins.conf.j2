@@ -1,0 +1,17 @@
+{{ ansible_managed | comment }}
+# 40-group-admins.conf — Match Group {{ ssh_ad_groups.admins }}
+#
+# Full interactive shell with agent forwarding.
+# 2FA (publickey + keyboard-interactive) required from internet.
+# From corp/vpn, AuthenticationMethods is already set to publickey by
+# 30-network-zones.conf (first-occurrence wins) — no 2FA from trusted zones.
+#
+# keyboard-interactive maps to PAM (pam_google_authenticator or TOTP).
+# Requires malpanez.security.pam_mfa role to configure the PAM stack.
+
+Match Group {{ ssh_ad_groups.admins }}
+    AllowTcpForwarding yes
+    AllowAgentForwarding yes
+    PermitTTY yes
+    X11Forwarding no
+    AuthenticationMethods publickey,keyboard-interactive

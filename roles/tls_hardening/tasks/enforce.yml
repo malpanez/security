@@ -1,0 +1,180 @@
+---
+- name: Enforce | Read FIPS state
+  ansible.builtin.slurp:
+    src: /proc/sys/crypto/fips_enabled
+  register: _tls_fips_raw
+  failed_when: false
+  tags: [tls_hardening, enforce, configure]
+
+- name: Enforce | Set FIPS fact
+  ansible.builtin.set_fact:
+    _tls_fips_active: "{{ (_tls_fips_raw.content | default('MA==') | b64decode | trim) == '1' }}"
+  tags: [tls_hardening, enforce, configure]
+
+- name: Enforce | Skip enforcement when FIPS active
+  ansible.builtin.debug:
+    msg: "FIPS mode is active - skipping TLS hardening enforcement (FIPS policy supersedes)"
+  when: _tls_fips_active | bool
+  tags: [tls_hardening, enforce, configure]
+
+- name: Enforce | Install crypto-policies-scripts (RHEL 8/9)
+  ansible.builtin.package:
+    name: crypto-policies-scripts
+    state: present
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution_major_version | int >= 8
+    - not _tls_fips_active | bool
+  tags: [tls_hardening, enforce, install]
+
+- name: Enforce | Read current crypto policy
+  ansible.builtin.command:
+    cmd: update-crypto-policies --show
+  register: _tls_current_policy
+  changed_when: false
+  failed_when: false
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution_major_version | int >= 8
+    - not _tls_fips_active | bool
+  tags: [tls_hardening, enforce, configure]
+
+- name: Enforce | Set crypto policy
+  ansible.builtin.command:
+    cmd: "update-crypto-policies --set {{ tls_hardening_rhel_policy }}"
+  changed_when: true
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution_major_version | int >= 8
+    - not _tls_fips_active | bool
+    - (_tls_current_policy.stdout | default('')) != tls_hardening_rhel_policy
+  tags: [tls_hardening, enforce, configure]
+
+- name: Enforce | Set openssl.cnf branch fact
+  ansible.builtin.set_fact:
+    _tls_use_openssl_cnf: >-
+      {{ ansible_os_family in ['Debian', 'Suse'] or
+         (ansible_os_family == 'RedHat' and ansible_distribution_major_version | int < 8) }}
+  tags: [tls_hardening, enforce, configure]
+
+- name: Enforce | Slurp openssl.cnf
+  ansible.builtin.slurp:
+    src: "{{ tls_hardening_openssl_cnf }}"
+  register: _tls_cnf_content
+  failed_when: false
+  when: _tls_use_openssl_cnf | bool and not _tls_fips_active | bool
+  tags: [tls_hardening, enforce, configure]
+
+- name: Enforce | Check if TLS chain already wired
+  ansible.builtin.set_fact:
+    _tls_chain_absent: >-
+      {{ _tls_cnf_content.content is not defined or
+         'ssl_conf = ssl_sect' not in (_tls_cnf_content.content | b64decode) }}
+  when: _tls_use_openssl_cnf | bool and not _tls_fips_active | bool
+  tags: [tls_hardening, enforce, configure]
+
+- name: Enforce | Insert full TLS chain
+  ansible.builtin.blockinfile:
+    path: "{{ tls_hardening_openssl_cnf }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK tls_hardening"
+    insertafter: EOF
+    block: |
+      [openssl_init]
+      ssl_conf = ssl_sect
+
+      [ssl_sect]
+      system_default = system_default_sect
+
+      [system_default_sect]
+      MinProtocol = {{ tls_hardening_min_protocol }}
+      CipherString = {{ tls_hardening_openssl_cipher_string }}
+      Options = ServerPreference
+    backup: true
+  when: _tls_use_openssl_cnf | bool and not _tls_fips_active | bool and _tls_chain_absent | bool
+  tags: [tls_hardening, enforce, configure]
+
+- name: Enforce | Ensure MinProtocol value
+  ansible.builtin.lineinfile:
+    path: "{{ tls_hardening_openssl_cnf }}"
+    regexp: '^\s*MinProtocol\s*='
+    line: "MinProtocol = {{ tls_hardening_min_protocol }}"
+    insertafter: '\[system_default_sect\]'
+    backup: true
+  when: _tls_use_openssl_cnf | bool and not _tls_fips_active | bool and not _tls_chain_absent | bool
+  tags: [tls_hardening, enforce, configure]
+
+- name: Enforce | Ensure CipherString value
+  ansible.builtin.lineinfile:
+    path: "{{ tls_hardening_openssl_cnf }}"
+    regexp: '^\s*CipherString\s*='
+    line: "CipherString = {{ tls_hardening_openssl_cipher_string }}"
+    insertafter: '\[system_default_sect\]'
+    backup: true
+  when: _tls_use_openssl_cnf | bool and not _tls_fips_active | bool and not _tls_chain_absent | bool
+  tags: [tls_hardening, enforce, configure]
+
+- name: Enforce | Verify RHEL crypto policy applied
+  ansible.builtin.command:
+    cmd: update-crypto-policies --show
+  register: _tls_verify_policy
+  changed_when: false
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution_major_version | int >= 8
+    - not _tls_fips_active | bool
+  tags: [tls_hardening, enforce, verify]
+
+- name: Enforce | Verify openssl.cnf MinProtocol applied
+  ansible.builtin.slurp:
+    src: "{{ tls_hardening_openssl_cnf }}"
+  register: _tls_verify_cnf
+  when: _tls_use_openssl_cnf | bool and not _tls_fips_active | bool
+  tags: [tls_hardening, enforce, verify]
+
+- name: Enforce | Assert RHEL policy matches target
+  ansible.builtin.assert:
+    that:
+      - _tls_verify_policy.stdout == tls_hardening_rhel_policy
+    fail_msg: >-
+      Crypto policy is {{ _tls_verify_policy.stdout | default('unknown') }},
+      expected {{ tls_hardening_rhel_policy }}
+    quiet: true
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution_major_version | int >= 8
+    - not _tls_fips_active | bool
+    - _tls_verify_policy.rc | default(1) == 0
+  tags: [tls_hardening, enforce, verify]
+
+- name: Enforce | Assert openssl.cnf contains MinProtocol
+  ansible.builtin.assert:
+    that:
+      - "'MinProtocol = ' ~ tls_hardening_min_protocol in (_tls_verify_cnf.content | b64decode)"
+    fail_msg: "MinProtocol not found in openssl.cnf after enforcement"
+    quiet: true
+  when:
+    - _tls_use_openssl_cnf | bool
+    - not _tls_fips_active | bool
+    - _tls_verify_cnf.content is defined
+  tags: [tls_hardening, enforce, verify]
+
+- name: Enforce | Report enforcement result
+  ansible.builtin.debug:
+    msg:
+      - "TLS enforcement complete on {{ inventory_hostname }}"
+      - >-
+        RHEL 8/9 crypto-policies: {{
+          'applied (policy: ' ~ tls_hardening_rhel_policy ~ ')'
+          if (ansible_os_family == 'RedHat' and ansible_distribution_major_version | int >= 8)
+          else 'N/A (not RHEL 8/9)' }}
+      - >-
+        openssl.cnf path: {{
+          tls_hardening_openssl_cnf
+          if _tls_use_openssl_cnf | bool
+          else 'N/A (RHEL 8/9 uses crypto-policies)' }}
+      - >-
+        TLS enforcement method: {{
+          'crypto-policies'
+          if (ansible_os_family == 'RedHat' and ansible_distribution_major_version | int >= 8)
+          else 'openssl.cnf blockinfile/lineinfile' }}
+  tags: [tls_hardening, enforce, verify]

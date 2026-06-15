@@ -1,0 +1,25 @@
+---
+rsyslog_forwarding_enabled: false
+
+rsyslog_forwarding_host: ""
+rsyslog_forwarding_port: 514
+rsyslog_forwarding_protocol: tcp
+rsyslog_forwarding_selector: "*.*"
+
+rsyslog_forwarding_queue_type: LinkedList
+rsyslog_forwarding_queue_size: 10000
+rsyslog_forwarding_queue_spool_dir: /var/spool/rsyslog/forwarding
+rsyslog_forwarding_queue_file_name: fwd-queue
+rsyslog_forwarding_resume_retry_count: -1
+
+rsyslog_forwarding_tls_enabled: false
+rsyslog_forwarding_tls_ca_cert: ""
+rsyslog_forwarding_tls_auth_mode: x509/name
+rsyslog_forwarding_tls_client_cert: ""
+rsyslog_forwarding_tls_client_key: ""
+
+rsyslog_forwarding_logrotate_enabled: true
+rsyslog_forwarding_logrotate_rotate: 4
+rsyslog_forwarding_logrotate_size: 50M
+rsyslog_forwarding_log_dir: /var/log
+rsyslog_forwarding_file_create_mode: "0640"

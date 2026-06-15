@@ -87,3 +87,144 @@ compliance_evidence_items:
 
   - name: controls_map
     command: echo 'See docs/controls.md'
+
+# ── Machine-readable compliance report ─────────────────────────────────────
+compliance_evidence_report_enabled: true
+compliance_evidence_report_json: compliance-report.json
+compliance_evidence_report_md: compliance-report.md
+compliance_evidence_controls:
+  - id: ssh_password_auth_disabled
+    title: SSH password authentication disabled
+    frameworks:
+      cis: CIS 5.2.x
+      nist: NIST AC-17
+      nis2: NIS2 21(2)(f)
+    role: sshd_hardening
+    severity: high
+    check: sshd -T 2>/dev/null | grep -qi '^passwordauthentication no'
+  - id: ssh_root_login_disabled
+    title: SSH root login disabled
+    frameworks:
+      cis: CIS 5.2.x
+      nist: NIST AC-6
+      nis2: NIS2 21(2)(e)
+    role: sshd_hardening
+    severity: high
+    check: sshd -T 2>/dev/null | grep -qiE '^permitrootlogin (no|prohibit-password)'
+  - id: ssh_max_auth_tries
+    title: SSH MaxAuthTries limited
+    frameworks:
+      cis: CIS 5.2.7
+      nist: NIST AC-7
+      nis2: NIS2 21(2)(e)
+    role: sshd_hardening
+    severity: medium
+    check: v=$(sshd -T 2>/dev/null | awk '/^maxauthtries/{print $2}'); [ -n "$v" ] && [ "$v" -le 4 ]
+  - id: sudo_use_pty
+    title: Sudo commands use a pseudo-terminal
+    frameworks:
+      cis: CIS 5.3.4
+      nist: NIST AC-6
+      nis2: NIS2 21(2)(e)
+    role: sudoers_baseline
+    severity: medium
+    check: grep -REq '^Defaults.*use_pty' /etc/sudoers /etc/sudoers.d/
+  - id: sudo_logfile
+    title: Sudo logfile configured
+    frameworks:
+      cis: CIS 5.3.6
+      nist: NIST AU-2
+      nis2: NIS2 21(2)(b)
+    role: sudoers_baseline
+    severity: low
+    check: grep -REq '^Defaults.*logfile=' /etc/sudoers /etc/sudoers.d/
+  - id: password_quality
+    title: Password quality minimum length enforced
+    frameworks:
+      cis: CIS 5.4.1
+      nist: NIST IA-5
+      nis2: NIS2 21(2)(i)
+    role: pam_security
+    severity: medium
+    check: grep -Eq '^minlen\s*=\s*(1[4-9]|[2-9][0-9])' /etc/security/pwquality.conf
+  - id: account_lockout
+    title: Account lockout after failed attempts
+    frameworks:
+      cis: CIS 5.4.2
+      nist: NIST AC-7
+      nis2: NIS2 21(2)(e)
+    role: pam_security
+    severity: medium
+    check: grep -Eq '^deny\s*=\s*[1-5]' /etc/security/faillock.conf
+  - id: auditd_active
+    title: Audit daemon active
+    frameworks:
+      cis: CIS 4.1.x
+      nist: NIST AU-2
+      nis2: NIS2 21(2)(b)
+    role: audit_logging
+    severity: high
+    check: systemctl is-active --quiet auditd
+  - id: firewall_active
+    title: Host firewall active
+    frameworks:
+      cis: CIS 3.5.x
+      nist: NIST SC-7
+      nis2: NIS2 21(2)(j)
+    role: firewall
+    severity: high
+    check: "{ systemctl is-active --quiet firewalld; } || { command -v ufw >/dev/null && ufw status | grep -qi 'Status: active'; }"
+  - id: mac_enforcing
+    title: Mandatory access control enforcing
+    frameworks:
+      cis: CIS 1.x
+      nist: NIST AC-3
+      nis2: NIS2 21(2)(e)
+    role: selinux_enforcement/apparmor
+    severity: high
+    check: "{ command -v getenforce >/dev/null && getenforce | grep -qi enforcing; } || { command -v aa-status >/dev/null && aa-status --enabled; }"
+  - id: kernel_aslr
+    title: Kernel ASLR fully enabled
+    frameworks:
+      cis: CIS 1.5.x
+      nist: NIST SC-30
+      nis2: NIS2 21(2)(e)
+    role: kernel_hardening
+    severity: medium
+    check: '[ "$(sysctl -n kernel.randomize_va_space 2>/dev/null)" = "2" ]'
+  - id: time_sync_active
+    title: Time synchronization service active
+    frameworks:
+      cis: CIS 2.x
+      nist: NIST AU-8
+      nis2: NIS2 21(2)(b)
+    role: ntp_hardening
+    severity: low
+    check: systemctl is-active --quiet chrony || systemctl is-active --quiet chronyd
+  - id: fim_present
+    title: File integrity monitoring present
+    frameworks:
+      cis: ""
+      nist: NIST SI-7
+      nis2: NIS2 21(2)(e)
+    role: aide
+    severity: medium
+    check: command -v aide >/dev/null
+  - id: auto_security_updates
+    title: Automated security updates enabled
+    frameworks:
+      cis: CIS 1.9
+      nist: NIST SI-2
+      nis2: NIS2 21(2)(i)
+    role: automated_patching
+    severity: medium
+    check: "{ systemctl is-enabled --quiet dnf-automatic.timer; } || { systemctl is-enabled --quiet unattended-upgrades || systemctl is-enabled --quiet apt-daily-upgrade.timer; }"
+  - id: sshd_strong_crypto
+    title: SSH disallows weak ciphers
+    frameworks:
+      cis: CIS 5.2.x
+      nist: NIST SC-8
+      nis2: NIS2 21(2)(f)
+    role: sshd_hardening
+    severity: medium
+    check: "! sshd -T 2>/dev/null | grep -Ei 'ciphers' | grep -Eqi '(3des|arcfour|cbc)'"

@@ -1,0 +1,38 @@
+{{ ansible_managed | comment }}
+# /etc/security/access.conf — SSH access control via pam_access
+# Managed by malpanez.security.sssd_ad_integration
+#
+# This file provides a second enforcement layer independent of sshd_config.
+# It is enforced even if sshd is misconfigured or bypassed by another daemon.
+#
+# Activation (distro-dependent — check before deploying):
+#   Debian/Ubuntu: /etc/pam.d/sshd must contain:
+#     account  required  pam_access.so
+#   RHEL/Rocky: usually present in /etc/pam.d/sshd via system-auth;
+#     verify with: grep pam_access /etc/pam.d/sshd /etc/pam.d/system-auth
+#
+# Format: permission:user_or_group:origins
+#   +  = allow,  - = deny
+#   @group = group members
+#   Origins: IP, CIDR network/prefix, hostname, ALL, LOCAL
+#
+# Rule order matters: first match wins per user/source combination.
+
+# Emergency console access for root (never block local/console)
++:root:LOCAL
+
+{% if ssh_local_fallback_group | length > 0 %}
+# Automation fallback group — always allowed from any origin
++:({{ ssh_local_fallback_group }}):ALL
+{% endif %}
+
+{% for entry in _sssd_ad_pam_groups | default([]) %}
+{%   if entry.enabled and entry.sources | length > 0 %}
++:@{{ entry.group }}:{{ entry.sources | select | join(' ') }}
+{%   endif %}
+{% endfor %}
+
+# Catch-all: deny everything not explicitly allowed above.
+# This applies to ALL users including AD accounts and local accounts
+# not covered by rules above.
+-:ALL:ALL

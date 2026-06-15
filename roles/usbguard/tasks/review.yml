@@ -1,0 +1,54 @@
+---
+- name: Review | Gather package facts
+  ansible.builtin.package_facts:
+    manager: auto
+  tags: [usbguard, review]
+
+- name: Review | Check if usbguard package is installed
+  ansible.builtin.set_fact:
+    _usbguard_installed: "{{ _usbguard_package in ansible_facts.packages }}"
+  tags: [usbguard, review]
+
+- name: Review | Check usbguard service state
+  ansible.builtin.command:
+    cmd: systemctl is-active {{ _usbguard_service }}
+  register: _usbguard_svc_active
+  changed_when: false
+  failed_when: false
+  when:
+    - _usbguard_installed | bool
+    - _usbguard_usb_available | bool
+  tags: [usbguard, review]
+
+- name: Review | Check ImplicitPolicyTarget in daemon config
+  ansible.builtin.command:
+    cmd: grep ImplicitPolicyTarget {{ _usbguard_daemon_conf }}
+  register: _usbguard_current_policy
+  changed_when: false
+  failed_when: false
+  when: _usbguard_installed | bool
+  tags: [usbguard, review]
+
+- name: Review | Check initial rules file presence
+  ansible.builtin.stat:
+    path: "{{ _usbguard_initial_rules }}"
+  register: _usbguard_rules_present
+  tags: [usbguard, review]
+
+- name: Review | Report USBGuard audit findings
+  ansible.builtin.debug:
+    msg: |
+      === USBGuard Review Report ===
+      Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})
+      USB bus available: {{ _usbguard_usb_available }}
+      Package installed: {{ _usbguard_installed }}
+      Service state: {{ _usbguard_svc_active.stdout | default('unknown') }}
+      Current ImplicitPolicyTarget: {{ _usbguard_current_policy.stdout | default('not configured') }}
+      Initial rules file present: {{ _usbguard_rules_present.stat.exists | default(false) }}
+      {% if not _usbguard_usb_available | bool %}
+      WARNING: USB bus absent — container environment detected. Enforce will skip.
+      {% endif %}
+      {% if _usbguard_needs_epel | default(false) | bool and ansible_os_family == 'RedHat' %}
+      WARNING: RHEL 8 detected — EPEL may be required for usbguard package.
+      {% endif %}
+  tags: [usbguard, review]

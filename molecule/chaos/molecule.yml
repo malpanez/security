@@ -9,7 +9,8 @@ driver:
 
 platforms:
   - name: debian13
-    image: geerlingguy/docker-debian13-ansible:latest
+    # debian13:latest digest, pinned 2026-06-08
+    image: geerlingguy/docker-debian13-ansible@sha256:83e8c966725a665a6a33800c19ae6dfdc2ed9cda8d5732e36f94b8899fc46524
     platform: linux/amd64
     privileged: true
     command: /lib/systemd/systemd

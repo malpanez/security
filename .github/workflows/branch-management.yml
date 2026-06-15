@@ -7,9 +7,8 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: write
-  pull-requests: write
-  checks: read
+  contents: read
+  pull-requests: read
 
 jobs:
   # ============================================
@@ -18,6 +17,10 @@ jobs:
   auto-merge-to-develop:
     name: Auto-merge to Develop
     runs-on: ubuntu-slim
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
     if: |
       github.event_name == 'push' &&
       (startsWith(github.ref, 'refs/heads/feature/') ||
@@ -25,8 +28,13 @@ jobs:
        startsWith(github.ref, 'refs/heads/hotfix/'))
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -79,13 +87,22 @@ jobs:
   auto-promote-to-main:
     name: Auto-promote to Main
     runs-on: ubuntu-slim
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
     if: |
       github.event_name == 'push' &&
       github.ref == 'refs/heads/develop'
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -147,13 +164,22 @@ jobs:
   backmerge-main-to-develop:
     name: Sync Main → Develop
     runs-on: ubuntu-slim
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: read
     if: |
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main'
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}

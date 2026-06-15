@@ -1,0 +1,72 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Set openssl.cnf path per OS family
+      ansible.builtin.set_fact:
+        _verify_openssl_cnf: >-
+          {{ '/etc/pki/tls/openssl.cnf'
+             if ansible_os_family == 'RedHat'
+             else '/etc/ssl/openssl.cnf' }}
+
+    - name: Stat openssl.cnf
+      ansible.builtin.stat:
+        path: "{{ _verify_openssl_cnf }}"
+      register: _verify_openssl_cnf_stat
+
+    - name: Assert openssl.cnf exists
+      ansible.builtin.assert:
+        that:
+          - _verify_openssl_cnf_stat.stat.exists
+        fail_msg: "openssl.cnf not found at {{ _verify_openssl_cnf }}"
+
+    - name: Read openssl.cnf content
+      ansible.builtin.slurp:
+        src: "{{ _verify_openssl_cnf }}"
+      register: _verify_cnf_content
+
+    - name: Assert MinProtocol is set in openssl.cnf (Debian/Suse)
+      ansible.builtin.assert:
+        that:
+          - "'MinProtocol = TLSv1.2' in (_verify_cnf_content.content | b64decode)"
+        fail_msg: "MinProtocol = TLSv1.2 not found in openssl.cnf"
+      when: ansible_os_family in ['Debian', 'Suse']
+
+    - name: Assert CipherString is set in openssl.cnf (Debian/Suse)
+      ansible.builtin.assert:
+        that:
+          - "'CipherString = HIGH:!aNULL:!MD5:!RC4:!3DES' in (_verify_cnf_content.content | b64decode)"
+        fail_msg: "CipherString not found in openssl.cnf"
+      when: ansible_os_family in ['Debian', 'Suse']
+
+    - name: Assert ssl_conf linkage in openssl.cnf (Debian/Suse)
+      ansible.builtin.assert:
+        that:
+          - "'ssl_conf = ssl_sect' in (_verify_cnf_content.content | b64decode)"
+        fail_msg: "ssl_conf = ssl_sect linkage not found in openssl.cnf"
+      when: ansible_os_family in ['Debian', 'Suse']
+
+    - name: Read crypto policy file (RHEL 8/9)
+      ansible.builtin.command:
+        cmd: update-crypto-policies --show
+      register: _verify_rhel_policy
+      changed_when: false
+      failed_when: false
+      when:
+        - ansible_os_family == 'RedHat'
+        - ansible_distribution_major_version | int >= 8
+
+    - name: Assert crypto policy is DEFAULT:NO-SHA1 (RHEL 8/9)
+      ansible.builtin.assert:
+        that:
+          - _verify_rhel_policy.stdout == 'DEFAULT:NO-SHA1'
+        fail_msg: >-
+          Expected crypto policy DEFAULT:NO-SHA1 but got
+          {{ _verify_rhel_policy.stdout | default('unknown') }}
+      when:
+        - ansible_os_family == 'RedHat'
+        - ansible_distribution_major_version | int >= 8
+        - _verify_rhel_policy.rc == 0

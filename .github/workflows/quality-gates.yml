@@ -3,8 +3,26 @@ name: Quality Gates
 on:
   pull_request:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "playbooks/**"
+      - "tasks/**"
+      - "plugins/**"
+      - "galaxy.yml"
+      - "requirements.yml"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/quality-gates.yml"
   push:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "playbooks/**"
+      - "tasks/**"
+      - "plugins/**"
+      - "galaxy.yml"
+      - "requirements.yml"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/quality-gates.yml"
   workflow_dispatch:
 
 permissions:
@@ -18,10 +36,16 @@ jobs:
   pre-commit-checks:
     name: Pre-commit Hooks
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -47,10 +71,16 @@ jobs:
   ansible-best-practices:
     name: Ansible Best Practices
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -88,17 +118,23 @@ jobs:
   documentation-quality:
     name: Documentation Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Check markdown links
-        uses: gaurav-nelson/github-action-markdown-link-check@3c3b66f1f7d0900e37b71eca45b63ea9eedfce31 # 1.0.17
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
         with:
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'no'
-          config-file: '.github/markdown-link-check-config.json'
+          args: '--no-progress --config .github/lychee.toml "**/*.md"'
+          fail: true
+          jobSummary: true
 
       - name: Verify README completeness
         run: |
@@ -128,10 +164,16 @@ jobs:
   playbook-syntax:
     name: Playbook Syntax Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -164,10 +206,16 @@ jobs:
   security-hardening-checks:
     name: Security Hardening Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Check for weak SSH ciphers
         run: |
@@ -198,10 +246,16 @@ jobs:
   idempotency-check:
     name: Idempotency Testing
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -222,7 +276,7 @@ jobs:
           molecule converge
           # Run again - should have no changes
           molecule converge | tee /tmp/output.txt
-          if grep -q "changed=0" /tmp/output.txt; then
+          if grep -qE "changed[=:] ?0" /tmp/output.txt; then
             echo "✅ Idempotent"
           else
             echo "❌ Not idempotent"
@@ -233,10 +287,16 @@ jobs:
   variable-naming:
     name: Variable Naming Convention
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Check role variable prefixes
         run: |
@@ -251,10 +311,16 @@ jobs:
   version-consistency:
     name: Version Consistency
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Check version consistency
         run: |
@@ -270,10 +336,16 @@ jobs:
   license-check:
     name: License Compliance
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Verify LICENSE file exists
         run: |
@@ -293,10 +365,16 @@ jobs:
   performance-check:
     name: Performance Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Check for inefficient loops
         run: |
@@ -320,10 +398,16 @@ jobs:
   platform-compatibility:
     name: Platform Compatibility Check
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Verify platform support documented
         run: |
@@ -343,11 +427,17 @@ jobs:
   changelog-validation:
     name: Changelog Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: github.event_name == 'pull_request'
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
 
@@ -362,6 +452,7 @@ jobs:
   quality-summary:
     name: Quality Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs:
       - pre-commit-checks
       - ansible-best-practices
@@ -374,6 +465,11 @@ jobs:
     if: always()
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Generate quality report
         run: |
           echo "## Quality Gates Summary" >> $GITHUB_STEP_SUMMARY

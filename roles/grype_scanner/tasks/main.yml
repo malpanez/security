@@ -1,0 +1,27 @@
+---
+- name: Gather minimum facts if not already collected
+  ansible.builtin.setup:
+    gather_subset: [min]
+  when: ansible_facts == {}
+  tags: [always]
+
+- name: Assert supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ['Debian', 'RedHat', 'Suse']
+    fail_msg: >-
+      grype_scanner: unsupported OS family '{{ ansible_os_family }}'.
+      Supported: Debian, RedHat, Suse.
+    quiet: true
+  tags: [always]
+
+- name: Review current grype installation
+  ansible.builtin.include_tasks: review.yml
+  tags: [grype_scanner, review]
+
+- name: Install and configure grype
+  ansible.builtin.include_tasks: enforce.yml
+  when:
+    - grype_scanner_enabled | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [grype_scanner, enforce]

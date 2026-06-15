@@ -1,0 +1,35 @@
+---
+- name: Review | Check if grype is installed
+  ansible.builtin.stat:
+    path: "{{ grype_install_dir }}/grype"
+  register: _grype_binary
+  tags: [review]
+
+- name: Review | Get installed grype version
+  ansible.builtin.command:
+    cmd: "{{ grype_install_dir }}/grype version --output json"
+  register: _grype_version_raw
+  changed_when: false
+  failed_when: false
+  when: _grype_binary.stat.exists
+  tags: [review]
+
+- name: Review | Parse installed version
+  ansible.builtin.set_fact:
+    _grype_installed_version: >-
+      {{
+        (_grype_version_raw.stdout | from_json).version
+        if (_grype_binary.stat.exists and _grype_version_raw.rc == 0)
+        else 'not installed'
+      }}
+  tags: [review]
+
+- name: Review | Report grype status
+  ansible.builtin.debug:
+    msg:
+      - "Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
+      - "Grype installed: {{ _grype_binary.stat.exists }}"
+      - "Installed version: {{ _grype_installed_version }}"
+      - "Desired version: {{ grype_version }}"
+      - "Version match: {{ _grype_installed_version == grype_version }}"
+  tags: [review]

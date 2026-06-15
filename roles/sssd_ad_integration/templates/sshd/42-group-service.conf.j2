@@ -1,0 +1,18 @@
+{{ ansible_managed | comment }}
+# 42-group-service.conf — Match Group {{ ssh_ad_groups.service }}
+#
+# No interactive TTY.  No forwarding.
+# Command restrictions belong in the authorized_keys file using
+# from="source_ip" combined with command="restricted_command" options.
+# Do NOT use ForceCommand here — service account command lists vary
+# per account and must be managed in authorized_keys.
+#
+# Service accounts should connect from specific IPs.  Enforce source
+# restrictions via pam_access.conf (see ssh_service_allowed_sources variable).
+
+Match Group {{ ssh_ad_groups.service }}
+    PermitTTY no
+    AllowTcpForwarding no
+    AllowAgentForwarding no
+    X11Forwarding no
+    PermitTunnel no

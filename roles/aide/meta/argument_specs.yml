@@ -1,0 +1,88 @@
+---
+argument_specs:
+  main:
+    short_description: File Integrity Monitoring with AIDE
+    options:
+      aide_enabled:
+        type: bool
+        default: false
+        description: >-
+          Gate variable. Set to true with security_mode=enforce to install and
+          configure AIDE. Review tasks always run regardless.
+      aide_config_file:
+        type: str
+        default: /etc/aide/aide.conf
+        description: >-
+          Path to the AIDE configuration file. On RHEL/EL the default system
+          path is /etc/aide.conf — override via vars/RedHat.yml.
+      aide_db_path:
+        type: str
+        default: /var/lib/aide/aide.db
+        description: Path to the active AIDE database.
+      aide_db_new_path:
+        type: str
+        default: /var/lib/aide/aide.db.new
+        description: Path written by aide --init before promotion to active DB.
+      aide_log_dir:
+        type: str
+        default: /var/log/aide
+        description: Directory for AIDE check reports and logs.
+      aide_report_file:
+        type: str
+        default: /var/log/aide/aide-report.log
+        description: Full path to the AIDE report output file.
+      aide_init_db:
+        type: bool
+        default: true
+        description: >-
+          When true, run aide --init on first run (when no database exists).
+          Set false to skip DB initialisation (useful in CI/containers).
+      aide_verify_after_init:
+        type: bool
+        default: true
+        description: Assert database file exists after initialisation.
+      aide_timer_enabled:
+        type: bool
+        default: true
+        description: Deploy and enable the aide-check systemd timer.
+      aide_check_schedule:
+        type: str
+        default: "0 5 * * *"
+        description: systemd OnCalendar expression for periodic checks. Default is 05:00 daily.
+      aide_monitored_paths:
+        type: list
+        elements: dict
+        description: >-
+          List of dicts with keys path (str) and rules (str) defining what to
+          monitor. The rules value is an AIDE attribute combination string.
+        default:
+          - path: /bin
+            rules: p+i+n+u+g+s+b+m+c+md5+sha256
+          - path: /sbin
+            rules: p+i+n+u+g+s+b+m+c+md5+sha256
+          - path: /usr/bin
+            rules: p+i+n+u+g+s+b+m+c+md5+sha256
+          - path: /usr/sbin
+            rules: p+i+n+u+g+s+b+m+c+md5+sha256
+          - path: /etc
+            rules: p+i+n+u+g+s+b+m+c+md5+sha256
+          - path: /boot
+            rules: p+i+n+u+g+s+b+m+c+md5+sha256
+          - path: /lib
+            rules: p+i+n+u+g+s+b+m+c+md5+sha256
+          - path: /lib64
+            rules: p+i+n+u+g+s+b+m+c+md5+sha256
+      aide_excluded_paths:
+        type: list
+        elements: str
+        description: Paths prefixed with ! in aide.conf to exclude from monitoring.
+        default:
+          - /etc/mtab
+          - /etc/aide/aide.db
+          - /etc/aide/aide.db.new
+          - /var/log/aide
+          - /proc
+          - /sys
+          - /dev
+          - /run
+          - /tmp

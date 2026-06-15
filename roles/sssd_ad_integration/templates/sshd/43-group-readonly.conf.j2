@@ -1,0 +1,22 @@
+{{ ansible_managed | comment }}
+# 43-group-readonly.conf — Match Group {{ ssh_ad_groups.readonly }}
+#
+# SFTP-only chroot.  No shell, no forwarding, no TTY.
+#
+# ChrootDirectory requirements (OpenSSH enforced):
+#   - Path: {{ ssh_chroot_base }}
+#   - Owner: root:root
+#   - Mode: 0755 (NOT writable by the chrooted user)
+#   - Role creates and enforces this — do not change ownership manually.
+#
+# internal-sftp runs in-process (no external binary needed inside chroot).
+# Do NOT write ForceCommand none — it is not valid and will cause sshd -t failure.
+
+Match Group {{ ssh_ad_groups.readonly }}
+    ChrootDirectory {{ ssh_chroot_base }}
+    ForceCommand internal-sftp
+    PermitTTY no
+    AllowTcpForwarding no
+    AllowAgentForwarding no
+    X11Forwarding no
+    PermitTunnel no

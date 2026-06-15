@@ -1,0 +1,10 @@
+---
+automated_patching_enabled: false
+
+automated_patching_security_only: true
+automated_patching_apply_updates: true
+automated_patching_auto_reboot: false
+automated_patching_reboot_time: "02:00"
+automated_patching_exclude_packages: []
+automated_patching_notify_email: ""
+automated_patching_random_sleep: 3600

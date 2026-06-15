@@ -1,0 +1,5 @@
+---
+automated_patching_package: dnf-automatic
+automated_patching_service: dnf-automatic.timer
+automated_patching_config_file: /etc/dnf/automatic.conf
+automated_patching_security_marker: '^\s*upgrade_type\s*=\s*security'

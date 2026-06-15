@@ -1,0 +1,19 @@
+# {{ ansible_managed }}
+LogFile {{ antivirus_log_dir }}/clamd.log
+LogTime yes
+LogRotate yes
+PidFile /run/clamd.scan/clamd.pid
+TemporaryDirectory /var/tmp
+DatabaseDirectory {{ antivirus_db_dir }}
+LocalSocket /run/clamd.scan/clamd.sock
+User {{ antivirus_clamd_user }}
+MaxFileSize {{ antivirus_max_file_size }}
+MaxScanSize {{ antivirus_max_scan_size }}
+ScanPE yes
+ScanELF yes
+ScanOLE2 yes
+ScanMail yes
+ScanArchive yes
+DetectPUA yes
+FollowFileSymlinks false
+FollowDirectorySymlinks false

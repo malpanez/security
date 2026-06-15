@@ -1,0 +1,29 @@
+---
+galaxy_info:
+  author: Miguel Alpanez
+  description: >-
+    Host-based firewall hardening. Default-deny inbound with an explicit
+    allowlist (SSH always kept open). Uses firewalld on RHEL/SUSE and ufw on
+    Debian/Ubuntu. Supports review mode (audit-only) and enforce mode.
+    CIS 3.5.x, NIST CM-7/SC-7, NIS2 Art.21(2)(j).
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - security
+    - hardening
+    - firewall
+    - firewalld
+    - ufw
+    - network
+    - linux
+    - cis
+    - nist
+    - nis2
+  platforms:
+    - name: Debian
+      versions: [bullseye, bookworm, trixie]
+    - name: Ubuntu
+      versions: [focal, jammy, noble]
+    - name: EL
+      versions: [all]
+dependencies: []

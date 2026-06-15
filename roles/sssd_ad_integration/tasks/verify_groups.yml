@@ -1,0 +1,117 @@
+---
+# ---------------------------------------------------------------------------
+# Group membership verification — backend-agnostic.
+#
+# Uses `getent group` which queries the NSS stack. Works identically for:
+#   local   → /etc/group
+#   ad      → SSSD id_provider=ad
+#   ipa     → SSSD id_provider=ipa
+#   any     → any other NSS source (winbind, nslcd, etc.)
+#
+# Three states per group:
+#   ok        → resolves via NSS and has at least one member
+#   empty     → resolves but member list is empty  ← silent lockout risk
+#   not_found → NSS returns nothing               ← group doesn't exist yet
+#
+# Failure mode controlled by ssh_verify_groups_strict:
+#   false (default) → warn, continue play
+#   true            → fail the play immediately
+# ---------------------------------------------------------------------------
+
+- name: Verify_groups | Build list of enabled groups to check
+  ansible.builtin.set_fact:
+    _ssh_groups_to_check: >-
+      {{
+        ([ssh_ad_groups.admins] if ssh_enable_group_admins | bool else [])
+        + ([ssh_ad_groups.users] if ssh_enable_group_users | bool else [])
+        + ([ssh_ad_groups.service] if ssh_enable_group_service | bool else [])
+        + ([ssh_ad_groups.readonly] if ssh_enable_group_readonly | bool else [])
+      }}
+  tags: [sshd, ssh, access-control]
+
+- name: Verify_groups | Query each group via NSS
+  ansible.builtin.command:
+    cmd: "getent group {{ item }}"
+  register: _ssh_group_query
+  loop: "{{ _ssh_groups_to_check }}"
+  changed_when: false
+  failed_when: false
+  tags: [sshd, ssh, access-control]
+
+- name: Verify_groups | Evaluate group resolution results
+  ansible.builtin.set_fact:
+    _ssh_group_results: >-
+      {{
+        _ssh_group_results | default([])
+        + [{
+            'group': item.item,
+            'rc': item.rc,
+            'members': item.stdout.split(':')[3] | default('') if item.rc == 0 else '',
+            'state':
+              'ok' if (item.rc == 0 and item.stdout.split(':')[3] | default('') | length > 0)
+              else ('empty' if item.rc == 0
+              else 'not_found')
+          }]
+      }}
+  loop: "{{ _ssh_group_query.results }}"
+  tags: [sshd, ssh, access-control]
+
+- name: Verify_groups | Report group resolution status (backend={{ ssh_identity_backend }})
+  ansible.builtin.debug:
+    msg: >-
+      [{{ ssh_identity_backend | upper }}] group check — {{ item.group }}:
+      {{ 'OK (members: ' + item.members + ')' if item.state == 'ok'
+         else ('WARNING: group resolves via NSS but has NO MEMBERS' if item.state == 'empty'
+         else _ssh_not_found_hint) }}
+  vars:
+    _ssh_not_found_hint: >-
+      {% if ssh_identity_backend == 'local' %}
+      WARNING: group not found in /etc/group — create it: groupadd {{ item.group }}
+      {% elif ssh_identity_backend == 'ipa' %}
+      WARNING: group not found via NSS — check IPA enrollment and sssd status,
+      or create the group in IPA: ipa group-add {{ item.group }}
+      {% else %}
+      WARNING: group not found via NSS — check AD join status, SSSD service,
+      or run: sss_cache -G {{ item.group }} to refresh
+      {% endif %}
+  loop: "{{ _ssh_group_results }}"
+  tags: [sshd, ssh, access-control]
+
+- name: Verify_groups | Collect groups in warning state
+  ansible.builtin.set_fact:
+    _ssh_groups_not_ok: >-
+      {{ _ssh_group_results | selectattr('state', 'ne', 'ok') | list }}
+  tags: [sshd, ssh, access-control]
+
+- name: Verify_groups | Fail play when strict mode and groups are missing or empty
+  ansible.builtin.fail:
+    msg: >-
+      Group verification failed (ssh_verify_groups_strict=true,
+      backend={{ ssh_identity_backend }}).
+      The following groups are unresolvable or empty:
+      {{ _ssh_groups_not_ok | map(attribute='group') | join(', ') }}.
+      {% if ssh_identity_backend == 'local' %}
+      Create them with: groupadd <group> && usermod -aG <group> <user>
+      {% elif ssh_identity_backend == 'ipa' %}
+      Check IPA enrollment (ipa-client-install) and run: ipa group-find
+      {% else %}
+      Check AD join (realm list) and run: sss_cache -G <group>
+      {% endif %}
+      See docs/ssh-ad-integration.md — Group Verification.
+  when:
+    - ssh_verify_groups_strict | bool
+    - _ssh_groups_not_ok | length > 0
+  tags: [sshd, ssh, access-control]
+
+- name: Verify_groups | Warn (non-fatal) when groups are missing or empty
+  ansible.builtin.debug:
+    msg: >-
+      [WARNING] {{ _ssh_groups_not_ok | length }} group(s) unresolvable or empty
+      (backend={{ ssh_identity_backend }}):
+      {{ _ssh_groups_not_ok | map(attribute='group') | join(', ') }}.
+      AllowGroups is enforced — these groups cannot log in until membership is resolved.
+      Set ssh_verify_groups_strict=true to block deployment on this condition.
+  when:
+    - not (ssh_verify_groups_strict | bool)
+    - _ssh_groups_not_ok | length > 0
+  tags: [sshd, ssh, access-control]

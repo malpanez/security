@@ -1,0 +1,31 @@
+---
+galaxy_info:
+  author: Miguel Alpanez
+  description: >-
+    Audit and evidence of encryption-at-rest (LUKS / dm-crypt). Audit-first and
+    non-destructive: it reports which block devices are encrypted, flags
+    required mounts that are not encrypted, and hardens crypttab/tooling. It
+    does NOT encrypt an existing root filesystem and only initialises LUKS on
+    explicitly-listed EMPTY data volumes behind a hard safety guard.
+    NIST SC-28 (protection of information at rest), NIS2 Art.21(2)(f).
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - security
+    - hardening
+    - encryption
+    - luks
+    - dmcrypt
+    - cryptsetup
+    - linux
+    - nist
+    - nis2
+    - audit
+  platforms:
+    - name: Debian
+      versions: [bullseye, bookworm, trixie]
+    - name: Ubuntu
+      versions: [focal, jammy, noble]
+    - name: EL
+      versions: [all]
+dependencies: []

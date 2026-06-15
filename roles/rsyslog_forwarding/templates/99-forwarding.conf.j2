@@ -1,0 +1,35 @@
+# Managed by Ansible — malpanez.security.rsyslog_forwarding
+# Do not edit manually.
+
+{% if rsyslog_forwarding_tls_enabled | bool %}
+module(load="imtls")
+
+global(
+  defaultNetstreamDriver="gtls"
+  defaultNetstreamDriverCAFile="{{ rsyslog_forwarding_tls_ca_cert }}"
+{% if rsyslog_forwarding_tls_client_cert | default('') | length > 0 and rsyslog_forwarding_tls_client_key | default('') | length > 0 %}
+  defaultNetstreamDriverCertFile="{{ rsyslog_forwarding_tls_client_cert }}"
+  defaultNetstreamDriverKeyFile="{{ rsyslog_forwarding_tls_client_key }}"
+{% endif %}
+)
+
+{% endif %}
+$FileCreateMode {{ rsyslog_forwarding_file_create_mode }}
+
+{{ rsyslog_forwarding_selector }} action(type="omfwd"
+  Target="{{ rsyslog_forwarding_host }}"
+  Port="{{ rsyslog_forwarding_port }}"
+  Protocol="{{ rsyslog_forwarding_protocol }}"
+{% if rsyslog_forwarding_tls_enabled | bool %}
+  StreamDriver="gtls"
+  StreamDriverMode="1"
+  StreamDriverAuthMode="{{ rsyslog_forwarding_tls_auth_mode }}"
+{% endif %}
+  queue.type="{{ rsyslog_forwarding_queue_type }}"
+  queue.size="{{ rsyslog_forwarding_queue_size }}"
+{% if rsyslog_forwarding_queue_type == 'Disk' %}
+  queue.spoolDirectory="{{ rsyslog_forwarding_queue_spool_dir }}"
+  queue.filename="{{ rsyslog_forwarding_queue_file_name }}"
+{% endif %}
+  action.resumeRetryCount="{{ rsyslog_forwarding_resume_retry_count }}"
+)

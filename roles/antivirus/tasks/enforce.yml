@@ -1,0 +1,196 @@
+---
+- name: Enforce | Install EPEL repository
+  ansible.builtin.dnf:
+    name: >-
+      https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{
+      ansible_distribution_major_version }}.noarch.rpm
+    state: present
+  when: ansible_os_family == 'RedHat' and antivirus_epel_required | bool
+  tags: [antivirus, enforce, install]
+
+- name: Enforce | Install ClamAV packages (RedHat)
+  ansible.builtin.dnf:
+    name: "{{ antivirus_packages }}"
+    state: present
+  when: ansible_os_family == 'RedHat'
+  tags: [antivirus, enforce, install]
+
+- name: Enforce | Install ClamAV packages (Debian)
+  ansible.builtin.apt:
+    name: "{{ antivirus_packages }}"
+    state: present
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+  tags: [antivirus, enforce, install]
+
+- name: Enforce | Install ClamAV packages (Suse)
+  community.general.zypper:
+    name: "{{ antivirus_packages }}"
+    state: present
+  when: ansible_os_family == 'Suse'
+  tags: [antivirus, enforce, install]
+
+- name: Enforce | Create log directory
+  ansible.builtin.file:
+    path: "{{ antivirus_log_dir }}"
+    state: directory
+    owner: "{{ antivirus_clamd_user }}"
+    group: "{{ antivirus_clamd_group }}"
+    mode: "0750"
+  tags: [antivirus, enforce, configure]
+
+- name: Enforce | Create scan log directory
+  ansible.builtin.file:
+    path: "{{ antivirus_scan_log | dirname }}"
+    state: directory
+    owner: "{{ antivirus_clamd_user }}"
+    group: "{{ antivirus_clamd_group }}"
+    mode: "0750"
+  tags: [antivirus, enforce, configure]
+
+- name: Enforce | Ensure DB directory ownership
+  ansible.builtin.file:
+    path: "{{ antivirus_db_dir }}"
+    state: directory
+    owner: "{{ antivirus_clamd_user }}"
+    group: "{{ antivirus_clamd_group }}"
+    mode: "0755"
+  tags: [antivirus, enforce, configure]
+
+- name: Enforce | Deploy clamd.conf
+  ansible.builtin.template:
+    src: clamd.conf.j2
+    dest: "{{ antivirus_clamd_config }}"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify: Restart clamd
+  tags: [antivirus, enforce, configure]
+
+- name: Enforce | Deploy freshclam.conf
+  ansible.builtin.template:
+    src: freshclam.conf.j2
+    dest: "{{ antivirus_freshclam_config }}"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify: Restart freshclam
+  tags: [antivirus, enforce, configure]
+
+- name: Enforce | Set SELinux boolean antivirus_can_scan_system
+  ansible.posix.seboolean:
+    name: antivirus_can_scan_system
+    state: true
+    persistent: true
+  when:
+    - ansible_os_family == 'RedHat'
+    - antivirus_selinux_contexts | bool
+    - ansible_selinux.status | default('disabled') == 'enabled'
+  tags: [antivirus, enforce, configure]
+
+- name: Enforce | Restore SELinux context on log directory
+  ansible.builtin.command:
+    cmd: "restorecon -Rv {{ antivirus_log_dir }}"
+  register: _antivirus_restorecon_log
+  changed_when: "'Relabeled' in _antivirus_restorecon_log.stdout"
+  failed_when: false
+  when:
+    - ansible_os_family == 'RedHat'
+    - antivirus_selinux_contexts | bool
+    - ansible_selinux.status | default('disabled') == 'enabled'
+  tags: [antivirus, enforce, configure]
+
+- name: Enforce | Restore SELinux context on scan dirs
+  ansible.builtin.command:
+    cmd: "restorecon -Rv {{ item }}"
+  loop: "{{ antivirus_scan_dirs }}"
+  register: _antivirus_restorecon_scan
+  changed_when: "'Relabeled' in _antivirus_restorecon_scan.stdout"
+  failed_when: false
+  when:
+    - ansible_os_family == 'RedHat'
+    - antivirus_selinux_contexts | bool
+    - ansible_selinux.status | default('disabled') == 'enabled'
+  tags: [antivirus, enforce, configure]
+
+- name: Enforce | Run freshclam to update virus databases
+  ansible.builtin.command:
+    cmd: freshclam
+  register: _antivirus_freshclam_result
+  changed_when: "'Database updated' in _antivirus_freshclam_result.stdout"
+  failed_when: _antivirus_freshclam_result.rc not in [0, 1]
+  when: antivirus_update_db | bool and not _antivirus_in_container | bool
+  tags: [antivirus, enforce, configure]
+
+- name: Enforce | Enable and start freshclam service
+  ansible.builtin.systemd:
+    name: "{{ antivirus_freshclam_service }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: not _antivirus_in_container | bool
+  tags: [antivirus, enforce, service]
+
+- name: Enforce | Enable and start clamd service
+  ansible.builtin.systemd:
+    name: "{{ antivirus_clamd_service }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: not _antivirus_in_container | bool
+  tags: [antivirus, enforce, service]
+
+- name: Enforce | Deploy clamav-scan.service unit
+  ansible.builtin.template:
+    src: clamav-scan.service.j2
+    dest: /etc/systemd/system/clamav-scan.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+  when: antivirus_scan_enabled | bool
+  tags: [antivirus, enforce, service]
+
+- name: Enforce | Deploy clamav-scan.timer unit
+  ansible.builtin.template:
+    src: clamav-scan.timer.j2
+    dest: /etc/systemd/system/clamav-scan.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+  when: antivirus_scan_enabled | bool
+  tags: [antivirus, enforce, service]
+
+- name: Enforce | Enable and start scan timer
+  ansible.builtin.systemd:
+    name: clamav-scan.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: antivirus_scan_enabled | bool and not _antivirus_in_container | bool
+  tags: [antivirus, enforce, service]
+
+- name: Enforce | Stat clamd config to verify deployment
+  ansible.builtin.stat:
+    path: "{{ antivirus_clamd_config }}"
+  register: _antivirus_clamd_config_stat
+  tags: [antivirus, enforce, verify]
+
+- name: Enforce | Assert clamd config was deployed
+  ansible.builtin.assert:
+    that:
+      - _antivirus_clamd_config_stat.stat.exists
+    fail_msg: "clamd config not found at {{ antivirus_clamd_config }}"
+    quiet: true
+  tags: [antivirus, enforce, verify]
+
+- name: Enforce | Warn if DB absent and update_db false
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: antivirus_update_db is false — virus database may not exist.
+      Set antivirus_update_db: true for production use.
+  when: not antivirus_update_db | bool
+  tags: [antivirus, enforce, verify]

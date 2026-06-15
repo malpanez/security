@@ -130,3 +130,47 @@ argument_specs:
         type: str
         default: warn
         description: Apache log level (error, warn, notice, info, debug).
+      apache_hardening_access_log_format:
+        type: str
+        default: combined
+        description: Apache access log format (nickname or format string).
+      apache_hardening_cgi_enabled:
+        type: bool
+        default: false
+        description: Allow CGI execution.
+      apache_hardening_keep_alive:
+        type: str
+        default: 'On'
+        description: KeepAlive directive value (On/Off).
+      apache_hardening_keep_alive_timeout:
+        type: int
+        default: 5
+        description: KeepAliveTimeout directive value in seconds.
+      apache_hardening_max_keep_alive_requests:
+        type: int
+        default: 100
+        description: MaxKeepAliveRequests directive value.
+      apache_hardening_server_admin:
+        type: str
+        default: webmaster@localhost
+        description: ServerAdmin contact address.
+      apache_hardening_server_side_includes:
+        type: bool
+        default: false
+        description: Allow Server Side Includes (SSI).
+      apache_hardening_ssl_cipher_suite:
+        type: str
+        default: 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256: ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384: ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305: DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384'
+        description: SSLCipherSuite cipher list for TLS.
+      apache_hardening_ssl_stapling_verify:
+        type: str
+        default: 'On'
+        description: SSLStaplingVerify directive value (On/Off).
+      apache_hardening_ssl_use_stapling_cache:
+        type: str
+        default: SSLStaplingCache shmcb:/var/run/ocsp(128000)
+        description: SSLStaplingCache directive value.
+      apache_hardening_x_xss_protection:
+        type: str
+        default: 1; mode=block
+        description: X-XSS-Protection response header value.

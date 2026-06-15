@@ -1,0 +1,13 @@
+# Managed by Ansible — malpanez.security.rsyslog_forwarding
+{{ rsyslog_forwarding_log_dir }}/*.log {
+    rotate {{ rsyslog_forwarding_logrotate_rotate }}
+    size {{ rsyslog_forwarding_logrotate_size }}
+    missingok
+    notifempty
+    compress
+    delaycompress
+    sharedscripts
+    postrotate
+        /usr/bin/systemctl kill -s HUP rsyslog.service 2>/dev/null || true
+    endscript
+}

@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - boot_hardening role - added GRUB2 bootloader hardening (grub.cfg permissions, os-prober/recovery control, opt-in PBKDF2 superuser password) for Debian and RHEL families (CIS 1.4.x, NIST CM-6).
+  - encryption_at_rest role - added a non-destructive encryption-at-rest audit role that reports LUKS/dm-crypt coverage, flags unencrypted required mounts, hardens crypttab, and can initialise LUKS on explicitly-allowed empty data volumes behind a hard safety guard (NIST SC-28, NIS2 Art.21(2)(f)).

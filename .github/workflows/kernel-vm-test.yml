@@ -22,9 +22,6 @@ on:
       - "playbooks/kernel-vm-test.yml"
       - ".github/workflows/kernel-vm-test.yml"
   workflow_dispatch:
-  schedule:
-    # Weekly Sunday 03:00 UTC — detect kernel/distro regressions early
-    - cron: "0 3 * * 0"
 
 permissions:
   contents: read
@@ -37,6 +34,7 @@ jobs:
   kernel-vm:
     name: "Kernel hardening on ${{ matrix.runner }}"
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -53,8 +51,13 @@ jobs:
       ANSIBLE_RESULT_FORMAT: yaml
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -346,6 +349,7 @@ jobs:
   rocky-container:
     name: "Kernel hardening on Rocky Linux 9 (RHEL-compatible)"
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     env:
       PYTHONUNBUFFERED: "1"
@@ -357,8 +361,13 @@ jobs:
       CONTAINER: rocky9-hardening
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -388,7 +397,7 @@ jobs:
             --tmpfs /tmp \
             --volume /sys/fs/cgroup:/sys/fs/cgroup:rw \
             --platform linux/amd64 \
-            geerlingguy/docker-rockylinux9-ansible:latest \
+            geerlingguy/docker-rockylinux9-ansible@sha256:09c1074489a704687b2b1f3d16a4f537b211b49b64eb7a5b6e4d6d1eae5b8ba9 \
             /lib/systemd/systemd
           # Wait for systemd to be ready
           sleep 5
@@ -533,9 +542,15 @@ jobs:
   summary:
     name: VM Test Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: [kernel-vm, rocky-container]
     if: always()
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Check all VM tests passed
         run: |
           if [ "${{ needs.kernel-vm.result }}" != "success" ]; then

@@ -57,14 +57,17 @@ mysql_hardening_automatic_sp_privileges: false
 # Use safe user creation
 mysql_hardening_safe_user_create: true
 
-# Restrict file operations to secure directory
-mysql_hardening_secure_file_priv: /tmp
+# Restrict file operations to a secure, dedicated directory.
+# /tmp is world-writable and allows LOAD DATA INFILE injection — never use it.
+# Set to "" to disable file import/export entirely (recommended if not needed).
+mysql_hardening_secure_file_priv: ""
 
 # Disable symbolic links (prevents privilege escalation via symlinks)
 mysql_hardening_symbolic_links: false
 
-# Skip default database schema exposure
-mysql_hardening_skip_show_database: false
+# Prevent any user from running SHOW DATABASES without explicit privilege.
+# CIS MySQL Benchmark recommends true.
+mysql_hardening_skip_show_database: true
 
 # Disable deprecated secure_auth (MariaDB specific)
 mysql_hardening_secure_auth: true

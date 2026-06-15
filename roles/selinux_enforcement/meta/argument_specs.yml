@@ -60,3 +60,15 @@ argument_specs:
           - Recommended to ensure contexts are properly applied
         type: bool
         default: true
+      selinux_enforcement_check_denials:
+        type: bool
+        default: true
+        description: Check for and report recent SELinux AVC denials.
+      selinux_enforcement_force_enforcing:
+        type: bool
+        default: false
+        description: Force enforcing mode even when denials are present.
+      selinux_enforcement_monitoring_period_hours:
+        type: int
+        default: 48
+        description: Lookback window in hours for SELinux denial monitoring.

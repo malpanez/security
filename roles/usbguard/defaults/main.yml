@@ -1,0 +1,10 @@
+---
+usbguard_enabled: false
+usbguard_implicit_policy: block
+usbguard_allow_existing_devices: true
+usbguard_present_device_policy: apply-policy
+usbguard_present_controller_policy: apply-policy
+usbguard_restore_controller_state: false
+usbguard_audit_backend: LinuxAudit
+usbguard_audit_file_path: /var/log/usbguard/usbguard-audit.log
+usbguard_extra_rules: []

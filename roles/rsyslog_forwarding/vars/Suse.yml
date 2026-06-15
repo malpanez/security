@@ -1,0 +1,5 @@
+---
+rsyslog_forwarding_package: rsyslog
+rsyslog_forwarding_tls_package: rsyslog-module-gtls
+rsyslog_forwarding_service: rsyslog
+rsyslog_forwarding_dropin_dir: /etc/rsyslog.d

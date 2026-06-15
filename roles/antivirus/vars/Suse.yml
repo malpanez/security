@@ -1,0 +1,12 @@
+---
+antivirus_packages:
+  - clamav
+antivirus_clamd_service: clamd
+antivirus_freshclam_service: freshclam
+antivirus_clamd_config: /etc/clamd.conf
+antivirus_freshclam_config: /etc/freshclam.conf
+antivirus_clamd_user: vscan
+antivirus_clamd_group: vscan
+antivirus_log_dir: /var/log/clamav
+antivirus_db_dir: /var/lib/clamav
+antivirus_epel_required: false

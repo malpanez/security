@@ -9,7 +9,7 @@ namespace: malpanez
 name: security
 
 # The version of the collection. Must be compatible with semantic versioning
-version: 1.1.0
+version: 1.4.0
 
 # The path to the Markdown (.md) readme file. This path is relative to the root of the collection
 readme: README.md
@@ -31,7 +31,7 @@ description: >-
 # Either a single license or a list of licenses for content inside of a collection. Ansible Galaxy currently only
 # accepts L(SPDX,https://spdx.org/licenses/) licenses. This key is mutually exclusive with 'license_file'
 license:
-  - MIT
+  - Apache-2.0
 
 # A list of tags you want to associate with the collection for indexing/searching. A tag name has the same character
 # requirements as 'namespace' and 'name'
@@ -58,7 +58,12 @@ tags:
 # collection label 'namespace.name'. The value is a version range
 # L(specifiers,https://python-semanticversion.readthedocs.io/en/latest/#requirement-specification). Multiple version
 # range specifiers can be set and are separated by ','
-dependencies: {}
+dependencies:
+  community.mysql: ">=3.0.0,<4.3.0"
+  community.general: ">=8.0.0"
+  ansible.posix: ">=1.5.0"
+  community.docker: ">=3.0.0"
+  community.crypto: ">=2.0.0"
 # The URL of the originating SCM repository
 repository: https://github.com/malpanez/security
 
@@ -75,7 +80,28 @@ issues: https://github.com/malpanez/security/issues
 # artifact. A pattern is matched from the relative path of the file or directory of the collection directory. This
 # uses 'fnmatch' to match the files or directories. Some directories and files like 'galaxy.yml', '*.pyc', '*.retry',
 # and '.git' are always filtered. Mutually exclusive with 'manifest'
-build_ignore: []
+build_ignore:
+  - "ansible_collections"
+  - ".ansible"
+  - ".venv"
+  - ".git"
+  - ".github"
+  - ".pre-commit-config.yaml"
+  - ".gitleaks.toml"
+  - "*.tar.gz"
+  - "*.bak"
+  - ".molecule"
+  - "molecule"
+  - "tests"
+  - "docs"
+  - "scripts"
+  - "pyproject.toml"
+  - "uv.lock"
+  - "renovate.json"
+  - "inventory"
+  - "group_vars"
+  - "CONTRIBUTING.md"
+  - "SECURITY.md"
 
 # A dict controlling use of manifest directives used in building the collection artifact. The key 'directives' is a
 # list of MANIFEST.in style

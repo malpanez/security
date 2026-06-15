@@ -3,8 +3,26 @@ name: CI with UV
 on:
   push:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "molecule/**"
+      - "playbooks/**"
+      - "tasks/**"
+      - "plugins/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/ci-uv.yml"
   pull_request:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "molecule/**"
+      - "playbooks/**"
+      - "tasks/**"
+      - "plugins/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/ci-uv.yml"
   workflow_dispatch:
 
 concurrency:
@@ -13,7 +31,6 @@ concurrency:
 
 permissions:
   contents: read
-  security-events: write
 
 env:
   UV_VERSION: "0.5.0"
@@ -26,10 +43,15 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install UV
-        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -39,7 +61,7 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Cache venv
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: cache-venv
         with:
           path: .venv
@@ -53,7 +75,7 @@ jobs:
         if: steps.cache-venv.outputs.cache-hit != 'true'
 
       - name: Cache Ansible + Molecule
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible
@@ -64,7 +86,7 @@ jobs:
             ansible-molecule-${{ runner.os }}-
 
       - name: Cache Ansible Galaxy collections
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible/collections
@@ -77,6 +99,7 @@ jobs:
         run: |
           source .venv/bin/activate
           ansible-galaxy collection install -r requirements.yml
+          ansible-galaxy collection install . -p .ansible/collections
 
       - name: Run ansible-lint
         run: |
@@ -110,12 +133,29 @@ jobs:
           - service_accounts_transfer
           - compliance_evidence
           - cis_baseline
+          - grype_scanner
+          - aide
+          - ntp_hardening
+          - user_audit
+          - rsyslog_forwarding
+          - antivirus
+          - tls_hardening
+          - usbguard
+          - firewall
+          - automated_patching
+          - boot_hardening
+          - encryption_at_rest
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install UV
-        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -125,7 +165,7 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Cache venv
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: cache-venv
         with:
           path: .venv
@@ -139,7 +179,7 @@ jobs:
         if: steps.cache-venv.outputs.cache-hit != 'true'
 
       - name: Cache Ansible + Molecule
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible
@@ -150,7 +190,7 @@ jobs:
             ansible-molecule-${{ runner.os }}-
 
       - name: Cache Ansible Galaxy collections
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible/collections
@@ -163,6 +203,7 @@ jobs:
         run: |
           source .venv/bin/activate
           ansible-galaxy collection install -r requirements.yml
+          ansible-galaxy collection install . -p .ansible/collections
 
       - name: Run Molecule test
         run: |
@@ -186,10 +227,15 @@ jobs:
           - audit_logging
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install UV
-        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -199,7 +245,7 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Cache venv
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: cache-venv
         with:
           path: .venv
@@ -213,7 +259,7 @@ jobs:
         if: steps.cache-venv.outputs.cache-hit != 'true'
 
       - name: Cache Ansible + Molecule
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible
@@ -224,7 +270,7 @@ jobs:
             ansible-molecule-${{ runner.os }}-
 
       - name: Cache Ansible Galaxy collections
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.ansible/collections
@@ -237,6 +283,7 @@ jobs:
         run: |
           source .venv/bin/activate
           ansible-galaxy collection install -r requirements.yml
+          ansible-galaxy collection install . -p .ansible/collections
 
       - name: Run Molecule test
         run: |
@@ -249,12 +296,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-roles, test-roles-slow]
     timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write       # SLSA provenance (OIDC)
+      attestations: write   # build attestation
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install UV
-        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           version: ${{ env.UV_VERSION }}
           cache-dependency-glob: pyproject.toml
@@ -263,7 +319,7 @@ jobs:
         run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Cache venv
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: cache-venv
         with:
           path: .venv
@@ -280,8 +336,33 @@ jobs:
           source .venv/bin/activate
           ansible-galaxy collection build
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - name: Attest build provenance (SLSA)
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-path: "*.tar.gz"
+
+      - name: Install cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign collection tarball (keyless / sigstore)
+        if: github.event_name != 'pull_request'
+        run: |
+          for f in *.tar.gz; do
+            cosign sign-blob --yes \
+              --output-signature "${f}.sig" \
+              --output-certificate "${f}.pem" \
+              --bundle "${f}.cosign.bundle" \
+              "${f}"
+          done
+
+      - name: Upload artifact (+ signatures)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: collection
-          path: "*.tar.gz"
+          path: |
+            *.tar.gz
+            *.tar.gz.sig
+            *.tar.gz.pem
+            *.tar.gz.cosign.bundle

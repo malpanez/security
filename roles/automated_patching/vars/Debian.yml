@@ -1,0 +1,6 @@
+---
+automated_patching_package: unattended-upgrades
+automated_patching_service: apt-daily-upgrade.timer
+automated_patching_config_file: /etc/apt/apt.conf.d/50unattended-upgrades
+automated_patching_periodic_file: /etc/apt/apt.conf.d/20auto-upgrades
+automated_patching_security_marker: '\$\{distro_id\}:\$\{distro_codename\}-security'

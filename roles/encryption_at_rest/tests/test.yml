@@ -1,0 +1,6 @@
+---
+- name: Test encryption_at_rest role
+  hosts: localhost
+  gather_facts: true
+  roles:
+    - role: malpanez.security.encryption_at_rest

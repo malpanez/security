@@ -146,3 +146,15 @@ argument_specs:
           - "* soft nofile 65536"
           - "* hard nofile 65536"
         description: List of limits.conf rules.
+      pam_security_logindefs_gid_min:
+        type: int
+        default: 1000
+        description: GID_MIN value written to login.defs.
+      pam_security_logindefs_uid_min:
+        type: int
+        default: 1000
+        description: UID_MIN value written to login.defs.
+      pam_security_pwquality_minclass:
+        type: int
+        default: 0
+        description: pwquality minclass value (minimum required character classes).

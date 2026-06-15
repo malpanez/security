@@ -1,0 +1,79 @@
+name: Docs
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "plugins/**"
+      - "meta/**"
+      - "galaxy.yml"
+      - "README.md"
+      - "docs/**"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "plugins/**"
+      - "meta/**"
+      - "galaxy.yml"
+      - "README.md"
+      - "docs/**"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-docs:
+    name: Build collection docs (antsibull-docs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout into collection path
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          path: ansible_collections/malpanez/security
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Install antsibull-docs and Sphinx
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible-core antsibull-docs sphinx sphinx-ansible-theme
+
+      - name: Install the collection
+        working-directory: ansible_collections/malpanez/security
+        run: ansible-galaxy collection install . --force -p ../../../
+
+      - name: Render and build docs site
+        working-directory: ansible_collections/malpanez/security
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}
+        run: |
+          mkdir -p built_docs
+          antsibull-docs sphinx-init --use-current \
+            --squash-hierarchy --dest-dir built_docs malpanez.security
+          pip install -r built_docs/requirements.txt
+          built_docs/build.sh
+
+      - name: Upload docs site artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: docs-site
+          path: ansible_collections/malpanez/security/built_docs/build/html
+          retention-days: 14

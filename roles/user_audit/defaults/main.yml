@@ -1,0 +1,17 @@
+---
+user_audit_enabled: false
+
+user_audit_inactive_days: 90
+user_audit_max_password_age: 90
+user_audit_min_password_age: 1
+user_audit_warn_days: 14
+
+user_audit_lock_inactive: true
+user_audit_set_password_expiry: true
+user_audit_fix_service_shells: false
+
+user_audit_skip_users:
+  - root
+  - halt
+  - sync
+  - shutdown

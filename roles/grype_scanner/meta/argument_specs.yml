@@ -1,0 +1,70 @@
+---
+argument_specs:
+  main:
+    short_description: Install and configure Grype vulnerability scanner
+    options:
+      grype_scanner_enabled:
+        type: bool
+        default: false
+        description: >-
+          Gate variable. Set to true with security_mode=enforce to install and
+          configure grype. Review tasks always run regardless.
+      grype_version:
+        type: str
+        default: "0.111.0"
+        description: Grype release version to install (without leading 'v').
+      grype_install_dir:
+        type: str
+        default: /usr/local/bin
+        description: Directory where the grype binary is placed.
+      grype_config_dir:
+        type: str
+        default: /etc/grype
+        description: Directory for the grype configuration file.
+      grype_db_dir:
+        type: str
+        default: /var/lib/grype/db
+        description: Directory for the grype vulnerability database cache.
+      grype_log_dir:
+        type: str
+        default: /var/log/grype
+        description: Directory for grype scan output logs.
+      grype_severity_fail:
+        type: str
+        default: high
+        description: >-
+          Minimum severity level that causes a non-zero exit code.
+          Valid values: negligible, low, medium, high, critical.
+      grype_output_format:
+        type: str
+        default: table
+        description: >-
+          Output format for grype scan results.
+          Valid values: table, json, cyclonedx, sarif, template.
+      grype_ignore_unfixed:
+        type: bool
+        default: false
+        description: When true, findings with no available fix are ignored.
+      grype_scan_targets:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          List of paths or image references to scan. Used only when
+          grype_scheduled_scan is true.
+      grype_scheduled_scan:
+        type: bool
+        default: false
+        description: >-
+          When true, deploys a systemd timer that runs grype on the
+          schedule defined by grype_scan_schedule.
+      grype_scan_schedule:
+        type: str
+        default: "0 3 * * *"
+        description: >-
+          systemd OnCalendar expression for scheduled scans.
+          Default runs daily at 03:00.
+      grype_scanner_update_db:
+        type: bool
+        default: true
+        description: Update the Grype vulnerability database before scanning.

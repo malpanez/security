@@ -1,0 +1,12 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=AIDE File Integrity Check Timer
+Documentation=man:aide(1)
+
+[Timer]
+OnCalendar={{ aide_check_schedule }}
+RandomizedDelaySec=900
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,16 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Include user_audit role
+      ansible.builtin.include_role:
+        name: malpanez.security.user_audit
+      vars:
+        user_audit_enabled: true
+        security_mode: enforce
+        user_audit_inactive_days: 90
+        user_audit_set_password_expiry: true
+        user_audit_max_password_age: 90

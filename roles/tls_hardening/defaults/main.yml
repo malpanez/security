@@ -1,0 +1,8 @@
+---
+tls_hardening_enabled: false
+
+tls_hardening_rhel_policy: "DEFAULT:NO-SHA1"
+
+tls_hardening_min_protocol: "TLSv1.2"
+
+tls_hardening_openssl_cipher_string: "HIGH:!aNULL:!MD5:!RC4:!3DES"

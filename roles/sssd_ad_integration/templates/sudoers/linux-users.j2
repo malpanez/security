@@ -1,0 +1,16 @@
+{{ ansible_managed | comment(decoration='# ') }}
+# /etc/sudoers.d/51-linux-users
+# Managed by Ansible — malpanez.security.sssd_ad_integration
+# CIS 5.3 / NIST AC-6(1) / NIS2 Art.21(2)(i)
+#
+# Explicit allowlist only.  Principle of least privilege.
+# NOPASSWD only for read-only/status operations.
+# PASSWD required for state-changing operations.
+# No ! negation.  No wildcards that accept arbitrary paths.
+
+{% if ssh_sudoers_users_nopasswd_commands | length > 0 %}
+%{{ ssh_ad_groups.users }} ALL=(root) NOPASSWD: {{ ssh_sudoers_users_nopasswd_commands | join(', ') }}
+{% endif %}
+{% if ssh_sudoers_users_passwd_commands | length > 0 %}
+%{{ ssh_ad_groups.users }} ALL=(root) PASSWD: {{ ssh_sudoers_users_passwd_commands | join(', ') }}
+{% endif %}

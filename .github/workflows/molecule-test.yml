@@ -4,8 +4,20 @@ on:
   workflow_dispatch:
   push:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "molecule/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/molecule-test.yml"
   pull_request:
     branches: [develop, main]
+    paths:
+      - "roles/**"
+      - "molecule/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/molecule-test.yml"
 
 permissions:
   contents: read
@@ -17,15 +29,21 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest  # Cannot use ubuntu-slim: Docker driver required
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.12"
 
       - name: Install uv (with cache)
-        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: true
 
@@ -40,12 +58,12 @@ jobs:
           set -euo pipefail
           for attempt in 1 2 3; do
             if ansible-galaxy collection install -r requirements.yml; then
-              exit 0
+              break
             fi
             echo "Retrying ansible-galaxy collection install (${attempt}/3)..."
             sleep $((attempt * 10))
           done
-          exit 1
+          ansible-galaxy collection install . -p .ansible/collections
 
       - name: Test minimal scenario
         run: |

@@ -44,3 +44,7 @@
 
     - name: Include selinux status evidence
       ansible.builtin.include_tasks: selinux_status.yml
+
+    - name: Include machine-readable compliance report
+      ansible.builtin.include_tasks: compliance_report.yml
+      when: compliance_evidence_report_enabled | bool

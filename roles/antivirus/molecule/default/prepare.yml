@@ -1,0 +1,21 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Fix Rocky 9 nsswitch for sudo/PAM in containers
+      ansible.builtin.replace:
+        path: /etc/nsswitch.conf
+        regexp: ' sss'
+        replace: ''
+      failed_when: false
+
+    - name: Install SELinux Python bindings (RedHat)
+      ansible.builtin.dnf:
+        name:
+          - python3-libselinux
+          - python3-policycoreutils
+        state: present
+      when: ansible_os_family == 'RedHat'

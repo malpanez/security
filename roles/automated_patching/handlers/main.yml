@@ -1,0 +1,7 @@
+---
+- name: Restart automated patching timer
+  ansible.builtin.systemd:
+    name: "{{ automated_patching_service }}"
+    state: restarted
+  changed_when: true
+  when: not _automated_patching_in_container | bool

@@ -1,0 +1,71 @@
+---
+- name: Assert required variables for AD backend
+  ansible.builtin.assert:
+    that:
+      - sssd_ad_domain | length > 0
+      - sssd_ad_realm | length > 0
+    fail_msg: >-
+      sssd_ad_domain and sssd_ad_realm are required when ssh_identity_backend=ad.
+  when:
+    - ssh_identity_backend == 'ad'
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Assert required variables for IPA backend
+  ansible.builtin.assert:
+    that:
+      - sssd_ipa_domain | length > 0
+    fail_msg: >-
+      sssd_ipa_domain is required when ssh_identity_backend=ipa.
+  when:
+    - ssh_identity_backend == 'ipa'
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Assert ssh_identity_backend is a supported value
+  ansible.builtin.assert:
+    that:
+      - ssh_identity_backend in ['ad', 'ipa', 'local']
+    fail_msg: >-
+      ssh_identity_backend must be one of: ad, ipa, local.
+      Got: {{ ssh_identity_backend }}
+  tags: [sshd, ssh, access-control]
+
+- name: Include sshd drop-in backup tasks
+  ansible.builtin.include_tasks: backup.yml
+  when:
+    - ssh_backup_config | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Include SSSD configuration tasks
+  ansible.builtin.include_tasks: sssd.yml
+  when:
+    - ssh_identity_backend in ['ad', 'ipa']
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Include sshd network-zone drop-in tasks
+  ansible.builtin.include_tasks: sshd_zones.yml
+  tags: [sshd, ssh, access-control]
+
+- name: Include sudoers tasks
+  ansible.builtin.include_tasks: sudoers.yml
+  tags: [sshd, ssh, access-control]
+
+- name: Include PAM access control tasks
+  ansible.builtin.include_tasks: pam.yml
+  when: ssh_pam_access_configure | bool
+  tags: [sshd, ssh, access-control]
+
+- name: Include PAM activation tasks
+  ansible.builtin.include_tasks: pam_activate.yml
+  when:
+    - ssh_pam_access_configure | bool
+    - ssh_pam_access_activate | bool
+  tags: [sshd, ssh, access-control]
+
+- name: Include group verification tasks
+  ansible.builtin.include_tasks: verify_groups.yml
+  when: ssh_verify_groups | bool
+  tags: [sshd, ssh, access-control]

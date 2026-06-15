@@ -15,3 +15,9 @@ cis_baseline_sshd_config_path: /etc/ssh/sshd_config
 cis_baseline_sshd_service_name: "{{ 'ssh' if ansible_facts['os_family'] == 'Debian' else 'sshd' }}"
 cis_baseline_sudoers_path: /etc/sudoers
 cis_baseline_sudoers_dir: /etc/sudoers.d
+# CIS 5.2.7 — cap SSH authentication attempts.
+cis_baseline_max_auth_tries: 4
+# CIS 5.3.6 — sudo command logging target.
+cis_baseline_sudo_logfile: /var/log/sudo.log
+# CIS 5.3 — fail enforce when NOPASSWD:ALL is present (cannot be safely auto-removed).
+cis_baseline_enforce_fail_on_nopasswd: true

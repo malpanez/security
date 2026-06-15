@@ -9,6 +9,25 @@
       changed_when: false
     - name: Gather facts
       ansible.builtin.setup:
+    # Minimal container images may ship without openssh-server, leaving
+    # /etc/ssh/sshd_config absent. The role only collects evidence for paths
+    # that exist, so seed a representative sshd_config to make the
+    # sshd_config evidence deterministic across all platforms.
+    - name: Ensure /etc/ssh exists
+      ansible.builtin.file:
+        path: /etc/ssh
+        state: directory
+        mode: "0755"
+    - name: Seed a minimal sshd_config when absent
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config
+        content: |
+          # Seeded by molecule converge for evidence collection.
+          Port 22
+          PermitRootLogin no
+          PasswordAuthentication no
+        mode: "0600"
+        force: false
   vars:
     compliance_evidence_enabled: true
     security_capabilities_selected_auth_mode: legacy

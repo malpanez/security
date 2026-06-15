@@ -1,0 +1,43 @@
+---
+aide_enabled: false
+
+aide_config_file: /etc/aide/aide.conf
+aide_db_path: /var/lib/aide/aide.db
+aide_db_new_path: /var/lib/aide/aide.db.new
+aide_log_dir: /var/log/aide
+aide_report_file: /var/log/aide/aide-report.log
+
+aide_init_db: true
+aide_verify_after_init: true
+
+aide_timer_enabled: true
+aide_check_schedule: "0 5 * * *"
+
+aide_monitored_paths:
+  - path: /bin
+    rules: p+i+n+u+g+s+b+m+c+md5+sha256
+  - path: /sbin
+    rules: p+i+n+u+g+s+b+m+c+md5+sha256
+  - path: /usr/bin
+    rules: p+i+n+u+g+s+b+m+c+md5+sha256
+  - path: /usr/sbin
+    rules: p+i+n+u+g+s+b+m+c+md5+sha256
+  - path: /etc
+    rules: p+i+n+u+g+s+b+m+c+md5+sha256
+  - path: /boot
+    rules: p+i+n+u+g+s+b+m+c+md5+sha256
+  - path: /lib
+    rules: p+i+n+u+g+s+b+m+c+md5+sha256
+  - path: /lib64
+    rules: p+i+n+u+g+s+b+m+c+md5+sha256
+
+aide_excluded_paths:
+  - /etc/mtab
+  - /etc/aide/aide.db
+  - /etc/aide/aide.db.new
+  - /var/log/aide
+  - /proc
+  - /sys
+  - /dev
+  - /run
+  - /tmp

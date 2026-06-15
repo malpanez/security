@@ -1,0 +1,15 @@
+## MFA second-factor substack — managed by malpanez.security.pam_mfa. Do not edit.
+## Wired into a PAM service with a single line:  auth  substack  {{ pam_mfa_substack_name }}
+##
+## 1. Service / bypass accounts skip MFA (optionally restricted by source host).
+auth    sufficient    pam_succeed_if.so quiet user ingroup {{ pam_mfa_service_bypass_group }}{% if pam_mfa_service_bypass_allow_from | default([]) | length > 0 %} rhost in {{ pam_mfa_service_bypass_allow_from | join(',') }}{% endif %}
+
+## 2. Primary factor: FIDO2 / U2F hardware key.
+auth    sufficient    {{ pam_mfa_primary_module_path }} authfile={{ pam_mfa_primary_authfile }} cue
+{% if pam_mfa_totp_enabled %}
+## 3. TOTP fallback — only for the breakglass group ({{ pam_mfa_totp_allowed_group }}).
+auth    [success=1 default=ignore]    pam_succeed_if.so quiet user notingroup {{ pam_mfa_totp_allowed_group }}
+auth    sufficient    {{ pam_mfa_pam_module_google_authenticator }} nullok{% if pam_mfa_totp_rate_limit %} rate_limit={{ pam_mfa_totp_rate_limit_count }}{% endif %} user_readenv=1 secret={{ pam_mfa_totp_dir }}/%u
+{% endif %}
+## 4. No factor satisfied -> deny.
+auth    required    pam_deny.so

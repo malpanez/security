@@ -1,0 +1,6 @@
+---
+- name: Test user_audit role
+  hosts: localhost
+  gather_facts: true
+  roles:
+    - role: malpanez.security.user_audit

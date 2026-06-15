@@ -1,0 +1,43 @@
+{{ ansible_managed | comment }}
+# /etc/sssd/sssd.conf — FreeIPA / Red Hat Identity Management backend
+# Managed by Ansible (malpanez.security.sssd_ad_integration)
+# Mode 0600 required.
+#
+# sudo_provider = sssd: rules live in /etc/sudoers.d/ (this role deploys them).
+# If you prefer IPA native sudo rules (sudo_provider = ipa), remove the
+# sudoers.d files and manage rules in the IPA web UI or ipa sudorule commands.
+#
+# access_provider = {{ sssd_ipa_access_provider }}:
+# {% if sssd_ipa_access_provider == 'permit' %}
+#   All IPA users are allowed — access_provider=ipa with HBAC rules is disabled.
+#   SSH access is gated by sshd AllowGroups and pam_access.conf instead.
+# {% else %}
+#   HBAC rules in IPA control SSH access. Create an HBAC rule that allows
+#   'sshd' service on these hosts for the relevant user groups.
+# {% endif %}
+#
+# Offline credentials: expiration={{ sssd_offline_credentials_expiration }} days (0=never).
+# See docs/ssh-ad-integration.md — Offline Credentials Expiration.
+
+[sssd]
+domains = {{ sssd_ipa_domain }}
+services = nss, pam, ssh
+config_file_version = 2
+
+[domain/{{ sssd_ipa_domain }}]
+id_provider = ipa
+auth_provider = ipa
+access_provider = {{ sssd_ipa_access_provider }}
+sudo_provider = sssd
+
+ipa_domain = {{ sssd_ipa_domain }}
+ipa_server = {{ sssd_ipa_server }}
+ipa_hostname = {{ ansible_fqdn }}
+
+cache_credentials = {{ sssd_cache_credentials | bool | lower }}
+offline_credentials_expiration = {{ sssd_offline_credentials_expiration }}
+
+use_fully_qualified_names = {{ sssd_use_fully_qualified_names | bool | lower }}
+fallback_homedir = {{ sssd_home_dir_template }}
+default_shell = {{ sssd_default_shell }}
+enumerate = {{ sssd_enumerate_users | bool | lower }}

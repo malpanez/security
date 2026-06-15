@@ -1,0 +1,56 @@
+---
+argument_specs:
+  main:
+    short_description: Automated security patching
+    options:
+      automated_patching_enabled:
+        type: bool
+        default: false
+        description: >-
+          Gate variable. Set to true with security_mode=enforce to install and
+          configure the automated patching tool. Review tasks always run
+          regardless.
+      automated_patching_security_only:
+        type: bool
+        default: true
+        description: >-
+          When true, restrict automated updates to security packages only
+          (dnf-automatic upgrade_type=security on RedHat; security origin on
+          Debian). When false, allow all available updates.
+      automated_patching_apply_updates:
+        type: bool
+        default: true
+        description: >-
+          When true, downloaded updates are applied automatically. When false,
+          updates are only downloaded (download-only mode).
+      automated_patching_auto_reboot:
+        type: bool
+        default: false
+        description: >-
+          When true, automatically reboot after applying updates that require it.
+          Disabled by default to preserve controlled reboot windows.
+      automated_patching_reboot_time:
+        type: str
+        default: "02:00"
+        description: >-
+          Time of day (HH:MM) at which an automatic reboot is performed when
+          automated_patching_auto_reboot is true.
+      automated_patching_exclude_packages:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          List of package name patterns to exclude from automated updates
+          (e.g. ['kernel*'] to hold back kernel updates).
+      automated_patching_notify_email:
+        type: str
+        default: ""
+        description: >-
+          Email address to receive patching notifications. Empty string disables
+          email notifications.
+      automated_patching_random_sleep:
+        type: int
+        default: 3600
+        description: >-
+          Maximum random delay in seconds added to the patching timer to spread
+          load (timer jitter).

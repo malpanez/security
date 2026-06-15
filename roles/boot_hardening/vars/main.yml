@@ -1,0 +1,2 @@
+---
+# vars file for roles/boot_hardening (OS-specific values live in <os_family>.yml)

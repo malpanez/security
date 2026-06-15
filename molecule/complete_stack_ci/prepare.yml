@@ -6,13 +6,6 @@
   gather_facts: false
 
   tasks:
-    - name: Fix nsswitch.conf - remove sss entry to prevent PAM sudo failures in containers
-      raw: |
-        if [ -f /etc/nsswitch.conf ]; then
-          sed -i 's/ sss//g' /etc/nsswitch.conf
-        fi
-      changed_when: false
-
     - name: Install Python and base packages (runs as root in container)
       raw: |
         if command -v apt-get >/dev/null 2>&1; then
@@ -30,6 +23,13 @@
   gather_facts: false
 
   tasks:
+    - name: Fix Rocky 9 nsswitch for sudo/PAM in containers
+      ansible.builtin.replace:
+        path: /etc/nsswitch.conf
+        regexp: ' sss'
+        replace: ''
+      failed_when: false
+
     - name: Ensure SSH service is available
       ansible.builtin.service:
         name: sshd

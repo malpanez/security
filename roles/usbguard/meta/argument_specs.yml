@@ -1,0 +1,84 @@
+---
+argument_specs:
+  main:
+    short_description: USB device control with USBGuard
+    options:
+      usbguard_enabled:
+        type: bool
+        default: false
+        description: >-
+          Gate variable. Set to true with security_mode=enforce to install and
+          configure usbguard. Review tasks always run regardless.
+      usbguard_implicit_policy:
+        type: str
+        default: block
+        choices:
+          - allow
+          - block
+          - reject
+        description: >-
+          Policy applied to USB devices not matched by any explicit rule.
+          'block' prevents device use; 'reject' blocks and logs; 'allow'
+          permits all unmatched devices (not recommended for production).
+      usbguard_allow_existing_devices:
+        type: bool
+        default: true
+        description: >-
+          When true, usbguard generate-policy captures currently-attached
+          devices and writes them to 00-initial-policy.conf before the daemon
+          starts. Prevents operator lockout on first run.
+      usbguard_present_device_policy:
+        type: str
+        default: apply-policy
+        choices:
+          - allow
+          - block
+          - reject
+          - apply-policy
+          - keep
+        description: >-
+          Policy applied to USB devices present at daemon startup. 'apply-policy'
+          evaluates each device against the current ruleset.
+      usbguard_present_controller_policy:
+        type: str
+        default: apply-policy
+        choices:
+          - allow
+          - block
+          - reject
+          - apply-policy
+          - keep
+        description: >-
+          Policy applied to USB host controllers present at daemon startup.
+          'apply-policy' evaluates each controller against the current ruleset.
+      usbguard_restore_controller_state:
+        type: bool
+        default: false
+        description: >-
+          When true, the daemon restores the authorization state of USB host
+          controllers and their child devices after policy reload or daemon
+          restart.
+      usbguard_audit_backend:
+        type: str
+        default: LinuxAudit
+        choices:
+          - LinuxAudit
+          - FileAudit
+        description: >-
+          Audit backend to use for logging USB policy decisions. 'LinuxAudit'
+          sends events to the Linux audit subsystem; 'FileAudit' writes to the
+          file specified by usbguard_audit_file_path.
+      usbguard_audit_file_path:
+        type: str
+        default: /var/log/usbguard/usbguard-audit.log
+        description: >-
+          Path to the audit log file. Only used when usbguard_audit_backend
+          is set to 'FileAudit'.
+      usbguard_extra_rules:
+        type: list
+        elements: str
+        default: []
+        description: >-
+          Additional USBGuard rules to deploy to rules.d/10-extra-rules.conf.
+          Each list item is a single USBGuard rule string. Rules are written
+          in the order provided.

@@ -53,6 +53,9 @@ pam_mfa_u2f_keys_path: /etc/Yubico/u2f_keys
 pam_mfa_fido2_authfile: /etc/fido2/authorized_fido2
 pam_mfa_totp_dir: /etc/google-authenticator.d
 pam_mfa_sudo_substack_name: mfa-totp
+# Name of the MFA auth substack under /etc/pam.d/ that protected services include
+# via `auth substack <name>` (the PAM equivalent of a config drop-in).
+pam_mfa_substack_name: mfa
 pam_mfa_enable_faillock: false
 pam_mfa_faillock_profile_name: zz-local-faillock
 pam_mfa_faillock_deny: 5

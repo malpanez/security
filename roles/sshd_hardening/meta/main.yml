@@ -1,14 +1,31 @@
 ---
 galaxy_info:
   author: Miguel Alpañez
-  description: Harden OpenSSH server configuration with sane defaults and auth modes.
-  license: GPL-2.0-or-later
+  description: >-
+    Harden OpenSSH using a drop-in sshd_config.d/ file — never rewrites your main config.
+    Auto-selects modern/legacy algorithm profiles by OpenSSH version. Match blocks for
+    human vs service accounts. Auto-rollback on invalid config. Review and enforce modes.
+    Supports Debian/Ubuntu, RHEL/Rocky/Alma, SUSE/openSUSE.
+  license: Apache-2.0
   min_ansible_version: "2.16"
   platforms:
     - name: Debian
-      versions: [buster, bullseye, bookworm]
+      versions: [buster, bullseye, bookworm, trixie]
     - name: Ubuntu
-      versions: [bionic, focal, jammy]
+      versions: [bionic, focal, jammy, noble]
     - name: EL
       versions: [all]
+    - name: opensuse
+      versions: [all]
+  galaxy_tags:
+    - security
+    - hardening
+    - ssh
+    - openssh
+    - cis
+    - nist
+    - nis2
+    - stig
+    - compliance
+    - linux
 dependencies: []

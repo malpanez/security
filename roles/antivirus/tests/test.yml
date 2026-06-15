@@ -1,0 +1,6 @@
+---
+- name: Test antivirus role
+  hosts: all
+  become: true
+  roles:
+    - role: malpanez.security.antivirus

@@ -1,0 +1,66 @@
+---
+argument_specs:
+  main:
+    short_description: Local user account audit and lockout enforcement
+    options:
+      user_audit_enabled:
+        type: bool
+        default: false
+        description: >-
+          Gate variable. Set to true with security_mode=enforce to apply
+          enforcement tasks. Review tasks always run regardless.
+      user_audit_inactive_days:
+        type: int
+        default: 90
+        description: >-
+          Days since last login before an account is considered inactive.
+          Accounts exceeding this threshold are locked when user_audit_lock_inactive
+          is true and user_audit_enabled is true.
+      user_audit_max_password_age:
+        type: int
+        default: 90
+        description: >-
+          Maximum number of days between password changes (chage --maxdays).
+          PCI-DSS 8.3.6 requires passwords to be changed at least every 90 days.
+      user_audit_min_password_age:
+        type: int
+        default: 1
+        description: >-
+          Minimum number of days between password changes (chage --mindays).
+          Prevents users from immediately cycling through passwords.
+      user_audit_warn_days:
+        type: int
+        default: 14
+        description: >-
+          Number of days before password expiry to warn the user (chage --warndays).
+          Users receive a warning message upon login.
+      user_audit_lock_inactive:
+        type: bool
+        default: true
+        description: >-
+          When true and user_audit_enabled is true, enforce tasks lock accounts
+          that have been inactive beyond user_audit_inactive_days.
+      user_audit_set_password_expiry:
+        type: bool
+        default: true
+        description: >-
+          When true and user_audit_enabled is true, enforce tasks apply password
+          aging policy (max/min/warn days) to accounts that have no expiry set.
+      user_audit_fix_service_shells:
+        type: bool
+        default: false
+        description: >-
+          When true and user_audit_enabled is true, enforce tasks change interactive
+          shells of service accounts (UID >= 1000 not in skip_users that have a
+          login shell) to the OS nologin path.
+      user_audit_skip_users:
+        type: list
+        elements: str
+        default:
+          - root
+          - halt
+          - sync
+          - shutdown
+        description: >-
+          List of usernames that enforce tasks will never modify. These accounts
+          are excluded from locking, shell changes, and password expiry enforcement.

@@ -1,0 +1,30 @@
+---
+galaxy_info:
+  author: Miguel Alpanez
+  description: >-
+    USB device control with USBGuard. Installs usbguard, generates initial
+    device whitelist from attached hardware, deploys block-by-default policy
+    via usbguard-daemon.conf. Supports review mode (audit-only) and enforce
+    mode. PCI-DSS 12.3.4, HIPAA 164.310(d)(1), NIS2 Art.21, SOC2 CC6.7.
+  license: Apache-2.0
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - security
+    - hardening
+    - usbguard
+    - usb
+    - devicecontrol
+    - linux
+    - pcidss
+    - nis2
+    - soc2
+    - hipaa
+    - compliance
+  platforms:
+    - name: Debian
+      versions: [buster, bullseye, bookworm]
+    - name: Ubuntu
+      versions: [bionic, focal, jammy]
+    - name: EL
+      versions: [all]
+dependencies: []

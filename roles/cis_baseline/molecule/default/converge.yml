@@ -9,6 +9,18 @@
       changed_when: false
     - name: Gather facts
       ansible.builtin.setup:
+    - name: Update apt cache (Debian)
+      ansible.builtin.apt:
+        update_cache: true
+      when: ansible_facts['os_family'] == 'Debian'
+    - name: Install openssh-server
+      ansible.builtin.package:
+        name: openssh-server
+        state: present
+    - name: Generate SSH host keys so sshd -T can dump the effective config
+      ansible.builtin.command:
+        cmd: ssh-keygen -A
+        creates: /etc/ssh/ssh_host_ed25519_key
   vars:
     cis_baseline_enabled: true
     cis_baseline_mode: enforce

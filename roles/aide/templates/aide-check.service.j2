@@ -1,0 +1,15 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=AIDE File Integrity Check
+After=local-fs.target
+Documentation=man:aide(1)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/aide --check --config={{ aide_config_file }}
+StandardOutput=append:{{ aide_log_dir }}/aide-check.log
+StandardError=append:{{ aide_log_dir }}/aide-check.log
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths={{ aide_log_dir }}

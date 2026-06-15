@@ -1,0 +1,17 @@
+---
+grype_scanner_enabled: false
+
+grype_version: "0.111.0"
+grype_install_dir: /usr/local/bin
+grype_config_dir: /etc/grype
+grype_db_dir: /var/lib/grype/db
+grype_log_dir: /var/log/grype
+
+grype_severity_fail: high
+grype_output_format: table
+grype_ignore_unfixed: false
+grype_scanner_update_db: true
+
+grype_scan_targets: []
+grype_scheduled_scan: false
+grype_scan_schedule: "0 3 * * *"

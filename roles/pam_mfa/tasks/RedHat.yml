@@ -31,13 +31,29 @@
     - pam_mfa_primary_module == 'fido2'
   tags: [enforce]
 
-- name: RedHat | Apply authselect profile if available
-  community.general.authselect:
-    profile: "{{ pam_mfa_rhel_authselect_profile }}"
-    features: "{{ pam_mfa_rhel_authselect_features }}"
-    state: present
+# community.general has no `authselect` module, so drive the CLI directly.
+- name: RedHat | Read current authselect profile
+  ansible.builtin.command: authselect current --raw
+  register: _pam_mfa_authselect_current
+  changed_when: false
+  failed_when: false
   when:
     - pam_mfa_should_configure | default(false)
     - security_mode | default('enforce') == 'enforce'
     - pam_mfa_authselect_pkg is not failed
+  tags: [enforce]
+
+- name: RedHat | Apply authselect profile if available
+  ansible.builtin.command:
+    cmd: >-
+      authselect select {{ pam_mfa_rhel_authselect_profile }}
+      {{ pam_mfa_rhel_authselect_features | default([]) | join(' ') }} --force
+  register: _pam_mfa_authselect_apply
+  changed_when: _pam_mfa_authselect_apply.rc == 0
+  failed_when: false
+  when:
+    - pam_mfa_should_configure | default(false)
+    - security_mode | default('enforce') == 'enforce'
+    - pam_mfa_authselect_pkg is not failed
+    - pam_mfa_rhel_authselect_profile not in (_pam_mfa_authselect_current.stdout | default(''))
   tags: [enforce]

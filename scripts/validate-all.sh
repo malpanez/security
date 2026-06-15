@@ -17,6 +17,7 @@ PASSED=0
 
 tmp_dir=$(mktemp -d -t validate-all.XXXXXX)
 cleanup() {
+    # shellcheck disable=SC2317  # invoked via 'trap ... EXIT'
     rm -rf "${tmp_dir}"
 }
 trap cleanup EXIT

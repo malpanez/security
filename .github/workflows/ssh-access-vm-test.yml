@@ -1,0 +1,330 @@
+---
+name: SSH Access Control - VM Tests
+
+# Containers cannot test sshd reload/restart, sudoers validation with real
+# visudo, or pam_access enforcement with a running PAM stack.
+# This workflow runs directly on GitHub-hosted Ubuntu VMs (real sshd, real
+# sudoers, real pam_access) to validate sssd_ad_integration without a DC.
+#
+# What is NOT tested here (requires a real AD domain controller):
+#   - SSSD AD join (realm join / adcli)
+#   - getent group resolving real AD groups
+#   - Kerberos ticket acquisition
+#
+# Local groups simulate AD group membership for structural validation.
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "roles/sssd_ad_integration/**"
+      - "playbooks/ssh-access-vm-test.yml"
+      - ".github/workflows/ssh-access-vm-test.yml"
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "roles/sssd_ad_integration/**"
+      - "playbooks/ssh-access-vm-test.yml"
+      - ".github/workflows/ssh-access-vm-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+jobs:
+  ssh-access-vm:
+    name: "SSH access control on ${{ matrix.runner }}"
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - ubuntu-22.04
+          - ubuntu-24.04
+
+    env:
+      PYTHONUNBUFFERED: "1"
+      PY_COLORS: "1"
+      ANSIBLE_FORCE_COLOR: "1"
+      ANSIBLE_CONFIG: ansible.cfg
+      ANSIBLE_STDOUT_CALLBACK: default
+      ANSIBLE_RESULT_FORMAT: yaml
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible and dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Install Ansible Galaxy collections
+        run: |
+          ansible-galaxy collection install -r requirements.yml
+          ansible-galaxy collection install . -p .ansible/collections
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
+      - name: Show OS and sshd info
+        run: |
+          uname -r
+          cat /etc/os-release
+          sshd -V 2>&1 || true
+          systemctl status ssh sshd --no-pager 2>/dev/null | head -10 || true
+
+      - name: Create local inventory
+        run: |
+          mkdir -p test-inventory
+          cat > test-inventory/hosts << 'EOF'
+          [local]
+          localhost ansible_connection=local ansible_python_interpreter=/usr/bin/python3
+          EOF
+
+      # ── prerequisite: local groups simulating AD groups ────────────────────
+
+      - name: Create local groups simulating AD groups (no real DC required)
+        run: |
+          set -euo pipefail
+          for grp in linux-admins linux-users linux-service linux-readonly ansible-deploy; do
+            getent group "$grp" >/dev/null 2>&1 || sudo groupadd "$grp"
+            echo "OK: group $grp"
+          done
+
+      - name: Create test users in each simulated AD group
+        run: |
+          set -euo pipefail
+          for grp in linux-admins linux-users linux-service linux-readonly; do
+            user="testuser-${grp}"
+            id "$user" >/dev/null 2>&1 || sudo useradd -m -s /bin/bash -G "$grp" "$user"
+            echo "OK: user $user in group $grp"
+          done
+
+      - name: Ensure sshd_config.d directory and Include directive
+        run: |
+          set -euo pipefail
+          sudo mkdir -p /etc/ssh/sshd_config.d
+          if ! grep -qE '^[[:space:]]*Include[[:space:]]+/etc/ssh/sshd_config\.d/\*\.conf' /etc/ssh/sshd_config; then
+            sudo sed -i '1s|^|Include /etc/ssh/sshd_config.d/*.conf\n|' /etc/ssh/sshd_config
+          fi
+          sudo mkdir -p /run/sshd
+          sudo sshd -t
+          echo "OK: sshd_config baseline valid"
+
+      # ── sssd_ad_integration: enforce ──────────────────────────────────────
+
+      - name: "Enforce sssd_ad_integration (sshd zones + sudoers + pam + verify_groups)"
+        run: |
+          ansible-playbook -i test-inventory/hosts \
+            -e "security_mode=enforce" \
+            -e "sssd_ad_configure=false" \
+            -e "sssd_ad_domain=example.com" \
+            -e "sssd_ad_realm=EXAMPLE.COM" \
+            -e "ssh_backup_config=false" \
+            -e "ssh_local_fallback_group=ansible-deploy" \
+            -e "ssh_verify_ad_groups=true" \
+            -e "ssh_verify_ad_groups_strict=true" \
+            -e "ssh_service_allowed_sources=['10.10.5.10']" \
+            -e "ansible_python_interpreter=/usr/bin/python3" \
+            playbooks/ssh-access-vm-test.yml \
+            --tags sssd_ad_integration
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
+      # ── structural verification ────────────────────────────────────────────
+
+      - name: "Verify sshd -t passes after drop-ins deployed"
+        run: |
+          set -euo pipefail
+          sudo mkdir -p /run/sshd
+          sudo sshd -t && echo "OK: sshd -t passed"
+
+      - name: "Verify all six sshd drop-in files exist with mode 0600"
+        run: |
+          set -euo pipefail
+          FAIL=0
+          for f in \
+            20-access-control.conf \
+            30-network-zones.conf \
+            40-group-admins.conf \
+            41-group-users.conf \
+            42-group-service.conf \
+            43-group-readonly.conf; do
+            path="/etc/ssh/sshd_config.d/$f"
+            if [ ! -f "$path" ]; then
+              echo "FAIL: $path not found"
+              FAIL=1
+              continue
+            fi
+            perms=$(stat -c '%a %U %G' "$path")
+            if [ "$perms" != "600 root root" ]; then
+              echo "FAIL: $path perms=$perms (expected 600 root root)"
+              FAIL=1
+            else
+              echo "OK:   $path ($perms)"
+            fi
+          done
+          [ $FAIL -eq 0 ] || exit 1
+
+      - name: "Verify AllowGroups contains all expected groups"
+        run: |
+          set -euo pipefail
+          FAIL=0
+          for grp in linux-admins linux-users linux-service linux-readonly ansible-deploy; do
+            if grep -r "AllowGroups" /etc/ssh/sshd_config.d/ | grep -q "$grp"; then
+              echo "OK:   AllowGroups contains $grp"
+            else
+              echo "FAIL: AllowGroups missing $grp"
+              FAIL=1
+            fi
+          done
+          [ $FAIL -eq 0 ] || exit 1
+
+      - name: "Verify 30-network-zones.conf has Match Address blocks"
+        run: |
+          set -euo pipefail
+          COUNT=$(grep -c 'Match Address' /etc/ssh/sshd_config.d/30-network-zones.conf)
+          echo "Match Address blocks: $COUNT"
+          [ "$COUNT" -ge 2 ] || { echo "FAIL: expected at least 2 Match Address blocks"; exit 1; }
+          echo "OK"
+
+      - name: "Verify 43-group-readonly.conf has ChrootDirectory + ForceCommand internal-sftp"
+        run: |
+          set -euo pipefail
+          FAIL=0
+          grep -q 'ChrootDirectory' /etc/ssh/sshd_config.d/43-group-readonly.conf || { echo "FAIL: ChrootDirectory missing"; FAIL=1; }
+          grep -q 'ForceCommand internal-sftp' /etc/ssh/sshd_config.d/43-group-readonly.conf || { echo "FAIL: ForceCommand internal-sftp missing"; FAIL=1; }
+          [ $FAIL -eq 0 ] && echo "OK: readonly drop-in correct"
+          [ $FAIL -eq 0 ] || exit 1
+
+      - name: "Verify ChrootDirectory exists with root:root 0755"
+        run: |
+          set -euo pipefail
+          DIR=/data/readonly
+          [ -d "$DIR" ] || { echo "FAIL: $DIR not created"; exit 1; }
+          perms=$(stat -c '%a %U %G' "$DIR")
+          [ "$perms" = "755 root root" ] || { echo "FAIL: $DIR perms=$perms (expected 755 root root)"; exit 1; }
+          echo "OK: $DIR ($perms)"
+
+      - name: "Verify sudoers drop-ins pass visudo -cf"
+        run: |
+          set -euo pipefail
+          FAIL=0
+          for f in /etc/sudoers.d/50-linux-admins /etc/sudoers.d/51-linux-users; do
+            if [ ! -f "$f" ]; then
+              echo "FAIL: $f not found"
+              FAIL=1
+              continue
+            fi
+            if visudo -cf "$f"; then
+              echo "OK:   $f"
+            else
+              echo "FAIL: $f failed visudo -cf"
+              FAIL=1
+            fi
+          done
+          # linux-service and linux-readonly must NOT have sudoers files (fail closed)
+          for f in /etc/sudoers.d/52-linux-service /etc/sudoers.d/53-linux-readonly; do
+            if [ -f "$f" ]; then
+              echo "FAIL: $f should not exist (fail-closed principle)"
+              FAIL=1
+            else
+              echo "OK:   $f absent (correct)"
+            fi
+          done
+          [ $FAIL -eq 0 ] || exit 1
+
+      - name: "Verify pam_access.conf has expected entries and catch-all deny"
+        run: |
+          set -euo pipefail
+          FAIL=0
+          ACCESS=/etc/security/access.conf
+          [ -f "$ACCESS" ] || { echo "FAIL: $ACCESS not found"; exit 1; }
+          for grp in linux-admins linux-users linux-service linux-readonly; do
+            if grep -q "@${grp}" "$ACCESS"; then
+              echo "OK:   @${grp} in $ACCESS"
+            else
+              echo "FAIL: @${grp} missing from $ACCESS"
+              FAIL=1
+            fi
+          done
+          if grep -q '^-:ALL:ALL' "$ACCESS"; then
+            echo "OK:   catch-all deny present"
+          else
+            echo "FAIL: catch-all deny '-:ALL:ALL' missing — pam_access would fail open"
+            FAIL=1
+          fi
+          [ $FAIL -eq 0 ] || exit 1
+
+      - name: "Verify sshd service is running after role"
+        run: |
+          set -euo pipefail
+          systemctl is-active --quiet ssh || systemctl is-active --quiet sshd || {
+            echo "FAIL: sshd not running after role application"
+            exit 1
+          }
+          echo "OK: sshd running"
+
+      # ── idempotency ────────────────────────────────────────────────────────
+
+      - name: "Idempotency check — second run must have 0 changes"
+        run: |
+          set -euo pipefail
+          OUTPUT=$(ansible-playbook -i test-inventory/hosts \
+            -e "security_mode=enforce" \
+            -e "sssd_ad_configure=false" \
+            -e "sssd_ad_domain=example.com" \
+            -e "sssd_ad_realm=EXAMPLE.COM" \
+            -e "ssh_backup_config=false" \
+            -e "ssh_local_fallback_group=ansible-deploy" \
+            -e "ssh_verify_ad_groups=true" \
+            -e "ssh_verify_ad_groups_strict=true" \
+            -e "ssh_service_allowed_sources=['10.10.5.10']" \
+            -e "ansible_python_interpreter=/usr/bin/python3" \
+            playbooks/ssh-access-vm-test.yml \
+            --tags sssd_ad_integration 2>&1)
+          echo "$OUTPUT"
+          CHANGED=$(echo "$OUTPUT" | awk '/PLAY RECAP/,0' | grep -oP 'changed=\K[0-9]+' | awk '{s+=$1} END {print s+0}')
+          echo "Total changed tasks in second run: $CHANGED"
+          if [ "${CHANGED:-0}" -gt 0 ]; then
+            echo "IDEMPOTENCY VIOLATION: $CHANGED task(s) changed on second run"
+            exit 1
+          fi
+          echo "OK: idempotency confirmed"
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/.ansible/collections
+
+  summary:
+    name: "SSH access control VM tests — summary"
+    needs: [ssh-access-vm]
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    if: always()
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Check all VM jobs passed
+        run: |
+          if [ "${{ needs.ssh-access-vm.result }}" != "success" ]; then
+            echo "FAIL: ssh-access-vm job failed"
+            exit 1
+          fi
+          echo "OK: all SSH access control VM tests passed"

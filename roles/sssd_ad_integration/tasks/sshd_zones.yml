@@ -1,0 +1,155 @@
+---
+- name: Sshd_zones | Detect SSH service name
+  ansible.builtin.service_facts:
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Resolve SSH service name
+  ansible.builtin.set_fact:
+    _sssd_ad_sshd_service_name: >-
+      {{ 'ssh' if 'ssh.service' in ansible_facts.services else 'sshd' }}
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Ensure sshd_config.d directory exists
+  ansible.builtin.file:
+    path: "{{ sshd_config_d_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Deploy 20-access-control.conf (AllowGroups whitelist)
+  ansible.builtin.template:
+    src: sshd/20-access-control.conf.j2
+    dest: "{{ sshd_config_d_path }}/20-access-control.conf"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: reload sshd
+  when: security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Deploy 30-network-zones.conf (Match Address blocks)
+  ansible.builtin.template:
+    src: sshd/30-network-zones.conf.j2
+    dest: "{{ sshd_config_d_path }}/30-network-zones.conf"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: reload sshd
+  when: security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Deploy 40-group-admins.conf
+  ansible.builtin.template:
+    src: sshd/40-group-admins.conf.j2
+    dest: "{{ sshd_config_d_path }}/40-group-admins.conf"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: reload sshd
+  when:
+    - ssh_enable_group_admins | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Remove 40-group-admins.conf when disabled
+  ansible.builtin.file:
+    path: "{{ sshd_config_d_path }}/40-group-admins.conf"
+    state: absent
+  notify: reload sshd
+  when: not (ssh_enable_group_admins | bool)
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Deploy 41-group-users.conf
+  ansible.builtin.template:
+    src: sshd/41-group-users.conf.j2
+    dest: "{{ sshd_config_d_path }}/41-group-users.conf"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: reload sshd
+  when:
+    - ssh_enable_group_users | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Remove 41-group-users.conf when disabled
+  ansible.builtin.file:
+    path: "{{ sshd_config_d_path }}/41-group-users.conf"
+    state: absent
+  notify: reload sshd
+  when: not (ssh_enable_group_users | bool)
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Deploy 42-group-service.conf
+  ansible.builtin.template:
+    src: sshd/42-group-service.conf.j2
+    dest: "{{ sshd_config_d_path }}/42-group-service.conf"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: reload sshd
+  when:
+    - ssh_enable_group_service | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Remove 42-group-service.conf when disabled
+  ansible.builtin.file:
+    path: "{{ sshd_config_d_path }}/42-group-service.conf"
+    state: absent
+  notify: reload sshd
+  when: not (ssh_enable_group_service | bool)
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Deploy 43-group-readonly.conf
+  ansible.builtin.template:
+    src: sshd/43-group-readonly.conf.j2
+    dest: "{{ sshd_config_d_path }}/43-group-readonly.conf"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: reload sshd
+  when:
+    - ssh_enable_group_readonly | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Remove 43-group-readonly.conf when disabled
+  ansible.builtin.file:
+    path: "{{ sshd_config_d_path }}/43-group-readonly.conf"
+    state: absent
+  notify: reload sshd
+  when: not (ssh_enable_group_readonly | bool)
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Ensure ChrootDirectory exists with correct ownership
+  ansible.builtin.file:
+    path: "{{ ssh_chroot_base }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - ssh_enable_group_readonly | bool
+    - security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Validate sshd configuration
+  ansible.builtin.command:
+    cmd: "{{ sshd_binary_path }} -t"
+  register: _sssd_ad_sshd_validate
+  changed_when: false
+  failed_when: _sssd_ad_sshd_validate.rc != 0
+  when: security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]
+
+- name: Sshd_zones | Ensure sshd service is running
+  ansible.builtin.service:
+    name: "{{ _sssd_ad_sshd_service_name | default('sshd') }}"
+    state: started
+    enabled: true
+  when: security_mode | default('review') == 'enforce'
+  tags: [sshd, ssh, access-control]

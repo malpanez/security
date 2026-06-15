@@ -1,0 +1,133 @@
+---
+- name: Enforce | USB bus not found - skipping enforcement
+  ansible.builtin.debug:
+    msg: "USB bus not found at /sys/bus/usb/devices - skipping usbguard enforcement (container or USB-less host)"
+  when: not _usbguard_usb_available | bool
+  tags: [usbguard, enforce]
+
+- name: Enforce | End host when USB bus absent
+  ansible.builtin.meta: end_host
+  when: not _usbguard_usb_available | bool
+  tags: [usbguard, enforce]
+
+- name: Enforce | Install EPEL (RHEL 8)
+  ansible.builtin.dnf:
+    name: >-
+      https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{
+      ansible_distribution_major_version }}.noarch.rpm
+    state: present
+  when:
+    - ansible_os_family == 'RedHat'
+    - _usbguard_needs_epel | bool
+  tags: [usbguard, enforce, install]
+
+- name: Enforce | Install usbguard (Debian)
+  ansible.builtin.apt:
+    name: "{{ _usbguard_package }}"
+    state: present
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+  tags: [usbguard, enforce, install]
+
+- name: Enforce | Install usbguard (RedHat)
+  ansible.builtin.dnf:
+    name: "{{ _usbguard_package }}"
+    state: present
+  when: ansible_os_family == 'RedHat'
+  tags: [usbguard, enforce, install]
+
+- name: Enforce | Install usbguard (Suse)
+  community.general.zypper:
+    name: "{{ _usbguard_package }}"
+    state: present
+  when: ansible_os_family == 'Suse'
+  tags: [usbguard, enforce, install]
+
+- name: Enforce | Create rules directory
+  ansible.builtin.file:
+    path: "{{ _usbguard_rules_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  tags: [usbguard, enforce, configure]
+
+- name: Enforce | Check for existing initial rules
+  ansible.builtin.stat:
+    path: "{{ _usbguard_initial_rules }}"
+  register: _usbguard_rules_existing
+  tags: [usbguard, enforce, configure]
+
+- name: Enforce | Generate policy for existing devices
+  ansible.builtin.command:
+    cmd: usbguard generate-policy
+  register: _usbguard_generated_policy
+  changed_when: false
+  when:
+    - usbguard_allow_existing_devices | bool
+    - not _usbguard_rules_existing.stat.exists
+  tags: [usbguard, enforce, configure]
+
+- name: Enforce | Write initial policy file
+  ansible.builtin.copy:
+    content: "{{ _usbguard_generated_policy.stdout }}\n"
+    dest: "{{ _usbguard_initial_rules }}"
+    owner: root
+    group: root
+    mode: "0640"
+  when:
+    - usbguard_allow_existing_devices | bool
+    - not _usbguard_rules_existing.stat.exists
+    - _usbguard_generated_policy.stdout is defined
+    - _usbguard_generated_policy.stdout | length > 0
+  tags: [usbguard, enforce, configure]
+
+- name: Enforce | Write extra rules file
+  ansible.builtin.copy:
+    content: "{{ usbguard_extra_rules | join('\n') }}\n"
+    dest: "{{ _usbguard_rules_dir }}/10-extra-rules.conf"
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Restart usbguard
+  when: usbguard_extra_rules | length > 0
+  tags: [usbguard, enforce, configure]
+
+- name: Enforce | Deploy usbguard-daemon.conf
+  ansible.builtin.template:
+    src: usbguard-daemon.conf.j2
+    dest: "{{ _usbguard_daemon_conf }}"
+    owner: root
+    group: root
+    mode: "0600"
+    backup: true
+  notify: Restart usbguard
+  tags: [usbguard, enforce, configure]
+
+- name: Enforce | Enable and start usbguard
+  ansible.builtin.service:
+    name: "{{ _usbguard_service }}"
+    state: started
+    enabled: true
+  tags: [usbguard, enforce, service]
+
+- name: Enforce | Verify usbguard is active
+  ansible.builtin.command:
+    cmd: "systemctl is-active {{ _usbguard_service }}"
+  changed_when: false
+  register: _usbguard_verify_active
+  tags: [usbguard, enforce, verify]
+
+- name: Enforce | Assert usbguard is active
+  ansible.builtin.assert:
+    that: _usbguard_verify_active.stdout == 'active'
+    fail_msg: "usbguard service is not active after enforcement"
+  tags: [usbguard, enforce, verify]
+
+- name: Enforce | Report enforcement complete
+  ansible.builtin.debug:
+    msg: >-
+      usbguard enforcement complete: service active,
+      ImplicitPolicyTarget={{ usbguard_implicit_policy }},
+      rules_dir={{ _usbguard_rules_dir }}
+  tags: [usbguard, enforce, verify]

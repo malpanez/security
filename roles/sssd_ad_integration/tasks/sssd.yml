@@ -1,0 +1,137 @@
+---
+- name: Sssd | Install required packages (RedHat — AD)
+  ansible.builtin.package:
+    name:
+      - sssd
+      - sssd-ad
+      - sssd-tools
+      - adcli
+      - realmd
+      - krb5-workstation
+      - oddjob
+      - oddjob-mkhomedir
+    state: present
+  when:
+    - ansible_facts['os_family'] == 'RedHat'
+    - ssh_identity_backend == 'ad'
+  tags: [sshd, ssh, access-control]
+
+- name: Sssd | Install required packages (RedHat — IPA)
+  ansible.builtin.package:
+    name:
+      - sssd
+      - sssd-ipa
+      - sssd-tools
+      - ipa-client
+      - oddjob
+      - oddjob-mkhomedir
+    state: present
+  when:
+    - ansible_facts['os_family'] == 'RedHat'
+    - ssh_identity_backend == 'ipa'
+  tags: [sshd, ssh, access-control]
+
+- name: Sssd | Install required packages (Debian — AD)
+  ansible.builtin.apt:
+    name:
+      - sssd
+      - sssd-ad
+      - sssd-tools
+      - adcli
+      - realmd
+      - krb5-user
+      - libpam-sss
+      - libnss-sss
+      - packagekit
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - ssh_identity_backend == 'ad'
+  tags: [sshd, ssh, access-control]
+
+- name: Sssd | Install required packages (Debian — IPA)
+  ansible.builtin.apt:
+    name:
+      - sssd
+      - sssd-ipa
+      - sssd-tools
+      - freeipa-client
+      - libpam-sss
+      - libnss-sss
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - ssh_identity_backend == 'ipa'
+  tags: [sshd, ssh, access-control]
+
+- name: Sssd | Ensure /etc/sssd directory exists
+  ansible.builtin.file:
+    path: /etc/sssd
+    state: directory
+    owner: root
+    group: root
+    mode: "0711"
+  tags: [sshd, ssh, access-control]
+
+- name: Sssd | Deploy sssd.conf (AD backend)
+  ansible.builtin.template:
+    src: sssd.conf.j2
+    dest: /etc/sssd/sssd.conf
+    owner: root
+    group: root
+    mode: "0600"
+  notify: restart sssd
+  when: ssh_identity_backend == 'ad'
+  tags: [sshd, ssh, access-control]
+
+- name: Sssd | Deploy sssd.conf (IPA backend)
+  ansible.builtin.template:
+    src: sssd-ipa.conf.j2
+    dest: /etc/sssd/sssd.conf
+    owner: root
+    group: root
+    mode: "0600"
+  notify: restart sssd
+  when: ssh_identity_backend == 'ipa'
+  tags: [sshd, ssh, access-control]
+
+- name: Sssd | Ensure sssd service is enabled and running
+  ansible.builtin.service:
+    name: sssd
+    state: started
+    enabled: true
+  tags: [sshd, ssh, access-control]
+
+- name: Sssd | Enable oddjobd for home directory creation (RedHat)
+  ansible.builtin.service:
+    name: oddjobd
+    state: started
+    enabled: true
+  when: ansible_facts['os_family'] == 'RedHat'
+  failed_when: false
+  tags: [sshd, ssh, access-control]
+
+- name: Sssd | Check if pam_mkhomedir already active (Debian)
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail &&
+      grep -r pam_mkhomedir.so /etc/pam.d/ 2>/dev/null | grep -v '^#'
+    executable: /bin/bash
+  register: _sssd_mkhomedir_check
+  changed_when: false
+  failed_when: false
+  when: ansible_facts['os_family'] == 'Debian'
+  tags: [sshd, ssh, access-control]
+
+- name: Sssd | Enable pam_mkhomedir for auto home creation (Debian)
+  ansible.builtin.command:
+    cmd: pam-auth-update --enable mkhomedir
+  changed_when: true
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - _sssd_mkhomedir_check.stdout | length == 0
+  tags: [sshd, ssh, access-control]

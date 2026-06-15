@@ -1,0 +1,19 @@
+---
+- name: Restart clamd
+  ansible.builtin.systemd:
+    name: "{{ antivirus_clamd_service }}"
+    state: restarted
+  changed_when: true
+  when: not _antivirus_in_container | bool
+
+- name: Restart freshclam
+  ansible.builtin.systemd:
+    name: "{{ antivirus_freshclam_service }}"
+    state: restarted
+  changed_when: true
+  when: not _antivirus_in_container | bool
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  changed_when: true

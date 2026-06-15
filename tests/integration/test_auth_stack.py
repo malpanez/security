@@ -13,8 +13,6 @@ COMPLEXITY: HIGH
 - Requires sudo configuration
 - Tests real authentication flows
 """
-import pytest
-import time
 
 
 class TestPAMSSHIntegration:

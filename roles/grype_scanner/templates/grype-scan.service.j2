@@ -1,0 +1,12 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=Grype vulnerability scan
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart={{ grype_install_dir }}/grype dir:/ --config {{ grype_config_dir }}/config.yaml
+StandardOutput=append:{{ grype_log_dir }}/scan.log
+StandardError=append:{{ grype_log_dir }}/scan.log
+Environment=GRYPE_DB_CACHE_DIR={{ grype_db_dir }}

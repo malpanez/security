@@ -1,0 +1,28 @@
+# Managed by Ansible — malpanez.security.automated_patching
+# Do not edit manually.
+
+[commands]
+upgrade_type = {{ 'security' if automated_patching_security_only else 'default' }}
+random_sleep = {{ automated_patching_random_sleep }}
+download_updates = yes
+apply_updates = {{ 'yes' if automated_patching_apply_updates else 'no' }}
+reboot = {{ 'when-needed' if automated_patching_auto_reboot else 'never' }}
+{% if automated_patching_exclude_packages %}
+exclude = {{ automated_patching_exclude_packages | join(' ') }}
+{% endif %}
+
+[emitters]
+{% if automated_patching_notify_email %}
+emit_via = email
+{% else %}
+emit_via = stdio
+{% endif %}
+
+[email]
+{% if automated_patching_notify_email %}
+email_to = {{ automated_patching_notify_email }}
+email_from = root
+{% endif %}
+
+[base]
+debuglevel = 1

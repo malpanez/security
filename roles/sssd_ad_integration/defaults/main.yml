@@ -1,0 +1,171 @@
+---
+# ---------------------------------------------------------------------------
+# Identity backend — controls how groups are resolved and whether SSSD is
+# configured. The sshd/sudoers/pam layers are backend-agnostic: they only
+# reference group names and don't care how those groups are populated.
+#
+#   ad    — Active Directory via SSSD (id_provider=ad, ldap_id_mapping=true).
+#            Does NOT require Unix extensions / NIS schema in AD.
+#            Requires: sssd_ad_domain, sssd_ad_realm.
+#
+#   ipa   — FreeIPA / Red Hat Identity Management via SSSD (id_provider=ipa).
+#            Groups have POSIX attributes natively — no schema extensions needed.
+#            Requires: sssd_ipa_domain.
+#
+#   local — No SSSD. Groups come from /etc/group only. Use for standalone
+#           hosts, hosts not joined to any directory, or environments where
+#           SSSD is managed separately (set sssd_ad_configure=false to keep
+#           backward compatibility).
+# ---------------------------------------------------------------------------
+ssh_identity_backend: "ad"
+
+# ---------------------------------------------------------------------------
+# Group names — must match group sAMAccountNames (AD/IPA) or local group
+# names (/etc/group). The role does not create groups; they must exist before
+# AllowGroups is enforced.
+# ---------------------------------------------------------------------------
+ssh_ad_groups:
+  admins: "linux-admins"
+  users: "linux-users"
+  service: "linux-service"
+  readonly: "linux-readonly"
+
+# Local group always included in AllowGroups regardless of backend state.
+# Set to the primary group of your Ansible deploy user to prevent lockout.
+# With ssh_identity_backend=local this should also be the deploy user's group.
+ssh_local_fallback_group: ""
+
+# ---------------------------------------------------------------------------
+# Network zone CIDR ranges.  Empty string = disabled (no Match block written).
+# ---------------------------------------------------------------------------
+ssh_network_zones:
+  corp: "10.10.0.0/16"
+  vpn: "10.8.0.0/24"
+  bastion: ""
+
+# Require MFA (publickey + keyboard-interactive) even from corporate LAN.
+# Default false preserves backward compatibility. Set true to close AUDIT-CRIT-01:
+# without this, Match Address corp (file 30) sets AuthenticationMethods publickey,
+# which wins over Match Group linux-admins (file 40) publickey,keyboard-interactive
+# due to sshd first-occurrence-wins rule.
+ssh_corp_require_mfa: false
+
+# ---------------------------------------------------------------------------
+# sshd drop-in directory (must match sshd_hardening_config_dir if used together).
+# ---------------------------------------------------------------------------
+sshd_config_d_path: "/etc/ssh/sshd_config.d"
+sshd_binary_path: "/usr/sbin/sshd"
+
+# Back up all drop-ins before writing new ones.
+ssh_backup_config: true
+
+# ---------------------------------------------------------------------------
+# Toggle per-group sshd drop-in files.
+# Disabling removes the Match Group block and skips pam_access + sudoers too.
+# ---------------------------------------------------------------------------
+ssh_enable_group_admins: true
+ssh_enable_group_users: true
+ssh_enable_group_service: true
+ssh_enable_group_readonly: true
+
+# ---------------------------------------------------------------------------
+# ChrootDirectory for linux-readonly.
+# MUST be owned root:root mode 0755. NOT writable by the chrooted user.
+# The role creates this directory and enforces ownership/permissions.
+# ---------------------------------------------------------------------------
+ssh_chroot_base: "/data/readonly"
+
+# ---------------------------------------------------------------------------
+# Service group: source IPs/networks allowed by pam_access.
+# Empty list = linux-service connections denied by catch-all rule.
+# ---------------------------------------------------------------------------
+ssh_service_allowed_sources: []
+
+# ---------------------------------------------------------------------------
+# sudoers configuration.
+# linux-service and linux-readonly get NO sudoers entry (fail closed).
+# ---------------------------------------------------------------------------
+ssh_sudoers_admins_timestamp_timeout: 15
+
+ssh_sudoers_users_nopasswd_commands:
+  - "/usr/bin/systemctl status *"
+  - "/usr/bin/journalctl"
+  - "/usr/bin/journalctl -u *"
+
+ssh_sudoers_users_passwd_commands:
+  - "/usr/bin/systemctl restart *"
+  - "/usr/bin/systemctl start *"
+  - "/usr/bin/systemctl stop *"
+  - "/usr/bin/systemctl reload *"
+
+# ---------------------------------------------------------------------------
+# PAM access control (/etc/security/access.conf).
+# Independent of sshd_config — enforced even if sshd is misconfigured.
+# Requires pam_access.so in /etc/pam.d/sshd (distro-dependent).
+# ---------------------------------------------------------------------------
+ssh_pam_access_configure: true
+ssh_pam_access_file: "/etc/security/access.conf"
+# Activate pam_access.so in the PAM sshd stack after deploying access.conf.
+# Set false if PAM is managed externally (e.g. authselect profile, Puppet).
+ssh_pam_access_activate: true
+
+# ---------------------------------------------------------------------------
+# SSSD — Active Directory (ssh_identity_backend: ad)
+# sssd_ad_domain and sssd_ad_realm are REQUIRED when backend=ad.
+#
+# Note on Unix extensions: ldap_id_mapping=true derives UID/GID from the AD
+# SID algorithmically. No RFC 2307 / NIS schema extensions required.
+# Microsoft removed NIS extensions from Server 2016+ UI — this is the correct
+# modern approach regardless of AD version.
+# ---------------------------------------------------------------------------
+sssd_ad_configure: true  # kept for backward compat; derived from ssh_identity_backend
+
+sssd_ad_domain: ""       # REQUIRED for backend=ad — e.g. "corp.example.com"
+sssd_ad_realm: ""        # REQUIRED for backend=ad — e.g. "CORP.EXAMPLE.COM"
+sssd_ad_server: "_srv_"  # DNS SRV lookup by default
+
+sssd_cache_credentials: true
+# Days cached credentials remain valid when AD is unreachable.
+# 0 = no expiry (AUDIT-HIGH-01 risk: disabled AD accounts authenticate indefinitely).
+# 7 = credentials expire after 7 days offline. Adjust per site availability needs.
+sssd_offline_credentials_expiration: 7
+sssd_enumerate_users: false
+sssd_use_fully_qualified_names: false   # login as 'user' not 'user@domain'
+sssd_ldap_id_mapping: true             # SID→UID/GID mapping, no schema extensions
+sssd_home_dir_template: "/home/%u"
+sssd_default_shell: "/bin/bash"
+sssd_access_filter: ""  # optional LDAP filter, single-line only (INI format)
+
+# ---------------------------------------------------------------------------
+# SSSD — FreeIPA / Red Hat Identity Management (ssh_identity_backend: ipa)
+# sssd_ipa_domain is REQUIRED when backend=ipa.
+#
+# Groups in IPA have POSIX attributes natively (gidNumber, memberUid).
+# No schema extensions needed. sudo_provider=sssd keeps rules in sudoers.d
+# (same as AD design) rather than in IPA's sudo schema.
+# If you want IPA HBAC rules to gate SSH access, set sssd_ipa_access_provider
+# to 'ipa' and create HBAC rules in IPA for ssh service on these hosts.
+# ---------------------------------------------------------------------------
+sssd_ipa_domain: ""        # REQUIRED for backend=ipa — e.g. "ipa.example.com"
+sssd_ipa_server: "_srv_"   # IPA server, or "_srv_" for DNS SRV lookup
+sssd_ipa_access_provider: "permit"  # "permit"=allow all IPA users; "ipa"=enforce HBAC
+
+# ---------------------------------------------------------------------------
+# Group membership verification (runs after sshd + PAM are configured).
+# Queries each enabled group via getent group (NSS). Works for all backends:
+# local /etc/group, SSSD/AD, SSSD/IPA, or any other NSS source.
+#
+# ssh_verify_groups_strict:
+#   true  (default) — fail the play if any group is missing or has no members.
+#           Prevents silent lockout from unresolvable AllowGroups entries.
+#           OpenSSH deny-by-default: unresolvable group = ALL users denied.
+#   false — warn via debug, continue play. Use only during initial rollout
+#           when groups are not yet populated. Set ssh_local_fallback_group
+#           to prevent total lockout.
+# ---------------------------------------------------------------------------
+ssh_verify_groups: true
+ssh_verify_groups_strict: true
+
+# Backward-compatible aliases (deprecated — prefer ssh_verify_groups*)
+ssh_verify_ad_groups: "{{ ssh_verify_groups }}"
+ssh_verify_ad_groups_strict: "{{ ssh_verify_groups_strict }}"

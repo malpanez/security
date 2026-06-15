@@ -1,0 +1,53 @@
+---
+- name: Review | Stat clamscan binary
+  ansible.builtin.stat:
+    path: /usr/bin/clamscan
+  register: _antivirus_binary
+  tags: [antivirus, review]
+
+- name: Review | Get ClamAV version
+  ansible.builtin.command:
+    cmd: clamscan --version
+  register: _antivirus_version
+  changed_when: false
+  failed_when: false
+  when: _antivirus_binary.stat.exists
+  tags: [antivirus, review]
+
+- name: Review | Stat main virus database
+  ansible.builtin.stat:
+    path: "{{ antivirus_db_dir }}/main.cvd"
+  register: _antivirus_main_cvd
+  tags: [antivirus, review]
+
+- name: Review | Stat daily virus database
+  ansible.builtin.stat:
+    path: "{{ antivirus_db_dir }}/daily.cld"
+  register: _antivirus_daily_cld
+  tags: [antivirus, review]
+
+- name: Review | Check clamd service status
+  ansible.builtin.command:
+    cmd: systemctl is-active {{ antivirus_clamd_service }}
+  register: _antivirus_clamd_status
+  changed_when: false
+  failed_when: false
+  tags: [antivirus, review]
+
+- name: Review | Stat scan log
+  ansible.builtin.stat:
+    path: "{{ antivirus_scan_log }}"
+  register: _antivirus_scan_log
+  tags: [antivirus, review]
+
+- name: Review | Report antivirus review findings
+  ansible.builtin.debug:
+    msg:
+      - 'Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})'
+      - 'ClamAV binary: {{ _antivirus_binary.stat.exists }}'
+      - 'ClamAV version: {{ _antivirus_version.stdout | default("not installed") }}'
+      - 'Main DB (main.cvd): {{ _antivirus_main_cvd.stat.exists | default(false) }}'
+      - 'Daily DB (daily.cld): {{ _antivirus_daily_cld.stat.exists | default(false) }}'
+      - 'Clamd service: {{ _antivirus_clamd_status.stdout | default("unknown") }}'
+      - 'Scan log exists: {{ _antivirus_scan_log.stat.exists | default(false) }}'
+  tags: [antivirus, review]

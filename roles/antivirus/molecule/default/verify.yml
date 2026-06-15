@@ -1,0 +1,69 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Load OS-specific variables
+      ansible.builtin.include_vars: "../../vars/{{ ansible_os_family }}.yml"
+
+    - name: Detect container environment
+      ansible.builtin.set_fact:
+        _antivirus_in_container: >-
+          {{ ansible_facts.virtualization_type | default('') in
+             ['docker', 'podman', 'container', 'lxc'] }}
+
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert ClamAV package installed
+      ansible.builtin.assert:
+        that:
+          - "'clamav' in ansible_facts.packages"
+        fail_msg: "ClamAV package not installed"
+
+    - name: Assert clamd config deployed
+      ansible.builtin.stat:
+        path: "{{ antivirus_clamd_config }}"
+      register: _verify_clamd_config
+
+    - name: Verify clamd config exists
+      ansible.builtin.assert:
+        that:
+          - _verify_clamd_config.stat.exists
+        fail_msg: "clamd config not found at {{ antivirus_clamd_config }}"
+
+    - name: Assert freshclam config deployed
+      ansible.builtin.stat:
+        path: "{{ antivirus_freshclam_config }}"
+      register: _verify_freshclam_config
+
+    - name: Verify freshclam config exists
+      ansible.builtin.assert:
+        that:
+          - _verify_freshclam_config.stat.exists
+        fail_msg: "freshclam config not found at {{ antivirus_freshclam_config }}"
+
+    - name: Assert clamav-scan.service deployed
+      ansible.builtin.stat:
+        path: /etc/systemd/system/clamav-scan.service
+      register: _verify_scan_service
+
+    - name: Verify scan service exists
+      ansible.builtin.assert:
+        that:
+          - _verify_scan_service.stat.exists
+        fail_msg: "clamav-scan.service not deployed"
+
+    - name: Assert clamav-scan.timer deployed
+      ansible.builtin.stat:
+        path: /etc/systemd/system/clamav-scan.timer
+      register: _verify_scan_timer
+
+    - name: Verify scan timer exists
+      ansible.builtin.assert:
+        that:
+          - _verify_scan_timer.stat.exists
+        fail_msg: "clamav-scan.timer not deployed"

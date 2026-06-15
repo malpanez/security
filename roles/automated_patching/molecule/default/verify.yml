@@ -1,0 +1,91 @@
+---
+- name: Verify automated_patching
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Detect container environment
+      ansible.builtin.command:
+        cmd: systemd-detect-virt --container
+      register: _virt_check
+      changed_when: false
+      failed_when: false
+
+    - name: Set container flag
+      ansible.builtin.set_fact:
+        _in_container: "{{ _virt_check.rc == 0 }}"
+
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Set expected package name
+      ansible.builtin.set_fact:
+        _patching_package: >-
+          {{ 'unattended-upgrades' if ansible_os_family == 'Debian'
+             else 'dnf-automatic' }}
+
+    - name: Assert patching tool is installed
+      ansible.builtin.assert:
+        that:
+          - _patching_package in ansible_facts.packages
+        fail_msg: "{{ _patching_package }} package is not installed"
+        quiet: true
+
+    - name: Set config path for verification
+      ansible.builtin.set_fact:
+        _patching_config_path: >-
+          {{ '/etc/apt/apt.conf.d/50unattended-upgrades' if ansible_os_family == 'Debian'
+             else '/etc/dnf/automatic.conf' }}
+        _patching_security_marker: >-
+          {{ '\$\{distro_id\}:\$\{distro_codename\}-security' if ansible_os_family == 'Debian'
+             else '^[[:space:]]*upgrade_type[[:space:]]*=[[:space:]]*security' }}
+
+    - name: Check config file exists
+      ansible.builtin.stat:
+        path: "{{ _patching_config_path }}"
+      register: _config_stat
+
+    - name: Assert config file exists
+      ansible.builtin.assert:
+        that:
+          - _config_stat.stat.exists
+        fail_msg: "patching config file not found at {{ _patching_config_path }}"
+        quiet: true
+
+    - name: Check config restricts to security origin
+      ansible.builtin.command:
+        cmd: "grep -iE '{{ _patching_security_marker }}' {{ _patching_config_path }}"
+      register: _security_check
+      changed_when: false
+      failed_when: false
+
+    - name: Assert config restricts to security updates
+      ansible.builtin.assert:
+        that:
+          - _security_check.rc == 0
+        fail_msg: "config does not restrict to security updates at {{ _patching_config_path }}"
+        quiet: true
+
+    - name: Set timer name for verification
+      ansible.builtin.set_fact:
+        _patching_timer: >-
+          {{ 'apt-daily-upgrade.timer' if ansible_os_family == 'Debian'
+             else 'dnf-automatic.timer' }}
+
+    - name: Check timer enabled (non-container only)
+      ansible.builtin.command:
+        cmd: "systemctl is-enabled {{ _patching_timer }}"
+      register: _timer_enabled
+      changed_when: false
+      failed_when: false
+      when: not _in_container | bool
+
+    - name: Assert timer enabled
+      ansible.builtin.assert:
+        that:
+          - _timer_enabled.stdout in ['enabled']
+        fail_msg: "{{ _patching_timer }} is not enabled"
+        quiet: true
+      when: not _in_container | bool

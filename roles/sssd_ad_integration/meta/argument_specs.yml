@@ -1,0 +1,303 @@
+---
+argument_specs:
+  main:
+    short_description: Network-zone-aware SSH access control with AD/SSSD group mapping
+    description:
+      - Deploys layered SSH access control using sshd_config.d drop-ins, SSSD for AD
+        identity resolution, per-group sudoers.d files, and pam_access.conf enforcement.
+      - Designed to run after malpanez.security.sshd_hardening.
+      - Configure sshd_hardening_dropin_path to a filename sorting before
+        '20-access-control.conf' (e.g., '10-auth-hardening.conf') when using both roles.
+    options:
+      security_mode:
+        type: str
+        default: review
+        description:
+          - Set to 'enforce' to apply changes. In 'review' mode the role only asserts
+            variables and skips all file writes.
+        choices: [review, enforce]
+
+      ssh_ad_groups:
+        type: dict
+        description: AD group sAMAccountNames for each access tier.
+        options:
+          admins:
+            type: str
+            default: linux-admins
+            description: Full shell with 2FA from internet, agent forwarding from VPN/LAN.
+          users:
+            type: str
+            default: linux-users
+            description: Interactive shell without forwarding or tunneling.
+          service:
+            type: str
+            default: linux-service
+            description: No TTY. Command restrictions managed in authorized_keys.
+          readonly:
+            type: str
+            default: linux-readonly
+            description: SFTP-only chroot. No shell.
+
+      ssh_local_fallback_group:
+        type: str
+        default: ''
+        description:
+          - Local group always included in AllowGroups to prevent automation lockout.
+          - Set to the primary group of your Ansible deploy user.
+
+      ssh_network_zones:
+        type: dict
+        description: CIDR ranges per network zone. Empty string disables the zone.
+        options:
+          corp:
+            type: str
+            default: '10.10.0.0/16'
+            description: Corporate LAN. Password auth allowed, agent forwarding ok.
+          vpn:
+            type: str
+            default: '10.8.0.0/24'
+            description: VPN range. Pubkey only, agent forwarding ok, PermitTunnel yes.
+          bastion:
+            type: str
+            default: ''
+            description: Optional single bastion IP. Empty = no Match Address block.
+
+      ssh_corp_require_mfa:
+        type: bool
+        default: false
+        description:
+          - Require 2FA (publickey + keyboard-interactive) for the corp LAN zone.
+          - 'When false (default): corp LAN uses publickey only (backward compatible).'
+          - 'When true: corp LAN uses publickey,keyboard-interactive, closing the'
+          - 'sshd first-occurrence-wins loophole where file 30 (Match Address) overrides'
+          - 'file 40 (Match Group linux-admins) AuthenticationMethods.'
+          - 'Risk acceptance: set false only if corp LAN is trusted and MFA adds no value.'
+
+      sshd_config_d_path:
+        type: str
+        default: /etc/ssh/sshd_config.d
+        description: sshd_config.d drop-in directory.
+
+      sshd_binary_path:
+        type: str
+        default: /usr/sbin/sshd
+        description: Path to sshd binary for 'sshd -t' validation.
+
+      ssh_backup_config:
+        type: bool
+        default: true
+        description: Copy sshd_config.d to sshd_config.d.bak before any changes.
+
+      ssh_enable_group_admins:
+        type: bool
+        default: true
+        description: Deploy 40-group-admins.conf, sudoers, and pam_access entry.
+
+      ssh_enable_group_users:
+        type: bool
+        default: true
+        description: Deploy 41-group-users.conf, sudoers, and pam_access entry.
+
+      ssh_enable_group_service:
+        type: bool
+        default: true
+        description: Deploy 42-group-service.conf and pam_access entry. No sudoers file.
+
+      ssh_enable_group_readonly:
+        type: bool
+        default: true
+        description: Deploy 43-group-readonly.conf and pam_access entry. No sudoers file.
+
+      ssh_chroot_base:
+        type: str
+        default: /data/readonly
+        description:
+          - ChrootDirectory for linux-readonly group.
+          - Must be owned root:root, mode 0755, not writable by chrooted user.
+          - Role creates this directory and enforces ownership.
+
+      ssh_service_allowed_sources:
+        type: list
+        default: []
+        elements: str
+        description:
+          - Source IPs or CIDR ranges allowed by pam_access for linux-service.
+          - Empty list means linux-service is denied by the catch-all rule.
+
+      ssh_sudoers_admins_timestamp_timeout:
+        type: int
+        default: 15
+        description: sudo timestamp_timeout in minutes for linux-admins.
+
+      ssh_sudoers_users_nopasswd_commands:
+        type: list
+        elements: str
+        description: Commands linux-users may run without a password (read-only).
+
+      ssh_sudoers_users_passwd_commands:
+        type: list
+        elements: str
+        description: Commands linux-users may run with a password (state-changing).
+
+      ssh_pam_access_configure:
+        type: bool
+        default: true
+        description: Write /etc/security/access.conf.
+
+      ssh_pam_access_file:
+        type: str
+        default: /etc/security/access.conf
+        description: Destination path for pam_access configuration.
+
+      ssh_pam_access_activate:
+        type: bool
+        default: true
+        description: >-
+          Activate pam_access.so in /etc/pam.d/sshd after deploying
+          access.conf. Set false if PAM is managed externally.
+
+      sssd_ad_configure:
+        type: bool
+        default: true
+        description: Write /etc/sssd/sssd.conf and manage the sssd service.
+
+      ssh_identity_backend:
+        type: str
+        default: "ad"
+        choices:
+          - ad
+          - ipa
+          - local
+        description: >-
+          Identity backend for group resolution. 'ad' configures SSSD for Active
+          Directory (requires sssd_ad_domain + sssd_ad_realm). 'ipa' configures
+          SSSD for FreeIPA/IdM (requires sssd_ipa_domain). 'local' disables SSSD
+          configuration — groups come from /etc/group only.
+
+      sssd_ipa_domain:
+        type: str
+        default: ""
+        description: >-
+          FreeIPA/IdM domain FQDN. Required when ssh_identity_backend is 'ipa'.
+          Example: 'ipa.corp.example.com'.
+
+      sssd_ipa_server:
+        type: str
+        default: "_srv_"
+        description: >-
+          IPA server address. '_srv_' triggers DNS SRV lookup to discover the
+          IPA server automatically. Set to a hostname for environments without
+          DNS SRV records.
+
+      sssd_ipa_access_provider:
+        type: str
+        default: "permit"
+        choices:
+          - permit
+          - ipa
+        description: >-
+          SSSD access provider for IPA backend. 'permit' allows all IPA users
+          with valid Kerberos credentials. 'ipa' enforces HBAC rules defined
+          in the IPA server — recommended for production.
+
+      sssd_ad_domain:
+        type: str
+        required: false
+        description:
+          - REQUIRED when sssd_ad_configure=true.
+          - AD DNS domain name, e.g. 'corp.example.com'.
+
+      sssd_ad_realm:
+        type: str
+        required: false
+        description:
+          - REQUIRED when sssd_ad_configure=true.
+          - Kerberos realm, usually uppercase AD domain, e.g. 'CORP.EXAMPLE.COM'.
+
+      sssd_ad_server:
+        type: str
+        default: '_srv_'
+        description: AD server address. '_srv_' triggers DNS SRV lookup.
+
+      sssd_cache_credentials:
+        type: bool
+        default: true
+        description: Cache AD credentials for offline authentication.
+
+      sssd_offline_credentials_expiration:
+        type: int
+        default: 7
+        description:
+          - Days to accept cached credentials when AD is unreachable.
+          - 7 days balances offline access against credential staleness.
+          - '0 means never expire — disabled AD accounts can authenticate indefinitely.'
+          - Set higher for sites with unreliable WAN. Set 0 only with documented risk acceptance.
+
+      sssd_enumerate_users:
+        type: bool
+        default: false
+        description:
+          - Enumerate all AD users into the local NSS cache.
+          - Disable unless getent passwd must list AD users.
+
+      sssd_use_fully_qualified_names:
+        type: bool
+        default: false
+        description:
+          - "'false: login as user. true: login as user@domain.'"
+          - 'Requires unique sAMAccountNames across all trusted domains when false.'
+
+      sssd_ldap_id_mapping:
+        type: bool
+        default: true
+        description:
+          - Derive UID/GID from AD SID.
+          - Disable only if AD schema has explicit uidNumber/gidNumber attributes.
+
+      sssd_home_dir_template:
+        type: str
+        default: /home/%u
+        description: Home directory template for AD users.
+
+      sssd_default_shell:
+        type: str
+        default: /bin/bash
+        description: Default shell for AD users.
+
+      sssd_access_filter:
+        type: str
+        default: ''
+        description:
+          - Optional LDAP filter to restrict AD login access.
+          - Must be a single-line string (sssd.conf is INI, no backslash continuation).
+
+      ssh_verify_groups:
+        type: bool
+        default: true
+        description:
+          - Run group membership verification after applying configuration.
+          - Queries each enabled group via getent group (NSS/SSSD).
+          - Detects groups that are missing or have no members before
+            silent lockouts occur.
+
+      ssh_verify_groups_strict:
+        type: bool
+        default: true
+        description:
+          - 'true (default): fail the play if any enabled group is unresolvable or empty.'
+          - 'Prevents deploying AllowGroups with groups OpenSSH cannot resolve.'
+          - 'OpenSSH deny-by-default: unresolvable group means ALL users are denied.'
+          - 'false: warn and continue. Use only during initial rollout.'
+          - 'Mitigate lockout risk with ssh_local_fallback_group.'
+
+      ssh_verify_ad_groups:
+        type: bool
+        default: true
+        description:
+          - Deprecated alias for ssh_verify_groups. Use ssh_verify_groups instead.
+
+      ssh_verify_ad_groups_strict:
+        type: bool
+        default: true
+        description:
+          - Deprecated alias for ssh_verify_groups_strict. Use ssh_verify_groups_strict instead.

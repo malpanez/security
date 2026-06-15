@@ -1,0 +1,15 @@
+---
+# Dedicated playbook for GitHub Actions VM-based SSH access control tests.
+# Tests sssd_ad_integration without a real AD domain controller:
+#   - sssd_ad_configure: false (no SSSD, no krb5 join required)
+#   - Local groups are pre-created in CI to simulate AD group membership
+#   - sshd, sudoers, pam_access, and verify_groups all run on real sshd
+#
+# For production deployments with a real AD see playbooks/site.yml.
+- name: Apply SSH access control (VM test)
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: malpanez.security.sssd_ad_integration
+      tags: [sssd_ad_integration]

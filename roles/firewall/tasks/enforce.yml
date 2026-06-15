@@ -1,0 +1,186 @@
+---
+# ============ Debian family — ufw ============
+- name: Enforce | Install ufw (Debian)
+  ansible.builtin.apt:
+    name: "{{ firewall_package }}"
+    state: present
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+  tags: [install]
+
+- name: Enforce | Configure ufw logging (Debian)
+  community.general.ufw:
+    logging: "{{ firewall_log_level if firewall_logging else 'off' }}"
+  when:
+    - ansible_os_family == 'Debian'
+    - not _firewall_in_container | bool
+  tags: [configure]
+
+- name: Enforce | Allow SSH before tightening defaults (Debian)
+  community.general.ufw:
+    rule: allow
+    port: "{{ firewall_ssh_port | string }}"
+    proto: tcp
+  when: ansible_os_family == 'Debian'
+  tags: [configure]
+
+- name: Enforce | Allow trusted sources (Debian)
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ item }}"
+  loop: "{{ firewall_trusted_sources }}"
+  when: ansible_os_family == 'Debian'
+  tags: [configure]
+
+- name: Enforce | Allow inbound TCP ports (Debian)
+  community.general.ufw:
+    rule: allow
+    port: "{{ item | string }}"
+    proto: tcp
+  loop: "{{ firewall_allowed_tcp_ports }}"
+  when: ansible_os_family == 'Debian'
+  tags: [configure]
+
+- name: Enforce | Allow inbound UDP ports (Debian)
+  community.general.ufw:
+    rule: allow
+    port: "{{ item | string }}"
+    proto: udp
+  loop: "{{ firewall_allowed_udp_ports }}"
+  when: ansible_os_family == 'Debian'
+  tags: [configure]
+
+- name: Enforce | Set ufw default policies (Debian)
+  community.general.ufw:
+    default: "{{ item.policy }}"
+    direction: "{{ item.direction }}"
+  loop:
+    - {direction: incoming, policy: "{{ firewall_default_incoming_policy }}"}
+    - {direction: outgoing, policy: "{{ firewall_default_outgoing_policy }}"}
+    - {direction: routed, policy: "{{ firewall_default_routed_policy }}"}
+  loop_control:
+    label: "{{ item.direction }}"
+  when: ansible_os_family == 'Debian'
+  tags: [configure]
+
+- name: Enforce | Enable ufw (Debian, non-container)
+  community.general.ufw:
+    state: enabled
+  when:
+    - ansible_os_family == 'Debian'
+    - not _firewall_in_container | bool
+  tags: [service]
+
+# ============ RedHat / Suse family — firewalld ============
+- name: Enforce | Install firewalld (RedHat)
+  ansible.builtin.dnf:
+    name: "{{ firewall_package }}"
+    state: present
+  when: ansible_os_family == 'RedHat'
+  tags: [install]
+
+- name: Enforce | Install firewalld (Suse)
+  community.general.zypper:
+    name: "{{ firewall_package }}"
+    state: present
+  when: ansible_os_family == 'Suse'
+  tags: [install]
+
+# firewalld config requires the running daemon; gate on real hosts.
+- name: Enforce | Enable and start firewalld (non-container)
+  ansible.builtin.systemd:
+    name: "{{ firewall_service }}"
+    enabled: true
+    state: started
+  when:
+    - firewall_backend == 'firewalld'
+    - not _firewall_in_container | bool
+  tags: [service]
+
+- name: Enforce | firewalld — allow SSH (service + port)
+  ansible.posix.firewalld:
+    zone: "{{ firewall_zone }}"
+    service: ssh
+    permanent: true
+    immediate: true
+    state: enabled
+  when:
+    - firewall_backend == 'firewalld'
+    - not _firewall_in_container | bool
+  tags: [configure]
+
+- name: Enforce | firewalld — allow SSH port
+  ansible.posix.firewalld:
+    zone: "{{ firewall_zone }}"
+    port: "{{ firewall_ssh_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  when:
+    - firewall_backend == 'firewalld'
+    - not _firewall_in_container | bool
+  tags: [configure]
+
+- name: Enforce | firewalld — allow services
+  ansible.posix.firewalld:
+    zone: "{{ firewall_zone }}"
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ firewall_allowed_services }}"
+  when:
+    - firewall_backend == 'firewalld'
+    - not _firewall_in_container | bool
+  tags: [configure]
+
+- name: Enforce | firewalld — allow TCP ports
+  ansible.posix.firewalld:
+    zone: "{{ firewall_zone }}"
+    port: "{{ item }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ firewall_allowed_tcp_ports }}"
+  when:
+    - firewall_backend == 'firewalld'
+    - not _firewall_in_container | bool
+  tags: [configure]
+
+- name: Enforce | firewalld — allow UDP ports
+  ansible.posix.firewalld:
+    zone: "{{ firewall_zone }}"
+    port: "{{ item }}/udp"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ firewall_allowed_udp_ports }}"
+  when:
+    - firewall_backend == 'firewalld'
+    - not _firewall_in_container | bool
+  tags: [configure]
+
+- name: Enforce | firewalld — trust management sources
+  ansible.posix.firewalld:
+    zone: trusted
+    source: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ firewall_trusted_sources }}"
+  when:
+    - firewall_backend == 'firewalld'
+    - not _firewall_in_container | bool
+  tags: [configure]
+
+- name: Enforce | firewalld — set default zone target (default-deny)
+  ansible.posix.firewalld:
+    zone: "{{ firewall_zone }}"
+    target: "{{ 'DROP' if firewall_default_incoming_policy == 'deny' else ('%%REJECT%%' if firewall_default_incoming_policy == 'reject' else 'default') }}"
+    permanent: true
+    state: enabled
+  notify: Reload firewalld
+  when:
+    - firewall_backend == 'firewalld'
+    - not _firewall_in_container | bool
+  tags: [configure]

@@ -4,7 +4,7 @@
     update_cache: true
     cache_valid_time: 3600
   when:
-    - security_mode | default('enforce') == 'enforce'
+    - security_mode | default('review') == 'enforce'
     - ansible_facts["os_family"] == "Debian"
   tags: [enforce]
 
@@ -13,7 +13,7 @@
     name: "{{ sshd_hardening_package_name }}"
     state: present
   when:
-    - security_mode | default('enforce') == 'enforce'
+    - security_mode | default('review') == 'enforce'
     - ansible_facts["os_family"] == "Debian"
   tags: [enforce]
 
@@ -22,7 +22,7 @@
     name: "{{ sshd_hardening_package_name }}"
     state: present
   when:
-    - security_mode | default('enforce') == 'enforce'
+    - security_mode | default('review') == 'enforce'
     - ansible_facts["os_family"] != "Debian"
   tags: [enforce]
 
@@ -125,7 +125,7 @@
     owner: root
     group: root
     mode: "0644"
-  when: security_mode | default('enforce') == 'enforce' and sshd_hardening_trusted_ca_key | length > 0
+  when: security_mode | default('review') == 'enforce' and sshd_hardening_trusted_ca_key | length > 0
   tags: [enforce]
 
 - name: common | Ensure privilege separation directory exists
@@ -135,14 +135,15 @@
     owner: root
     group: root
     mode: "0755"
-  when: security_mode | default('enforce') == 'enforce'
+  when: security_mode | default('review') == 'enforce'
   tags: [enforce]
 
 - name: common | Generate SSH host keys if missing
   ansible.builtin.command: ssh-keygen -A
-  when: security_mode | default('enforce') == 'enforce'
+  register: _sshd_keygen
+  when: security_mode | default('review') == 'enforce'
   failed_when: false
-  changed_when: false
+  changed_when: "'Saving' in _sshd_keygen.stdout"
 
 - name: common | Ensure sshd config drop-in directory exists
   ansible.builtin.file:
@@ -152,7 +153,7 @@
     group: root
     mode: "0755"
   when:
-    - security_mode | default('enforce') == 'enforce'
+    - security_mode | default('review') == 'enforce'
     - sshd_hardening_use_dropin
   tags: [enforce]
 
@@ -164,7 +165,7 @@
   changed_when: false
   failed_when: false
   when:
-    - security_mode | default('enforce') == 'enforce'
+    - security_mode | default('review') == 'enforce'
     - sshd_hardening_use_dropin
   tags: [enforce]
 
@@ -176,7 +177,7 @@
     state: present
     validate: "{{ sshd_hardening_binary_path }} -t -f %s"
   when:
-    - security_mode | default('enforce') == 'enforce'
+    - security_mode | default('review') == 'enforce'
     - sshd_hardening_use_dropin
     - sshd_hardening_include_check.rc != 0
   notify: Restart sshd
@@ -192,7 +193,7 @@
     validate: "{{ sshd_hardening_binary_path }} -t -f %s"
   notify: Restart sshd
   when:
-    - security_mode | default('enforce') == 'enforce'
+    - security_mode | default('review') == 'enforce'
     - not sshd_hardening_use_dropin
   tags: [enforce]
 
@@ -201,7 +202,7 @@
     - name: common | Backup existing drop-in (if present)
       ansible.builtin.copy:
         src: "{{ sshd_hardening_dropin_path }}"
-        dest: "{{ sshd_hardening_dropin_path }}.backup-{{ ansible_date_time.epoch }}"
+        dest: "{{ sshd_hardening_dropin_path }}.rollback"
         remote_src: true
         mode: "0644"
       changed_when: false
@@ -221,22 +222,34 @@
       register: sshd_hardening_dropin_validate
       changed_when: false
       failed_when: sshd_hardening_dropin_validate.rc != 0
+
+    - name: common | Remove transient rollback backup after successful validation
+      ansible.builtin.file:
+        path: "{{ sshd_hardening_dropin_path }}.rollback"
+        state: absent
+      changed_when: false
   rescue:
     - name: common | Check for drop-in backup after validation failure
       ansible.builtin.stat:
-        path: "{{ sshd_hardening_dropin_path }}.backup-{{ ansible_date_time.epoch }}"
+        path: "{{ sshd_hardening_dropin_path }}.rollback"
       register: sshd_hardening_dropin_backup
       changed_when: false
 
     - name: common | Restore previous drop-in after validation failure
       ansible.builtin.copy:
-        src: "{{ sshd_hardening_dropin_path }}.backup-{{ ansible_date_time.epoch }}"
+        src: "{{ sshd_hardening_dropin_path }}.rollback"
         dest: "{{ sshd_hardening_dropin_path }}"
         remote_src: true
         mode: "0644"
       changed_when: false
       failed_when: false
       when: sshd_hardening_dropin_backup.stat.exists | default(false)
+
+    - name: common | Remove transient rollback backup after restore
+      ansible.builtin.file:
+        path: "{{ sshd_hardening_dropin_path }}.rollback"
+        state: absent
+      changed_when: false
 
     - name: common | Remove invalid drop-in when no backup exists
       ansible.builtin.file:
@@ -248,7 +261,7 @@
       ansible.builtin.fail:
         msg: "CRITICAL: sshd -t failed after drop-in update; restored previous drop-in."
   when:
-    - security_mode | default('enforce') == 'enforce'
+    - security_mode | default('review') == 'enforce'
     - sshd_hardening_use_dropin
   tags: [enforce]
 
@@ -257,5 +270,5 @@
     name: "{{ sshd_hardening_resolved_service_name | default(sshd_hardening_service_name) }}"
     state: started
     enabled: true
-  when: security_mode | default('enforce') == 'enforce'
+  when: security_mode | default('review') == 'enforce'
   tags: [enforce]

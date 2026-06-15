@@ -1,0 +1,68 @@
+---
+argument_specs:
+  main:
+    short_description: Default-deny host firewall (firewalld / ufw)
+    description:
+      - Configures a host-based firewall with a default-deny inbound policy and
+        an explicit allowlist.
+      - SSH is always kept open to prevent administrative lockout.
+      - firewalld on RHEL/SUSE, ufw on Debian/Ubuntu.
+      - Review mode audits the current state; enforce mode applies the policy.
+    author: Miguel Alpanez
+    options:
+      firewall_enabled:
+        type: bool
+        default: false
+        description: Whether to manage the host firewall (enforce mode).
+      firewall_default_incoming_policy:
+        type: str
+        default: deny
+        choices: [deny, allow, reject]
+        description: Default policy for inbound traffic.
+      firewall_default_outgoing_policy:
+        type: str
+        default: allow
+        choices: [deny, allow, reject]
+        description: Default policy for outbound traffic.
+      firewall_default_routed_policy:
+        type: str
+        default: deny
+        choices: [deny, allow, reject]
+        description: Default policy for forwarded/routed traffic.
+      firewall_ssh_port:
+        type: int
+        default: 22
+        description: SSH port kept open unconditionally to avoid lockout.
+      firewall_allowed_tcp_ports:
+        type: list
+        elements: int
+        default: []
+        description: Additional inbound TCP ports to allow.
+      firewall_allowed_udp_ports:
+        type: list
+        elements: int
+        default: []
+        description: Additional inbound UDP ports to allow.
+      firewall_allowed_services:
+        type: list
+        elements: str
+        default: []
+        description: firewalld service names to allow (ignored by the ufw backend).
+      firewall_trusted_sources:
+        type: list
+        elements: str
+        default: []
+        description: Source CIDRs allowed all inbound traffic (e.g. a mgmt subnet).
+      firewall_logging:
+        type: bool
+        default: true
+        description: Enable firewall logging.
+      firewall_log_level:
+        type: str
+        default: low
+        choices: ["off", low, medium, high, full]
+        description: ufw logging verbosity (ignored by firewalld).
+      firewall_zone:
+        type: str
+        default: public
+        description: firewalld zone to manage (ignored by the ufw backend).

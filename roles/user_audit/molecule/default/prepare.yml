@@ -1,0 +1,24 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Fix Rocky 9 nsswitch for sudo/PAM in containers
+      ansible.builtin.replace:
+        path: /etc/nsswitch.conf
+        regexp: ' sss'
+        replace: ''
+      failed_when: false
+
+    - name: Create testuser for audit verification
+      ansible.builtin.command:
+        cmd: useradd -m testuser
+      changed_when: true
+      failed_when: false
+
+    - name: Set testuser password expiry to never
+      ansible.builtin.command:
+        cmd: chage -M -1 testuser
+      changed_when: true

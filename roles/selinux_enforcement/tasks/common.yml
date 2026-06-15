@@ -136,11 +136,12 @@
 
 - name: common | Restorecon managed paths
   ansible.builtin.command: restorecon -Rv {{ item.target }}
+  register: _selinux_restorecon
   loop: "{{ selinux_enforcement_contexts }}"
   when:
     - selinux_config_file.stat.exists
     - selinux_status.rc == 0
     - selinux_enforcement_restorecon
     - selinux_enforcement_contexts | length > 0
-  changed_when: false
+  changed_when: _selinux_restorecon.stdout | length > 0
   tags: [enforce]

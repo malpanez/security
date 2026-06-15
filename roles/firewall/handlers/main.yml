@@ -1,0 +1,8 @@
+---
+- name: Reload firewalld
+  ansible.builtin.command:
+    cmd: firewall-cmd --reload
+  changed_when: true
+  when:
+    - firewall_backend | default('') == 'firewalld'
+    - not _firewall_in_container | default(false) | bool

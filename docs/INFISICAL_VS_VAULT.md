@@ -563,8 +563,8 @@ Winner: Infisical (15% más rápido)
 - Ansible Integration: https://infisical.com/docs/integrations/platforms/ansible
 
 ### Video Tutorials
-- Getting Started: https://www.youtube.com/watch?v=... (buscar en Infisical channel)
-- Self-Hosting Setup: https://www.youtube.com/watch?v=...
+- Getting Started — Infisical YouTube channel: https://www.youtube.com/@infisical
+- Self-Hosting Setup — Infisical YouTube channel: https://www.youtube.com/@infisical
 
 ---
 

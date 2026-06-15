@@ -1,0 +1,25 @@
+# CODEOWNERS for malpanez.security
+#
+# Each line maps a path pattern to one or more owners. The last matching
+# pattern takes precedence. Owners are automatically requested for review
+# when a pull request modifies matching files.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repository.
+*                           @malpanez
+
+# CI / repository governance — changes here affect the whole supply chain.
+/.github/                   @malpanez
+/.github/workflows/         @malpanez
+
+# Security-sensitive roles — always require the owner's review.
+/roles/sshd_hardening/      @malpanez
+/roles/pam_mfa/             @malpanez
+/roles/pam_security/        @malpanez
+/roles/sudoers_baseline/    @malpanez
+/roles/firewall/            @malpanez
+
+# Collection metadata and packaging.
+/galaxy.yml                 @malpanez
+/meta/                      @malpanez

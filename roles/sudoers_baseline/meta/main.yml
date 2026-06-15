@@ -2,7 +2,7 @@
 galaxy_info:
   author: Miguel Alpañez
   description: Baseline sudoers with least privilege and auditable defaults.
-  license: GPL-2.0-or-later
+  license: Apache-2.0
   min_ansible_version: "2.16"
   platforms:
     - name: Debian

@@ -1,0 +1,19 @@
+---
+- name: Backup | Ensure backup directory exists
+  ansible.builtin.file:
+    path: "{{ sshd_config_d_path }}.bak"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  tags: [sshd, ssh, access-control]
+
+- name: Backup | Snapshot all existing drop-ins
+  ansible.builtin.shell:
+    cmd: >-
+      cp -a {{ sshd_config_d_path }}/. {{ sshd_config_d_path }}.bak/
+    executable: /bin/bash
+  register: _sssd_ad_backup_result
+  changed_when: _sssd_ad_backup_result.rc == 0
+  failed_when: _sssd_ad_backup_result.rc != 0
+  tags: [sshd, ssh, access-control]

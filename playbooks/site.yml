@@ -25,50 +25,62 @@
 
   roles:
     # 1. Detect system capabilities (always first)
-    - security_capabilities
+    - malpanez.security.security_capabilities
 
     # 2. PAM: password quality, faillock, login.defs, access.conf, limits
-    - pam_security
+    - malpanez.security.pam_security
 
     # 3. Kernel hardening: sysctl (50+ params) + module blacklist
-    - kernel_hardening
+    - malpanez.security.kernel_hardening
 
     # 4. OS system hardening: mounts, hidepid, SUID/SGID, accounts, ctrl+alt+del
-    - system_hardening
+    - malpanez.security.system_hardening
+
+    # 4b. Host firewall: default-deny inbound, SSH always kept open
+    - malpanez.security.firewall
+
+    # 4c. Bootloader hardening (GRUB perms, os-prober; password opt-in)
+    - malpanez.security.boot_hardening
 
     # 5. SSH daemon hardening (drop-in by default)
-    - sshd_hardening
+    - malpanez.security.sshd_hardening
 
     # 6. PAM MFA: YubiKey / TOTP
-    - pam_mfa
+    - malpanez.security.pam_mfa
 
     # 7. Sudoers: drop-ins only by default, never rewrites /etc/sudoers
-    - sudoers_baseline
+    - malpanez.security.sudoers_baseline
 
     # 8. Service accounts: ForceCommand, chroot, SSH Match blocks
-    - service_accounts_transfer
+    - malpanez.security.service_accounts_transfer
 
     # 9. MAC: AppArmor (Debian/Ubuntu/SUSE) or SELinux (RHEL family)
-    - role: apparmor
+    - role: malpanez.security.apparmor
       when: ansible_os_family in ['Debian', 'Suse']
-    - role: selinux_enforcement
+    - role: malpanez.security.selinux_enforcement
       when: ansible_os_family == 'RedHat'
 
     # 10. Web server hardening (skips if not installed)
-    - nginx_hardening
-    - apache_hardening
+    - malpanez.security.nginx_hardening
+    - malpanez.security.apache_hardening
 
     # 11. Database hardening (skips if not installed)
-    - mysql_hardening
+    - malpanez.security.mysql_hardening
 
     # 12. Application server hardening (skips if not installed)
-    - tomcat_hardening
+    - malpanez.security.tomcat_hardening
+
+    # 12b. Automated security patching (dnf-automatic / unattended-upgrades)
+    - malpanez.security.automated_patching
 
     # 13. Audit logging: auditd rules for all managed config files
-    - audit_logging
+    - malpanez.security.audit_logging
+
+    # 13b. Encryption-at-rest audit (LUKS evidence; non-destructive)
+    - malpanez.security.encryption_at_rest
 
     # 14. Compliance evidence: collect and hash all artifacts
-    - compliance_evidence
+    - malpanez.security.compliance_evidence
 
   post_tasks:
     - name: Validate services

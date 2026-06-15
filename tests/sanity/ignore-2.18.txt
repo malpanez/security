@@ -1,0 +1,9 @@
+scripts/ensure-precommit-locked.sh shebang
+scripts/generate-sbom.sh shebang
+scripts/install-security-tools.sh shebang
+scripts/kickstart-top-0.01.sh shebang
+scripts/resolve-docker-digests.sh shebang
+scripts/test-all-platforms.sh shebang
+scripts/test-quick.sh shebang
+scripts/validate-all.sh shebang
+scripts/validate-no-log.py shebang

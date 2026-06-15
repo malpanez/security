@@ -57,10 +57,9 @@
   tags: [enforce]
 
 - name: common | Deploy audit rules
-  ansible.builtin.copy:
+  ansible.builtin.template:
+    src: audit.rules.j2
     dest: "{{ audit_logging_rules_path }}"
-    content: |
-      {{ (audit_logging_effective_rules | default(audit_logging_rules)) | join('\n') }}
     owner: root
     group: root
     mode: "0640"
@@ -101,15 +100,19 @@
 - name: common | Verify audit syscall rules are loaded
   ansible.builtin.assert:
     that:
+      # Match by arch + rule key: auditctl -l normalises syscall lists and errno
+      # names (e.g. exit=-EACCES -> exit=-13), so an exact string match is unsafe.
       - auditctl_check.stdout is search('arch=' ~ _audit_rule_arch)
-      - auditctl_check.stdout is search('(^|\\s)' ~ _audit_rule_syscall ~ '(\\s|,|$)')
+      - >-
+        (auditctl_check.stdout is search('key=' ~ _audit_rule_key))
+        or (auditctl_check.stdout is search('-k ' ~ _audit_rule_key))
     fail_msg: >-
       Audit syscall rule not loaded: {{ item }}
-      (expected arch={{ _audit_rule_arch }}, syscall={{ _audit_rule_syscall }})
+      (expected arch={{ _audit_rule_arch }}, key={{ _audit_rule_key }})
   loop: "{{ audit_logging_syscall_rules }}"
   vars:
     _audit_rule_arch: "{{ item | regex_replace('.*arch=([^ ]+).*', '\\1') }}"
-    _audit_rule_syscall: "{{ item | regex_replace('.*-S ([^ ]+).*', '\\1') }}"
+    _audit_rule_key: "{{ item | regex_replace('.*-k ([^ ]+).*', '\\1') }}"
   when:
     - auditctl_check.rc == 0
     - audit_logging_verify_syscalls | default(true)

@@ -1,0 +1,62 @@
+---
+- name: Review | Check rsyslog package (RedHat/Suse)
+  ansible.builtin.command:
+    cmd: rpm -q rsyslog
+  register: _rsyslog_pkg_check
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family in ['RedHat', 'Suse']
+  tags: [rsyslog_forwarding, review]
+
+- name: Review | Check rsyslog package (Debian)
+  ansible.builtin.command:
+    cmd: dpkg-query -W rsyslog
+  register: _rsyslog_pkg_check
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family == 'Debian'
+  tags: [rsyslog_forwarding, review]
+
+- name: Review | Check rsyslog service status
+  ansible.builtin.command:
+    cmd: systemctl is-active rsyslog
+  register: _rsyslog_svc_check
+  changed_when: false
+  failed_when: false
+  tags: [rsyslog_forwarding, review]
+
+- name: Review | Check forwarding drop-in exists
+  ansible.builtin.stat:
+    path: "{{ rsyslog_forwarding_dropin_dir }}/99-forwarding.conf"
+  register: _rsyslog_dropin_stat
+  tags: [rsyslog_forwarding, review]
+
+- name: Review | Read drop-in content
+  ansible.builtin.slurp:
+    src: "{{ rsyslog_forwarding_dropin_dir }}/99-forwarding.conf"
+  register: _rsyslog_dropin_content
+  when: _rsyslog_dropin_stat.stat.exists
+  tags: [rsyslog_forwarding, review]
+
+- name: Review | Detect TLS in drop-in
+  ansible.builtin.set_fact:
+    _rsyslog_tls_present: "{{ 'StreamDriverMode' in (_rsyslog_dropin_content.content | default('') | b64decode) }}"
+  when: _rsyslog_dropin_stat.stat.exists
+  tags: [rsyslog_forwarding, review]
+
+- name: Review | Set configured destination from drop-in
+  ansible.builtin.set_fact:
+    _rsyslog_configured_dest: "{{ (_rsyslog_dropin_content.content | b64decode | regex_search('Target=\"([^\"]+)\"', '\\1') | first) | default('unknown') }}"
+  when: _rsyslog_dropin_stat.stat.exists
+  tags: [rsyslog_forwarding, review]
+
+- name: Review | Report rsyslog_forwarding findings
+  ansible.builtin.debug:
+    msg:
+      - "Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
+      - "rsyslog installed: {{ (_rsyslog_pkg_check.rc | default(-1)) == 0 }}"
+      - "Forwarding drop-in exists: {{ _rsyslog_dropin_stat.stat.exists }}"
+      - "Destination: {{ _rsyslog_configured_dest | default('not configured') }}"
+      - "Service status: {{ _rsyslog_svc_check.stdout | default('unknown') }}"
+      - "TLS configured: {{ _rsyslog_tls_present | default(false) }}"
+  tags: [rsyslog_forwarding, review]

@@ -1,7 +1,7 @@
 ---
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b  # frozen: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -13,7 +13,7 @@ repos:
       - id: mixed-line-ending
 
   - repo: https://github.com/ansible/ansible-lint
-    rev: v24.12.2
+    rev: 4ce8e497d462cf73b4d4fac1e97b4ace4f317dcc  # frozen: v24.12.2
     hooks:
       - id: ansible-lint
         args: [--offline]
@@ -22,14 +22,14 @@ repos:
           - ansible-core==2.18.6
 
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.1
+    rev: 79a6b2b1392eaf49cdd32ac4f14be1a809bbd8f7  # frozen: v1.37.1
     hooks:
       - id: yamllint
         args: [-c, .yamllint.yml]
         files: \.(yaml|yml)$
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.26.0
+    rev: 78eebaca9d8940b8c511a6e67349168f6477943a  # frozen: v8.26.0
     hooks:
       - id: gitleaks
         args: [--config=.gitleaks.toml, --redact]

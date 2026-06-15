@@ -157,4 +157,4 @@ Tests verify: anonymous users absent, remote root absent, test DB absent, `local
 
 ## License
 
-GPL-2.0-or-later
+Apache-2.0

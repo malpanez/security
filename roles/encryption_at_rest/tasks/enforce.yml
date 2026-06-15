@@ -1,0 +1,77 @@
+---
+# ============ Tooling ============
+- name: Enforce | Install cryptsetup (Debian)
+  ansible.builtin.apt:
+    name: "{{ encryption_at_rest_package }}"
+    state: present
+    cache_valid_time: 3600
+  when:
+    - encryption_at_rest_install_tools | bool
+    - ansible_os_family == 'Debian'
+  tags: [install]
+
+- name: Enforce | Install cryptsetup (RedHat)
+  ansible.builtin.dnf:
+    name: "{{ encryption_at_rest_package }}"
+    state: present
+  when:
+    - encryption_at_rest_install_tools | bool
+    - ansible_os_family == 'RedHat'
+  tags: [install]
+
+- name: Enforce | Install cryptsetup (Suse)
+  community.general.zypper:
+    name: "{{ encryption_at_rest_package }}"
+    state: present
+  when:
+    - encryption_at_rest_install_tools | bool
+    - ansible_os_family == 'Suse'
+  tags: [install]
+
+# ============ crypttab hardening ============
+- name: Enforce | Stat /etc/crypttab before tightening permissions
+  ansible.builtin.stat:
+    path: /etc/crypttab
+  register: _encryption_at_rest_crypttab_enforce
+  tags: [configure]
+
+- name: Enforce | Tighten /etc/crypttab permissions
+  ansible.builtin.file:
+    path: /etc/crypttab
+    mode: "{{ encryption_at_rest_crypttab_mode }}"
+    owner: root
+    group: root
+  when: _encryption_at_rest_crypttab_enforce.stat.exists
+  tags: [configure]
+
+# ============ Guarded LUKS init on EMPTY data volumes ============
+# SAFE BY DEFAULT: every condition below must hold before a device is touched.
+# Default encryption_at_rest_allow_format=false means these tasks never run.
+- name: Enforce | Probe data volume for existing signatures (safety check)
+  ansible.builtin.command:
+    cmd: lsblk -no FSTYPE {{ item.device }}
+  register: _encryption_at_rest_volume_probe
+  changed_when: false
+  failed_when: false
+  loop: "{{ encryption_at_rest_data_volumes }}"
+  loop_control:
+    label: "{{ item.device }}"
+  when:
+    - encryption_at_rest_allow_format | bool
+    - not _encryption_at_rest_in_container | bool
+  tags: [configure]
+
+- name: Enforce | LUKS-format empty data volumes (hard-guarded)
+  community.crypto.luks_device:
+    device: "{{ item.item.device }}"
+    name: "{{ item.item.name }}"
+    state: present
+  loop: "{{ _encryption_at_rest_volume_probe.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.device }}"
+  when:
+    - encryption_at_rest_allow_format | bool
+    - not _encryption_at_rest_in_container | bool
+    - item.rc | default(1) == 0
+    - (item.stdout | default('') | trim) == ''
+  tags: [configure]

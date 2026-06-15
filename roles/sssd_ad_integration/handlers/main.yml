@@ -1,0 +1,18 @@
+---
+- name: Restart sshd
+  ansible.builtin.service:
+    name: "{{ _sssd_ad_sshd_service_name | default('sshd') }}"
+    state: restarted
+  listen: restart sshd
+
+- name: Restart sssd
+  ansible.builtin.service:
+    name: sssd
+    state: restarted
+  listen: restart sssd
+
+- name: Reload sshd
+  ansible.builtin.service:
+    name: "{{ _sssd_ad_sshd_service_name | default('sshd') }}"
+    state: reloaded
+  listen: reload sshd

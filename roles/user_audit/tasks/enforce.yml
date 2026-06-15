@@ -1,0 +1,86 @@
+---
+- name: Enforce | Lock accounts inactive beyond threshold
+  ansible.builtin.user:
+    name: "{{ item }}"
+    password_lock: true
+  loop: >-
+    {{
+      _ua_inactive_by_days.stdout_lines | default([])
+      | intersect(_ua_human_account_list)
+    }}
+  when:
+    - user_audit_lock_inactive | bool
+    - item not in user_audit_skip_users
+    - item != 'root'
+    - not ansible_check_mode
+  tags: [user_audit, enforce, configure]
+
+- name: Enforce | Collect current maxdays for accounts without expiry
+  ansible.builtin.command:
+    cmd: chage -l {{ item }}
+  loop: "{{ _ua_no_expiry | default([]) }}"
+  register: _ua_chage_current
+  changed_when: false
+  failed_when: false
+  when:
+    - user_audit_set_password_expiry | bool
+    - item not in user_audit_skip_users
+    - item != 'root'
+  tags: [user_audit, enforce, configure]
+
+- name: Enforce | Set password expiry where maxdays is unlimited
+  ansible.builtin.command:
+    cmd: >-
+      chage --maxdays {{ user_audit_max_password_age }}
+            --mindays {{ user_audit_min_password_age }}
+            --warndays {{ user_audit_warn_days }}
+            {{ item.item }}
+  loop: "{{ _ua_chage_current.results | default([]) }}"
+  when:
+    - item.stdout is defined
+    - item.stdout is search('Maximum number of days between password change\s*:\s*(-1|99999)')
+    - item.item not in user_audit_skip_users
+    - item.item != 'root'
+    - not ansible_check_mode
+  changed_when: true
+  failed_when: false
+  tags: [user_audit, enforce, configure]
+
+- name: Enforce | Set nologin shell on service accounts with interactive shells
+  ansible.builtin.user:
+    name: "{{ item }}"
+    shell: "{{ user_audit_nologin_shell }}"
+  loop: "{{ _ua_service_login_shells.stdout_lines | default([]) }}"
+  when:
+    - user_audit_fix_service_shells | bool
+    - item not in user_audit_skip_users
+    - item != 'root'
+    - not ansible_check_mode
+  tags: [user_audit, enforce, configure]
+
+- name: Enforce | Verify password expiry enforcement
+  ansible.builtin.command:
+    cmd: chage -l {{ item }}
+  loop: "{{ _ua_no_expiry | default([]) }}"
+  register: _ua_enforce_verify
+  changed_when: false
+  failed_when: false
+  when:
+    - user_audit_set_password_expiry | bool
+    - item not in user_audit_skip_users
+    - item != 'root'
+  tags: [user_audit, enforce, verify]
+
+- name: Enforce | Report enforcement summary
+  ansible.builtin.debug:
+    msg:
+      locked_candidates: >-
+        {{
+          _ua_inactive_by_days.stdout_lines | default([])
+          | intersect(_ua_human_account_list)
+          | difference(user_audit_skip_users)
+        }}
+      expiry_set_candidates: "{{ _ua_no_expiry | default([]) | difference(user_audit_skip_users) }}"
+      service_shell_candidates: >-
+        {{ _ua_service_login_shells.stdout_lines | default([]) | difference(user_audit_skip_users) }}
+  tags: [user_audit, enforce, verify]

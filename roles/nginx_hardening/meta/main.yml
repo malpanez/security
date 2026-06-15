@@ -2,8 +2,13 @@
 galaxy_info:
   role_name: nginx_hardening
   author: malpanez
-  description: "Harden nginx hardening — review and enforce mode, multi-platform"
-  license: GPL-2.0-or-later
+  description: >-
+    Harden Nginx via a drop-in conf.d/ file — never rewrites nginx.conf. Configures TLS 1.2/1.3,
+    security headers (HSTS, CSP, Permissions-Policy, Referrer-Policy, X-Frame-Options),
+    OCSP stapling, DH param auto-generation, rate limiting, and worker security.
+    Skips gracefully if Nginx is not installed. Review and enforce modes.
+    Supports Debian/Ubuntu, RHEL/Rocky/Alma, SUSE/openSUSE.
+  license: Apache-2.0
   min_ansible_version: "2.16"
   platforms:
     - name: EL
@@ -17,5 +22,14 @@ galaxy_info:
   galaxy_tags:
     - security
     - hardening
+    - nginx
+    - tls
+    - https
+    - headers
+    - cis
+    - pci
+    - owasp
+    - compliance
+    - linux
 
 dependencies: []

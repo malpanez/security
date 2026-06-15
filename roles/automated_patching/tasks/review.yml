@@ -1,0 +1,43 @@
+---
+- name: Review | Check patching tool package (RedHat)
+  ansible.builtin.command:
+    cmd: rpm -q {{ automated_patching_package }}
+  register: _automated_patching_pkg_check
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family == 'RedHat'
+  tags: [automated_patching, review]
+
+- name: Review | Check patching tool package (Debian)
+  ansible.builtin.command:
+    cmd: dpkg-query -W {{ automated_patching_package }}
+  register: _automated_patching_pkg_check
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family == 'Debian'
+  tags: [automated_patching, review]
+
+- name: Review | Check patching timer/service enabled
+  ansible.builtin.command:
+    cmd: systemctl is-enabled {{ automated_patching_service }}
+  register: _automated_patching_svc_check
+  changed_when: false
+  failed_when: false
+  tags: [automated_patching, review]
+
+- name: Review | Check config restricts to security origin
+  ansible.builtin.command:
+    cmd: grep -iE '{{ automated_patching_security_marker }}' {{ automated_patching_config_file }}
+  register: _automated_patching_security_check
+  changed_when: false
+  failed_when: false
+  tags: [automated_patching, review]
+
+- name: Review | Report automated patching findings
+  ansible.builtin.debug:
+    msg:
+      - 'Host: {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})'
+      - 'Package installed: {{ (_automated_patching_pkg_check.rc | default(-1)) == 0 }}'
+      - 'Timer/service enabled: {{ _automated_patching_svc_check.stdout | default("unknown") }}'
+      - 'Security-only restriction present: {{ (_automated_patching_security_check.rc | default(-1)) == 0 }}'
+  tags: [automated_patching, review]

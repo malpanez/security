@@ -1,0 +1,47 @@
+{{ ansible_managed | comment }}
+# 30-network-zones.conf — Match Address blocks per network zone
+#
+# Design: set the most restrictive settings globally (in sshd_hardening's
+# 10-auth-hardening.conf), then RELAX for trusted networks here.
+#
+# First-occurrence-wins interaction with group files (40-43):
+#   This file (30) is processed before group files (40-43).
+#   For directives set here inside a Match Address block, when both a
+#   Match Address and a Match Group are triggered simultaneously, the
+#   directive in 30 (first occurrence) takes precedence.
+#
+#   Example: admin from corp LAN triggers Match Address corp AND
+#   Match Group linux-admins.  When ssh_corp_require_mfa=false (default),
+#   the corp block sets AuthenticationMethods publickey (single factor) —
+#   this wins over linux-admins's publickey,keyboard-interactive (2FA).
+#   Set ssh_corp_require_mfa=true to require 2FA even from corp LAN.
+#
+# LoginGraceTime and MaxStartups are NOT valid inside Match blocks.
+# They must be set globally (in 10-auth-hardening.conf).
+
+{% if ssh_network_zones.corp | length > 0 %}
+Match Address {{ ssh_network_zones.corp }}
+    PasswordAuthentication yes
+    MaxAuthTries 6
+    AllowAgentForwarding yes
+{% if ssh_corp_require_mfa | default(false) | bool %}
+    AuthenticationMethods publickey,keyboard-interactive
+{% else %}
+    AuthenticationMethods publickey
+{% endif %}
+{% endif %}
+
+{% if ssh_network_zones.vpn | length > 0 %}
+Match Address {{ ssh_network_zones.vpn }}
+    PasswordAuthentication no
+    AllowAgentForwarding yes
+    PermitTunnel yes
+    AuthenticationMethods publickey
+{% endif %}
+
+{% if ssh_network_zones.bastion | length > 0 %}
+Match Address {{ ssh_network_zones.bastion }}
+    PasswordAuthentication no
+    MaxSessions 20
+    AuthenticationMethods publickey
+{% endif %}

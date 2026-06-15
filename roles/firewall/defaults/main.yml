@@ -1,0 +1,23 @@
+---
+firewall_enabled: false
+
+# Default policies (firewalld zone target / ufw default rules)
+firewall_default_incoming_policy: deny    # deny | allow | reject
+firewall_default_outgoing_policy: allow
+firewall_default_routed_policy: deny
+
+# SSH is always kept open to prevent administrative lockout.
+firewall_ssh_port: 22
+
+# Additional inbound allowances
+firewall_allowed_tcp_ports: []            # e.g. [80, 443]
+firewall_allowed_udp_ports: []            # e.g. [123]
+firewall_allowed_services: []             # firewalld service names (ssh is implicit)
+firewall_trusted_sources: []              # CIDRs allowed all inbound (e.g. mgmt subnet)
+
+# Logging
+firewall_logging: true
+firewall_log_level: low                   # ufw: off|low|medium|high|full
+
+# firewalld zone (RedHat/Suse)
+firewall_zone: public

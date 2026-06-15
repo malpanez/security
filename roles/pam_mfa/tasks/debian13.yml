@@ -90,19 +90,19 @@
 - name: Debian13 | Backup PAM sudo config before modification
   ansible.builtin.copy:
     src: /etc/pam.d/sudo
-    dest: /etc/pam.d/sudo.backup-{{ ansible_date_time.epoch }}
+    dest: /etc/pam.d/sudo.pam_mfa.orig
     remote_src: true
+    force: false
     mode: "0644"
-  changed_when: false
   tags: [enforce]
 
 - name: Debian13 | Backup PAM su config before modification
   ansible.builtin.copy:
     src: /etc/pam.d/su
-    dest: /etc/pam.d/su.backup-{{ ansible_date_time.epoch }}
+    dest: /etc/pam.d/su.pam_mfa.orig
     remote_src: true
+    force: false
     mode: "0644"
-  changed_when: false
   when: pam_mfa_enable_su
   tags: [enforce]
 

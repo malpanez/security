@@ -1,0 +1,9 @@
+---
+_usbguard_package: usbguard
+_usbguard_service: usbguard
+_usbguard_conf_dir: /etc/usbguard
+_usbguard_rules_dir: /etc/usbguard/rules.d
+_usbguard_daemon_conf: /etc/usbguard/usbguard-daemon.conf
+_usbguard_initial_rules: /etc/usbguard/rules.d/00-initial-policy.conf
+_usbguard_needs_epel: false
+_usbguard_ipc_group: wheel

@@ -34,3 +34,49 @@
     group: root
     validate: visudo -cf %s
   tags: [cis_enforce]
+
+- name: Cis Enforce | Ensure MaxAuthTries <= 4 (CIS 5.2.7)
+  ansible.builtin.lineinfile:
+    path: "{{ cis_baseline_sshd_config_path }}"
+    regexp: ^#?\s*MaxAuthTries
+    line: MaxAuthTries {{ cis_baseline_max_auth_tries }}
+    create: true
+    mode: "0600"
+    owner: root
+    group: root
+  notify: Restart sshd
+  tags: [cis_enforce]
+
+- name: Cis Enforce | Ensure sudo logfile configured (CIS 5.3.6)
+  ansible.builtin.lineinfile:
+    path: "{{ cis_baseline_sudoers_path }}"
+    regexp: ^Defaults.*logfile=
+    line: Defaults    logfile={{ cis_baseline_sudo_logfile }}
+    state: present
+    mode: "0440"
+    owner: root
+    group: root
+    validate: visudo -cf %s
+  tags: [cis_enforce]
+
+- name: Cis Enforce | Detect NOPASSWD:ALL in sudoers (CIS 5.3)
+  ansible.builtin.shell:
+    cmd: >-
+      grep -REIl '^[^#]*NOPASSWD:[[:space:]]*ALL'
+      {{ cis_baseline_sudoers_path }} {{ cis_baseline_sudoers_dir }}/ || true
+    executable: /bin/bash
+  register: cis_baseline_nopasswd_found
+  changed_when: false
+  failed_when: false
+  tags: [cis_enforce]
+
+- name: Cis Enforce | Fail when NOPASSWD:ALL present (manual remediation required)
+  ansible.builtin.assert:
+    that:
+      - (cis_baseline_nopasswd_found.stdout | trim | length) == 0
+    fail_msg: >-
+      CIS 5.3: NOPASSWD:ALL found and cannot be auto-removed safely. Review and
+      remediate manually in: {{ cis_baseline_nopasswd_found.stdout_lines }}
+    success_msg: "CIS 5.3: no NOPASSWD:ALL grants present"
+  when: cis_baseline_enforce_fail_on_nopasswd | bool
+  tags: [cis_enforce]

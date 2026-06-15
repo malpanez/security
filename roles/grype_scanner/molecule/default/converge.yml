@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+  become: true
+
+  vars:
+    grype_scanner_enabled: true
+    security_mode: enforce
+    grype_scanner_update_db: false
+
+  roles:
+    - role: malpanez.security.grype_scanner
