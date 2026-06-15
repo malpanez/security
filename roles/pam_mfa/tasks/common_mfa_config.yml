@@ -86,6 +86,32 @@
     create: false
   tags: [enforce]
 
+# SSH MFA via PAM only prompts when sshd accepts the keyboard-interactive
+# auth method. Debian/Ubuntu ship `KbdInteractiveAuthentication no` by default,
+# which silently defeats the substack we just wired into /etc/pam.d/sshd.
+- name: Common | Stat sshd_config before enabling keyboard-interactive
+  ansible.builtin.stat:
+    path: /etc/ssh/sshd_config
+  register: _pam_mfa_sshd_config
+  tags: [enforce]
+
+- name: Common | Ensure SSH allows keyboard-interactive auth for MFA
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?\s*KbdInteractiveAuthentication\b'
+    line: KbdInteractiveAuthentication yes
+    insertafter: EOF
+  when: _pam_mfa_sshd_config.stat.exists
+  tags: [enforce]
+
+- name: Common | Neutralize legacy ChallengeResponseAuthentication no
+  ansible.builtin.replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?\s*ChallengeResponseAuthentication\s+no\b'
+    replace: ChallengeResponseAuthentication yes
+  when: _pam_mfa_sshd_config.stat.exists
+  tags: [enforce]
+
 # CRITICAL: Post-configuration validation
 - name: Common | Set PAM module basenames
   ansible.builtin.set_fact:

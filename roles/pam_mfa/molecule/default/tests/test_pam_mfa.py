@@ -37,7 +37,8 @@ def test_pam_packages_installed(host):
         for pkg in packages:
             assert host.package(pkg).is_installed, f"Package {pkg} should be installed"
     elif os_family in ["centos", "rocky", "almalinux", "oraclelinux"]:
-        packages = ["pam_u2f", "google-authenticator"]
+        # EPEL ships the U2F PAM module as `pam-u2f` (matches vars/RedHat.yml).
+        packages = ["pam-u2f", "google-authenticator"]
         for pkg in packages:
             assert host.package(pkg).is_installed, f"Package {pkg} should be installed"
 

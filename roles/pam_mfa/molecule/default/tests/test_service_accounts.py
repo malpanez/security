@@ -7,11 +7,26 @@ to prevent automation lockout.
 import pytest
 
 
+# The MFA second-factor logic lives in its own substack file (the "drop-in"
+# pattern applied to PAM); the bypass/breakglass rules are here, NOT in the
+# vendor /etc/pam.d/sshd, which only carries a single `auth substack mfa` line.
+MFA_SUBSTACK = "/etc/pam.d/mfa"
+
+
+def _using_debian13_stack(host):
+    """Debian 13 uses a sudo-only TOTP stack (no U2F substack, no bypass groups)."""
+    if host.system_info.distribution.lower() != "debian":
+        return False
+    return host.file("/etc/pam.d/mfa-totp").exists
+
+
 def test_mfa_bypass_group_exists(host):
     """
     CRITICAL: mfa-bypass group must exist before PAM configuration.
     If PAM references a non-existent group, authentication fails.
     """
+    if _using_debian13_stack(host):
+        return
     group = host.group("mfa-bypass")
     assert group.exists, \
         "CRITICAL: mfa-bypass group must exist for service account bypass"
@@ -53,16 +68,18 @@ def test_service_accounts_in_bypass_group(host):
 
 def test_pam_bypass_rule_exists(host):
     """
-    Verify PAM configuration includes bypass rule for mfa-bypass group.
+    Verify the MFA substack includes the bypass rule for the mfa-bypass group.
     """
-    pam_sshd = host.file("/etc/pam.d/sshd")
+    if _using_debian13_stack(host):
+        return
+    substack = host.file(MFA_SUBSTACK)
 
-    if pam_sshd.exists:
-        content = pam_sshd.content_string
+    if substack.exists:
+        content = substack.content_string
 
         # Check for pam_succeed_if bypass rule
         assert "pam_succeed_if" in content and "mfa-bypass" in content, \
-            "PAM configuration must include bypass rule for mfa-bypass group"
+            "MFA substack must include bypass rule for mfa-bypass group"
         assert "rhost" in content and "10.0.0.0/8" in content, \
             "PAM bypass should include source restriction when configured"
 
@@ -72,13 +89,14 @@ def test_pam_bypass_rule_exists(host):
         for line in lines:
             if "auth" in line and "pam_succeed_if" in line and "mfa-bypass" in line:
                 found_bypass = True
-                # Verify it uses success=1 to skip next rule
-                assert "[success=1" in line or "success=1" in line, \
-                    "Bypass rule should use [success=1 default=ignore] control"
+                # The substack short-circuits the bypass with `sufficient`
+                # (drop-in semantics), not a fragile [success=N] jump.
+                assert "sufficient" in line, \
+                    "Bypass rule should use the 'sufficient' control"
                 break
 
         assert found_bypass, \
-            "PAM auth section must include pam_succeed_if bypass for mfa-bypass group"
+            "MFA substack auth section must include pam_succeed_if bypass for mfa-bypass group"
 
 
 def test_bypass_comes_before_mfa_enforcement(host):
@@ -86,10 +104,12 @@ def test_bypass_comes_before_mfa_enforcement(host):
     CRITICAL: Bypass rule must come BEFORE MFA enforcement in PAM stack.
     If MFA enforcement comes first, bypass won't work.
     """
-    pam_sshd = host.file("/etc/pam.d/sshd")
+    if _using_debian13_stack(host):
+        return
+    substack = host.file(MFA_SUBSTACK)
 
-    if pam_sshd.exists:
-        content = pam_sshd.content_string
+    if substack.exists:
+        content = substack.content_string
         lines = content.split("\n")
 
         bypass_line = None
@@ -120,6 +140,8 @@ def test_breakglass_group_exists(host):
     """
     Verify breakglass group exists for emergency MFA bypass.
     """
+    if _using_debian13_stack(host):
+        return
     group = host.group("mfa-breakglass")
     assert group.exists, \
         "mfa-breakglass group should exist for emergency access"
@@ -220,10 +242,12 @@ def test_no_wildcard_bypass_in_pam(host):
     Verify PAM bypass rule doesn't use wildcards or overly permissive patterns.
     Bypass should be explicit (group membership only).
     """
-    pam_sshd = host.file("/etc/pam.d/sshd")
+    if _using_debian13_stack(host):
+        return
+    substack = host.file(MFA_SUBSTACK)
 
-    if pam_sshd.exists:
-        content = pam_sshd.content_string
+    if substack.exists:
+        content = substack.content_string
 
         # Check for dangerous patterns
         dangerous_patterns = [
