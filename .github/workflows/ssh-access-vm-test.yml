@@ -132,9 +132,7 @@ jobs:
         run: |
           ansible-playbook -i test-inventory/hosts \
             -e "security_mode=enforce" \
-            -e "sssd_ad_configure=false" \
-            -e "sssd_ad_domain=example.com" \
-            -e "sssd_ad_realm=EXAMPLE.COM" \
+            -e "ssh_identity_backend=local" \
             -e "ssh_backup_config=false" \
             -e "ssh_local_fallback_group=ansible-deploy" \
             -e "ssh_verify_ad_groups=true" \
@@ -287,9 +285,7 @@ jobs:
           set -euo pipefail
           OUTPUT=$(ansible-playbook -i test-inventory/hosts \
             -e "security_mode=enforce" \
-            -e "sssd_ad_configure=false" \
-            -e "sssd_ad_domain=example.com" \
-            -e "sssd_ad_realm=EXAMPLE.COM" \
+            -e "ssh_identity_backend=local" \
             -e "ssh_backup_config=false" \
             -e "ssh_local_fallback_group=ansible-deploy" \
             -e "ssh_verify_ad_groups=true" \
